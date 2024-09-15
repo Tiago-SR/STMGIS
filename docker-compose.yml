@@ -42,11 +42,17 @@ services:
       - ./backend:/app
       - /app/__pycache__/
     ports:
-      - "8000:80"
-    env_file:
-      - ./backend/.env
+      - "8000:8000"
     depends_on:
       - db
+      - pgadmin
+    environment:
+      - DEBUG=1
+      - DB_NAME=STMGIS
+      - DB_USER=myuser
+      - DB_PASSWORD=mypassword
+      - DB_HOST=db
+      - DB_PORT=5432
     networks:
       - net
 

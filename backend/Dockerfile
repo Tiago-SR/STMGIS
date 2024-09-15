@@ -1,23 +1,26 @@
-# Usa una imagen base de Python
+# Usa una imagen base oficial de Python
 FROM python:3.11-slim
 
-RUN pip3 install --upgrade pip
-
-# Establece el directorio de trabajo en el contenedor
+# Establece el directorio de trabajo en /app
 WORKDIR /app
 
-# Copia el archivo de requerimientos al contenedor
+# Copia el archivo requirements.txt al contenedor
 COPY requirements.txt /app/
 
 # Instala las dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia el código de la aplicación al contenedor
+# Copia el resto de los archivos del proyecto al contenedor
 COPY . /app/
 
-# Expone el puerto que usará Django
-EXPOSE 80
+# Copia el script wait-for-it.sh al contenedor
+COPY ./wait-for-it.sh /app/wait-for-it.sh
 
-# Comando para iniciar el servidor de desarrollo de Django con modo debug
-#CMD ["python", "manage.py", "runserver", "0.0.0.0:80"]
-ENTRYPOINT ["./wait-for-it.sh", "db:5432", "--", "python", "manage.py", "runserver", "0.0.0.0:00"]
+# Dale permisos de ejecución al script
+RUN chmod +x /app/wait-for-it.sh
+
+# Expone el puerto en el que correrá la aplicación
+EXPOSE 8000
+
+# Corre las migraciones y luego ejecuta el servidor de Django
+CMD ["sh", "-c", "/app/wait-for-it.sh db:5432 -- python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
