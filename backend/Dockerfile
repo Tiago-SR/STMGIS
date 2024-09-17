@@ -1,6 +1,14 @@
 # Usa una imagen base oficial de Python
 FROM python:3.11-slim
 
+RUN apt-get update \
+    && apt-get install -y binutils libproj-dev gdal-bin \
+    && apt-get install -y software-properties-common \
+    && apt-get install -y libgeos++-dev \
+    && apt-get install -y proj-bin \
+    && apt-get install -y gdal-bin \
+    && apt-get install -y libgdal-dev
+
 # Establece el directorio de trabajo en /app
 WORKDIR /app
 
@@ -23,4 +31,4 @@ RUN chmod +x /app/wait-for-it.sh
 EXPOSE 8000
 
 # Corre las migraciones y luego ejecuta el servidor de Django
-CMD ["sh", "-c", "/app/wait-for-it.sh db:5432 -- python manage.py migrate && python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "/app/wait-for-it.sh db:5432 -- python manage.py runserver 0.0.0.0:8000"]
