@@ -27,6 +27,12 @@ COPY ./wait-for-it.sh /app/wait-for-it.sh
 # Dale permisos de ejecución al script
 RUN chmod +x /app/wait-for-it.sh
 
+# Crea un usuario no root
+RUN useradd -ms /bin/bash myuser
+
+# Cambia a ese usuario
+USER myuser
+
 # Expone el puerto en el que correrá la aplicación
 EXPOSE 8000
 
