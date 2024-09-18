@@ -8,4 +8,5 @@ class Empresa(models):
 
     def __str__(self):
         return self.nombre
+        # haciendo cambio prueba
     
