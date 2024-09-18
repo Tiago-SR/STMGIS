@@ -10,25 +10,25 @@ RUN apt-get update \
     && apt-get install -y libgdal-dev
 
 # Establece el directorio de trabajo en /app
-WORKDIR /app
+WORKDIR /usr/src/app
 
 # Copia el archivo requirements.txt al contenedor
-COPY requirements.txt /app/
+COPY requirements.txt /usr/src/app/
 
 # Instala las dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia el resto de los archivos del proyecto al contenedor
-COPY . /app/
+COPY . /usr/src/app/
 
 # Copia el script wait-for-it.sh al contenedor
-COPY ./wait-for-it.sh /app/wait-for-it.sh
+COPY ./wait-for-it.sh /usr/src/app/wait-for-it.sh
 
 # Dale permisos de ejecución al script
-RUN chmod +x /app/wait-for-it.sh
+RUN chmod +x /usr/src/app/wait-for-it.sh
 
 # Crea un usuario no root
-RUN useradd -ms /bin/bash myuser
+RUN useradd -ms /bin/bash
 
 # Cambia a ese usuario
 USER myuser
@@ -37,4 +37,4 @@ USER myuser
 EXPOSE 8000
 
 # Corre las migraciones y luego ejecuta el servidor de Django
-CMD ["sh", "-c", "/app/wait-for-it.sh db:5432 -- python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "/usr/src/app/wait-for-it.sh db:5432 -- python manage.py runserver 0.0.0.0:8000"]
