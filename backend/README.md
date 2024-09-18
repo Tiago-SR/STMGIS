@@ -14,7 +14,7 @@ Con eso deberia aparecernos `(venv)` al comienzo de nuestra linea de comandos.
 
 Y finalmente para instalar django hacemos:
 
-`pip install Django==4.2`
+`pip install -r requirements.txt`
 
 Con el siguiente comando se crean las 'apps':
 
