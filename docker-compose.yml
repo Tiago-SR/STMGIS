@@ -41,8 +41,8 @@ services:
   backend:
     image: lab-back-test:v1.0-dev
     volumes:
-      - ./backend:/app
-      - /app/__pycache__/
+      - ./backend:/usr/src/app
+      - /usr/src/app/__pycache__/
     ports:
       - "8000:8000"
     depends_on:
