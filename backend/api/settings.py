@@ -30,10 +30,21 @@ ALLOWED_HOSTS = [
     'api.proyecto.local'
 ]
 
+CORS_ALLOWED_ORIGINS = [
+    'http://proyecto.local',
+]
+
+# O si quieres permitir a todos los dominios (no recomendado para producción):
+# CORS_ALLOW_ALL_ORIGINS = True
+
+# Si necesitas soportar cookies en tus solicitudes CORS:
+CORS_ALLOW_CREDENTIALS = True
+
 
 # Application definition
 
 INSTALLED_APPS = [
+    'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +58,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

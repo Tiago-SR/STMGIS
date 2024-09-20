@@ -6,7 +6,7 @@ import { NgForm } from '@angular/forms';
 @Component({
   selector: 'app-empresa',
   templateUrl: './empresa.component.html',
-  styleUrl: './empresa.component.scss'
+  styleUrls: ['./empresa.component.scss']
 })
 export class EmpresaComponent {
 

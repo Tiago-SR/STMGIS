@@ -9,7 +9,7 @@ import { Empresa } from '../models/empresa.model';
   providedIn: 'root'
 })
 export class EmpresaService {
-  private baseUrl = 'http://api.pryecto.local/empresas';
+  private baseUrl = 'http://api.proyecto.local/empresas/';
 
   constructor(private http: HttpClient) { }
 
@@ -18,7 +18,7 @@ export class EmpresaService {
   }
   
   getEmpresaById(id: number): Observable<Empresa> {
-    return this.http.get<Empresa>(`${this.baseUrl}/${id}`);
+    return this.http.get<Empresa>(`${this.baseUrl}/${id}/`);
   }
   
   createEmpresa(empresa: Empresa): Observable<Empresa> {
@@ -30,7 +30,7 @@ export class EmpresaService {
   }
   
   updateEmpresa(id: number, empresa: Empresa): Observable<Empresa> {
-    return this.http.put<Empresa>(`${this.baseUrl}/${id}`, empresa, {
+    return this.http.put<Empresa>(`${this.baseUrl}/${id}/`, empresa, {
       headers: new HttpHeaders({
         'Content-Type': 'application/json'
       })
@@ -38,6 +38,6 @@ export class EmpresaService {
   }
   
   deleteEmpresa(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/${id}`);
+    return this.http.delete(`${this.baseUrl}/${id}/`);
   }
 }

@@ -1,5 +1,5 @@
 <p>empresa-form2 works!</p>
-<form (ngSubmit)="onSubmit()" #empresaForm="ngForm">
+<form (ngSubmit)="onSubmit(empresaForm)" #empresaForm="ngForm">
     <div>
       <label for="nombre">Nombre:</label>
       <input type="text" id="nombre" [(ngModel)]="empresa.nombre" name="nombre" required>
