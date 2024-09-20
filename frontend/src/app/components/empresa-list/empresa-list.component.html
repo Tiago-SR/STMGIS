@@ -1,0 +1,18 @@
+<div class="grid grid-cols-3 gap-4">
+    <div *ngFor="let empresa of empresas" class="bg-white p-4 rounded-lg shadow-md">
+        <h2 class="text-lg font-semibold">{{ empresa.nombre }}</h2>
+        <p>RUT: {{ empresa.rut }}</p>
+        <p>Dirección: {{ empresa.direccion }}</p>
+        <div class="flex justify-between items-center mt-4" *ngIf="empresa.id">
+            <button (click)="editarEmpresa(empresa.id, empresa)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Editar
+            </button>
+            <button (click)="softDeleteEmpresa(empresa.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Eliminar
+            </button>
+        </div>
+    </div>
+</div>
+
+
+  

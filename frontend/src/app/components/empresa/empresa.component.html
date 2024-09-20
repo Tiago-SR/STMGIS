@@ -1,1 +1,17 @@
-<p>empresa works!</p>
+
+<form (ngSubmit)="onSubmit(empresaForm)" #empresaForm="ngForm">
+    <div>
+      <label for="nombre">Nombre:</label>
+      <input type="text" id="nombre" [(ngModel)]="empresa.nombre" name="nombre" required>
+    </div>
+    <div>
+      <label for="rut">RUT:</label>
+      <input type="text" id="rut" [(ngModel)]="empresa.rut" name="rut" required>
+    </div>
+    <div>
+      <label for="direccion">Dirección:</label>
+      <input type="text" id="direccion" [(ngModel)]="empresa.direccion" name="direccion" required>
+    </div>
+    <button type="submit" [disabled]="!empresaForm.valid">Registrar Empresa</button>
+  </form>
+  <p>empresa worksasdfas!</p>

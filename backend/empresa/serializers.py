@@ -7,7 +7,7 @@ class EmpresaSerializer(serializers.ModelSerializer):
         model = Empresa
         fields = '__all__'
 
-class UserListSerializer(serializers.ModelSerializer):
+class EmpresasListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
-        fields = ('nombre', 'rut', 'direccion')
+        fields = ( 'id', 'nombre', 'rut', 'direccion')
