@@ -18,7 +18,7 @@ export class EmpresaService {
   }
   
   getEmpresaById(id: number): Observable<Empresa> {
-    return this.http.get<Empresa>(`${this.baseUrl}/${id}/`);
+    return this.http.get<Empresa>(`${this.baseUrl}${id}/`);
   }
   
   createEmpresa(empresa: Empresa): Observable<Empresa> {

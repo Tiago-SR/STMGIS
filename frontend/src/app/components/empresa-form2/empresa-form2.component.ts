@@ -12,7 +12,17 @@ export class EmpresaForm2Component {
   
   empresa: Empresa = new Empresa();  
 
-  constructor(private empresaService: EmpresaService) {}
+  constructor(private empresaService: EmpresaService) {
+    empresaService.getEmpresaById(1).subscribe({
+      next: (empresa) => {
+        this.empresa = empresa
+      },
+      error: (err) => {
+        alert(`Ha ocurrido un error`)
+        console.log(`Ha ocurrido un error,`, err);
+      }
+    })
+  }
 
   onSubmit(form: NgForm) {
     if (form.valid) {
