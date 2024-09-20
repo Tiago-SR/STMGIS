@@ -5,12 +5,6 @@ WORKDIR /app
 # Instala Angular CLI globalmente
 RUN npm install -g @angular/cli
 
-# Copia package.json y package-lock.json para instalar dependencias
-COPY package*.json ./
-
-# Instala las dependencias
-RUN npm install
-
 # Copia el resto del código de la aplicación
 COPY . .
 
