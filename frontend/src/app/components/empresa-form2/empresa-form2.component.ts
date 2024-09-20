@@ -1,15 +1,15 @@
 import { Component } from '@angular/core';
+import { NgForm } from '@angular/forms';
 import { Empresa } from '../../models/empresa.model';
 import { EmpresaService } from '../../services/empresa.service';
-import { NgForm } from '@angular/forms';
 
 @Component({
-  selector: 'app-empresa',
-  templateUrl: './empresa.component.html',
-  styleUrl: './empresa.component.scss'
+  selector: 'app-empresa-form2',
+  templateUrl: './empresa-form2.component.html',
+  styleUrls: ['./empresa-form2.component.scss']
 })
-export class EmpresaComponent {
-
+export class EmpresaForm2Component {
+  
   empresa: Empresa = new Empresa();  
 
   constructor(private empresaService: EmpresaService) {}

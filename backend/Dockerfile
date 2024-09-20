@@ -28,7 +28,7 @@ COPY ./wait-for-it.sh /usr/src/app/wait-for-it.sh
 RUN chmod +x /usr/src/app/wait-for-it.sh
 
 # Crea un usuario no root
-RUN useradd -ms /bin/bash
+RUN useradd -ms /bin/bash myuser
 
 # Cambia a ese usuario
 USER myuser
