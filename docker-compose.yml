@@ -62,7 +62,6 @@ services:
     image: lab-front-test:v1.0-dev
     volumes:
       - ./frontend:/app
-      - /app/node_modules
     ports:
       - "4200:4200"
     environment:
