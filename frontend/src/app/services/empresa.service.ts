@@ -30,7 +30,7 @@ export class EmpresaService {
   }
   
   updateEmpresa(id: number, empresa: Empresa): Observable<Empresa> {
-    return this.http.put<Empresa>(`${this.baseUrl}/${id}/`, empresa, {
+    return this.http.put<Empresa>(`${this.baseUrl}${id}/`, empresa, {
       headers: new HttpHeaders({
         'Content-Type': 'application/json'
       })
@@ -38,6 +38,8 @@ export class EmpresaService {
   }
   
   deleteEmpresa(id: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/${id}/`);
+    //return this.http.delete(`${this.baseUrl}/${id}/`);
+    return this.http.patch(`http://api.proyecto.local/empresas/${id}/`, { is_deleted: true });
+
   }
 }

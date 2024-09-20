@@ -10,4 +10,4 @@ class EmpresaSerializer(serializers.ModelSerializer):
 class EmpresasListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Empresa
-        fields = ('nombre', 'rut', 'direccion')
+        fields = ( 'id', 'nombre', 'rut', 'direccion')

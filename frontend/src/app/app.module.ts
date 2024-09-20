@@ -10,6 +10,7 @@ import { EmpresaForm2Component } from './components/empresa-form2/empresa-form2.
 import { EmpresaService } from './services/empresa.service';
 import { FormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { EmpresaEditComponent } from './empresa-edit/empresa-edit.component';
 
 @NgModule({
   declarations: [
@@ -17,7 +18,8 @@ import { HttpClientModule } from '@angular/common/http';
     EmpresaComponent,
     HeaderComponent,    
     EmpresaListComponent,
-    EmpresaForm2Component
+    EmpresaForm2Component,
+    EmpresaEditComponent
   ],
   imports: [
     BrowserModule,

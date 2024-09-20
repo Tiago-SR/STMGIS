@@ -1,0 +1,27 @@
+<div class="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-6">
+    <div class="w-full max-w-3xl bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-6">Editar Empresa</h2>
+      <form (ngSubmit)="onSubmit(empresaForm)" #empresaForm="ngForm" class="space-y-6">
+        <div>
+          <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre:</label>
+          <input type="text" id="nombre" [(ngModel)]="empresa.nombre" name="nombre" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div>
+          <label for="rut" class="block text-sm font-medium text-gray-700">RUT:</label>
+          <input type="text" id="rut" [(ngModel)]="empresa.rut" name="rut" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div>
+          <label for="direccion" class="block text-sm font-medium text-gray-700">Dirección:</label>
+          <input type="text" id="direccion" [(ngModel)]="empresa.direccion" name="direccion" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <button type="submit" [disabled]="!empresaForm.valid" 
+          class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+          Actualizar Empresa
+        </button>
+      </form>
+    </div>
+  </div>
+  
