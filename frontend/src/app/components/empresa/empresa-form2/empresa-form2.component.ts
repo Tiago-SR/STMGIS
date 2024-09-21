@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { NgForm } from '@angular/forms';
-import { Empresa } from '../../models/empresa.model';
-import { EmpresaService } from '../../services/empresa.service';
+import { EmpresaService } from '../../../services/empresa.service';
+import { Empresa } from '../../../models/empresa.model';
 
 @Component({
   selector: 'app-empresa-form2',

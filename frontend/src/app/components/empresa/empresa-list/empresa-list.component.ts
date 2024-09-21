@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { Empresa } from '../../models/empresa.model';
-import { EmpresaService } from '../../services/empresa.service';
 import { Router } from '@angular/router';
+import { Empresa } from '../../../models/empresa.model';
+import { EmpresaService } from '../../../services/empresa.service';
 
 @Component({
   selector: 'app-empresa-list',

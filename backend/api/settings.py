@@ -54,7 +54,8 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'rest_framework',
     'user.apps.UserConfig',
-    'empresa.apps.EmpresaConfig'
+    'empresa.apps.EmpresaConfig',
+    'campo.apps.CampoConfig',
 ]
 
 MIDDLEWARE = [

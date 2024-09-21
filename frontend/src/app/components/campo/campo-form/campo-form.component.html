@@ -1,1 +1,41 @@
-<p>campo-form works!</p>
+<p>campo-Form works!</p>
+
+
+<!-- <div class="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-6">
+    <div class="w-full max-w-3xl bg-white shadow-md rounded px-8 pt-4 pb-8 mb-4">
+      <p class="text-lg font-semibold text-gray-700 mb-4">Registro Nuevo Campo</p>
+      <form (ngSubmit)="onSubmit(campoForm)" #campoForm="ngForm" class="space-y-4" enctype="multipart/form-data">
+        <div>
+            <label for="empresa" class="block text-sm font-medium text-gray-700">Empresa:</label>
+            <select id="empresa" [(ngModel)]="campo.empresaId" name="empresaId" required
+              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+              <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+            </select>
+          </div>
+        <div>
+          <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del Campo:</label>
+          <input type="text" id="nombre" [(ngModel)]="campo.nombre" name="nombre" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div>
+          <label for="superficie" class="block text-sm font-medium text-gray-700">Superficie (has):</label>
+          <input type="number" id="superficie" [(ngModel)]="campo.superficie" name="superficie" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div>
+          <label for="departamento" class="block text-sm font-medium text-gray-700">Departamento:</label>
+          <input type="text" id="departamento" [(ngModel)]="campo.departamento" name="departamento" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <div>
+          <label for="archivo" class="block text-sm font-medium text-gray-700">Archivo SHP:</label>
+          <input type="file" id="archivo" (change)="handleFileInput($event.target.files)" name="archivo" 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+        </div>
+        <button type="submit" [disabled]="!campoForm.valid" 
+          class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
+          Registrar Campo
+        </button>
+      </form>
+    </div>
+  </div> -->
