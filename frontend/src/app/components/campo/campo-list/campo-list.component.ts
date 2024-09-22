@@ -35,15 +35,22 @@ export class CampoListComponent implements OnInit {
 
   loadCampos() {
     this.campoService.getCampos().subscribe({
-      next: (campos) => {
-        this.campos = campos;
+      next: (response) => {
+        if (response.success) {
+          this.campos = response.data;  // Asegúrate de que esta asignación se está haciendo correctamente
+        } else {
+          console.error('No se pudieron cargar todos los campos');
+          this.campos = [];
+        }
       },
-      error: (error) => console.error('Error al obtener campos', error)
+      error: (error) => {
+        console.error('Error al cargar todos los campos', error);
+        this.campos = [];
+      }
     });
   }
-
   filterCampos() {
-    if (this.selectedEmpresa > 0) {
+    if (this.selectedEmpresa>0) {
       this.campoService.getCamposByEmpresa(this.selectedEmpresa).subscribe({
         next: (campos) => {
           if (campos.success) {
@@ -67,10 +74,10 @@ export class CampoListComponent implements OnInit {
   }
 
   editarCampo(id: number, campo: Campo) {
-    this.router.navigate(['/editar-campo', id]);  
+    this.router.navigate(['campos/editar/', id]);  
   }
 
-  softDeleteCampo(id: number) {
+  softDeleteCampo(id: number){
     this.campoService.deleteCampo(id).subscribe({
       next: () => {
         console.log('Campo eliminado');

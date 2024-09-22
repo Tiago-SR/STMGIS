@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Campo } from '../models/campo.model';
 
@@ -12,18 +12,29 @@ export class CampoService {
 
     constructor(private http: HttpClient) { }
 
+    // getCampos(): Observable<any> {
+    //     return this.http.get<any>(this.apiUrl);
+    // }
     getCampos(): Observable<any> {
-        return this.http.get<any>(this.apiUrl);
+         const headers = new HttpHeaders({
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+             'Expires': '0'
+         });
+    
+        return this.http.get<any>(this.apiUrl, { headers });
     }      
 
     getCampoById(id: number): Observable<any> {
         return this.http.get<any>(`${this.apiUrl}${id}/`);
     }
-    getCamposByEmpresa(id: number): Observable<any> {
-        return this.http.get<any>(`${this.apiUrl}?empresa=${id}`);    }
 
-    createCampo(campo: any): Observable<any> {
-        return this.http.post<any>(this.apiUrl, campo);
+    getCamposByEmpresa(id: number): Observable<any> {
+        return this.http.get<any>(`${this.apiUrl}?empresa=${id}`);
+    }
+
+    createCampo(formData: FormData): Observable<any> {
+        return this.http.post<any>(this.apiUrl, formData);
     }
 
     updateCampo(id: number, campo: any): Observable<any> {

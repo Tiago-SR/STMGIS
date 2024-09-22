@@ -13,11 +13,41 @@
         <div [ngClass]="{'hidden': !menuOpen}" class="w-full md:block md:w-auto">
             <ul class="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-white dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
                 <li><a href="#" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Home</a></li>
-                <li><a routerLink="/empresas" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Empresas</a></li>
-                <li><a routerLink="/empresas/:id" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Empresa</a></li>
-                <li><a routerLink="/campos" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Campos</a></li>
-                <li><a href="#" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Item 2</a></li>
+                <li><a href="#" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Normalizar MR</a></li>
+
+                <li><a href="#" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Visualizar</a></li>
+
+                <button id="dropdownDefaultButton" data-dropdown-toggle="dropdown" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800" type="button">Configuración <svg class="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 1 4 4 4-4"/>
+                    </svg>
+                    </button>
+                    
+                    <!-- Dropdown menu -->
+                    <div id="dropdown" class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700">
+                        <ul class="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdownDefaultButton">
+                        <li>
+                            <a routerLink="/empresas"  class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Empresas</a>
+                        </li>
+                        <li>
+                            <a routerLink="/campos" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Campos</a>
+                        </li>
+                        <li>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Cultivos</a>
+                        </li>
+                        <li>
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Especies</a>
+                        </li>
+                        <li>         
+                            <a href="#" class="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Usuarios</a>
+                        </li>
+                        </ul>
+                    </div>
+               
+                <li><a href="#" class="block py-2 px-3 text-gray-900 rounded hover:bg-gray-100 dark:text-white">Usuario</a></li>
             </ul>
         </div>
+        
+    
+    
     </div>
 </nav>

@@ -14,8 +14,8 @@ const routes: Routes = [
   { path: 'campos', component: CampoListComponent },
   { path: 'campos/editar/:id', component: CampoEditComponent },
   { path: 'campos/nuevo', component: CampoFormComponent },
-  { path: '', redirectTo: '/campos', pathMatch: 'full' },  // Redirecciona a la lista de campos por defecto
-  { path: '**', redirectTo: '/campos' } ,
+  // { path: '', redirectTo: '/campos', pathMatch: 'full' },  // Redirecciona a la lista de campos por defecto
+  // { path: '**', redirectTo: '/campos' } ,
   { path: '**', redirectTo: '' }
 ];
 

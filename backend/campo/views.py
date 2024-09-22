@@ -21,7 +21,14 @@ class CampoViewSet(viewsets.ModelViewSet):
                     return Response({'message': 'No hay campos para esta empresa.'}, status=status.HTTP_404_NOT_FOUND)
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        pass
+        else:
+            # Si no se proporciona empresa_id, devuelve todos los campos
+            serializer = CampoSerializer(self.queryset, many=True)
+            return Response({'data': serializer.data, 'success': True})
+        # else:
+        #     # Si no se proporciona empresa_id, devuelve todos los campos
+        #     serializer = CampoSerializer(self.queryset, many=True)
+        #     return Response(serializer.data)
    
 
 

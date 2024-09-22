@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { EmpresaService } from '../../../services/empresa.service';
 import { Empresa } from '../../../models/empresa.model';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-empresa-form2',
@@ -12,16 +13,8 @@ export class EmpresaForm2Component {
   
   empresa: Empresa = new Empresa();  
 
-  constructor(private empresaService: EmpresaService) {
-    empresaService.getEmpresaById(1).subscribe({
-      next: (empresa) => {
-        this.empresa = empresa
-      },
-      error: (err) => {
-        alert(`Ha ocurrido un error`)
-        console.log(`Ha ocurrido un error,`, err);
-      }
-    })
+  constructor(private empresaService: EmpresaService, private router: Router) {
+  
   }
 
   onSubmit(form: NgForm) {
@@ -29,7 +22,8 @@ export class EmpresaForm2Component {
       this.empresaService.createEmpresa(this.empresa).subscribe({
         next: (res) => {
           console.log('Empresa creada:', res);
-          form.reset();
+          this.router.navigate(['/empresas']); // Redirigir después del registro
+
         },
         error: (err) => console.error('Error al crear empresa:', err)
       });

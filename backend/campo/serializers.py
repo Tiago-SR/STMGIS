@@ -9,4 +9,4 @@ class CampoSerializer(serializers.ModelSerializer):
 class CamposListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Campo
-        fields = ( 'id', 'nombre', 'superficie', 'departamento', 'shapePoligon', 'empresa', 'is_active')
+        fields = ( 'id', 'nombre', 'superficie', 'departamento', 'shapePoligon', 'empresa_id', 'is_active')
