@@ -8,9 +8,11 @@ import { HeaderComponent } from './components/header/header.component';
 import { EmpresaListComponent } from './components/empresa-list/empresa-list.component';
 import { EmpresaForm2Component } from './components/empresa-form2/empresa-form2.component';
 import { EmpresaService } from './services/empresa.service';
-import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { EmpresaEditComponent } from './empresa-edit/empresa-edit.component';
+import { LoginComponent } from './components/login/login.component';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
 
 @NgModule({
   declarations: [
@@ -19,15 +21,20 @@ import { EmpresaEditComponent } from './empresa-edit/empresa-edit.component';
     HeaderComponent,    
     EmpresaListComponent,
     EmpresaForm2Component,
-    EmpresaEditComponent
+    EmpresaEditComponent,
+    LoginComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    HttpClientModule
+    HttpClientModule,
+    ReactiveFormsModule
   ],
-  providers: [EmpresaService],
+  providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    EmpresaService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

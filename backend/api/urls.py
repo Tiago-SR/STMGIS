@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
+from rest_framework_simplejwt.views import TokenRefreshView
+from .jwt_personalizado import CustomTokenObtainPairView
+
 from user import views as user_view
 from empresa import views as empresa_view
 
@@ -26,6 +29,10 @@ router.register(r'users', user_view.UserViewSet, basename="Usuarios")
 router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
 
 urlpatterns = [
+    # Ruta para obtener el token (login)
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
 ]
