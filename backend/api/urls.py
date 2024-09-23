@@ -20,6 +20,8 @@ from rest_framework import routers
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
+from ambientes.views import FileUploadView  
+
 
 
 
@@ -29,9 +31,12 @@ router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
 router.register(r'campos', campo_view.CampoViewSet, basename="Campos")
 
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
+    path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
+
     #path('empresas/<int:empresa_id>/campos/', campo_view.campos_por_empresa, name='campos_por_empresa'),
 
 

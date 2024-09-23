@@ -12,7 +12,7 @@ class Campo(models.Model):
     superficie = models.FloatField()   
     departamento = models.CharField(max_length=100)
     empresa = models.ForeignKey(Empresa, related_name='campos', on_delete=models.CASCADE)
-    #shapePoligon = gis_models.PolygonField(null=True, blank=True, srid=4326)  # Campo espacial
+    shapePoligon = gis_models.PolygonField(null=True, blank=True, srid=4326)  # Campo espacial
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

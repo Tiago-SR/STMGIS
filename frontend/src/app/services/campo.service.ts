@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
 import { Campo } from '../models/campo.model';
 
 @Injectable({
@@ -33,8 +33,16 @@ export class CampoService {
         return this.http.get<any>(`${this.apiUrl}?empresa=${id}`);
     }
 
+    // createCampo(formData: FormData): Observable<any> {
+    //     return this.http.post<any>(this.apiUrl, formData);
+    // }
     createCampo(formData: FormData): Observable<any> {
-        return this.http.post<any>(this.apiUrl, formData);
+        return this.http.post<any>(this.apiUrl, formData).pipe(
+            catchError(error => {
+                console.error('Error al crear el campo:', error);
+                return throwError(error);
+            })
+        );
     }
 
     updateCampo(id: number, campo: any): Observable<any> {
