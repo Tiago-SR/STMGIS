@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable } from 'rxjs';
+import { UserType } from '../enums/user-type';
 
 @Injectable({
   providedIn: 'root'
@@ -74,5 +75,13 @@ export class AuthService {
     localStorage.removeItem('refresh_token');
     this.loggedIn.next({ isLogged: false, nickName: '' });
     this.router.navigate(['/login']);
+  }
+
+  getUserType(): null | UserType.ADMIN | UserType.RESPONSABLE {
+    const token = localStorage.getItem('access_token')
+    if (!token) return null
+    const userType = JSON.parse(atob(token.split('.')[1])).userType
+    if (userType !== UserType.ADMIN && userType !== UserType.RESPONSABLE) return null
+    return userType
   }
 }

@@ -13,6 +13,10 @@ import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
 import { EmpresaEditComponent } from './empresa-edit/empresa-edit.component';
 import { LoginComponent } from './components/login/login.component';
 import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { ProfileComponent } from './components/profile/profile.component';
+import { ListUserComponent } from './components/usuarios/list-user/list-user.component';
+import { UserCardComponent } from './components/usuarios/list-user/user-card/user-card.component';
+import { UserCreateModalComponent } from './components/usuarios/user-create-modal/user-create-modal.component';
 
 @NgModule({
   declarations: [
@@ -22,7 +26,11 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     EmpresaListComponent,
     EmpresaForm2Component,
     EmpresaEditComponent,
-    LoginComponent
+    LoginComponent,
+    ProfileComponent,
+    ListUserComponent,
+    UserCardComponent,
+    UserCreateModalComponent
   ],
   imports: [
     BrowserModule,

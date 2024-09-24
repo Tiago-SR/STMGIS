@@ -9,7 +9,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         # Añadir información personalizada al token (opcional)
         token['userName'] = user.username
-        token['user_type'] = user.user_type
+        token['userType'] = user.user_type
 
         return token
     

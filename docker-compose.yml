@@ -12,6 +12,7 @@
 services:
   db:
     image: postgis/postgis:15-3.3
+    container_name: db
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
@@ -40,6 +41,7 @@ services:
 
   backend:
     image: lab-back-test:v1.0-dev
+    container_name: backend
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/__pycache__/
@@ -60,6 +62,7 @@ services:
 
   frontend:
     image: lab-front-test:v1.0-dev
+    container_name: frontend
     volumes:
       - ./frontend:/app
     ports:
@@ -74,6 +77,7 @@ services:
   # Proxy inverso para el frontend.
   proxy:
     image: nginx
+    container_name: proxy
     ports:
       - "80:80"
     volumes:
