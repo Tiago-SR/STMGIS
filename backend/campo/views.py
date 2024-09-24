@@ -35,7 +35,6 @@ class CampoViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            # Si no se proporciona empresa_id, devuelve todos los campos
             serializer = CampoSerializer(self.queryset, many=True)
             return Response({'data': serializer.data, 'success': True})
     
@@ -63,17 +62,17 @@ class CampoViewSet(viewsets.ModelViewSet):
             with shapefile.Reader(shp=shp, shx=shx, dbf=dbf) as sf:
                 for shapeRecord in sf.shapeRecords():
                     geom = shapeRecord.shape.__geo_interface__
-                    # Crea un Polygon o MultiPolygon dependiendo del tipo de geometría
                     if geom['type'] == 'Polygon':
                         poly = Polygon(geom['coordinates'][0])
-                        multi_poly = MultiPolygon(poly)  # Convertir Polygon a MultiPolygon
+                        multi_poly = MultiPolygon(poly) 
                     elif geom['type'] == 'MultiPolygon':
                         multi_poly = MultiPolygon([Polygon(poly) for poly in geom['coordinates']])
                     
-                    # Crear un nuevo objeto Ambiente con los datos extraídos
                     Ambiente.objects.create(
                         campo=campo,
-                        datos=shapeRecord.record['Name'], 
+                        datos=shapeRecord.record, 
+                        #datos={field: shapeRecord.record[idx] for idx, field in enumerate(sf.fields[1:])},
+
                         ambiente_geom=multi_poly  
                     )
         except Exception as e:

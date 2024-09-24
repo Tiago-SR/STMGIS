@@ -25,6 +25,7 @@
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
         </div>
         <div>
+          <p class="text-xs text-gray-500">Los Archivos a cargar deben tener SRC: 4236</p>
           <label for="shpFile" class="block text-sm font-medium text-gray-700">Archivo SHP:</label>
           <input type="file" id="shpFile" name="shpFile" accept=".shp" (change)="handleFileInput($event, 'shpFile')"
                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
@@ -38,6 +39,7 @@
       
       <div>
           <label for="dbfFile" class="block text-sm font-medium text-gray-700">Archivo DBF:</label>
+         
           <input type="file" id="dbfFile" name="dbfFile" accept=".dbf" (change)="handleFileInput($event, 'dbfFile')"
                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
       </div>
