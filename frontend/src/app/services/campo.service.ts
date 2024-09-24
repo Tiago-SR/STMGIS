@@ -19,7 +19,7 @@ export class CampoService {
          const headers = new HttpHeaders({
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
-             'Expires': '0'
+            'Expires': '0'
          });
     
         return this.http.get<any>(this.apiUrl, { headers });
@@ -50,7 +50,7 @@ export class CampoService {
     }
 
     deleteCampo(id: number): Observable<any> {
-        return this.http.patch(`http://api.proyecto.local/campos/${id}/`, { is_deleted: true });
+        return this.http.patch(`http://api.proyecto.local/campos/${id}/`, { is_active: false });
 
     }
 }

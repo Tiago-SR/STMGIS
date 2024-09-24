@@ -25,10 +25,22 @@
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
         </div>
         <div>
-          <label for="archivo" class="block text-sm font-medium text-gray-700">Archivos Shapefile (SHP, SHX, DBF):</label>
-          <input type="file" id="archivo" (change)="handleFileInput($event)" name="archivo" multiple
-          class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-        </div>
+          <label for="shpFile" class="block text-sm font-medium text-gray-700">Archivo SHP:</label>
+          <input type="file" id="shpFile" name="shpFile" accept=".shp" (change)="handleFileInput($event, 'shpFile')"
+                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+      </div>
+      
+      <div>
+          <label for="shxFile" class="block text-sm font-medium text-gray-700">Archivo SHX:</label>
+          <input type="file" id="shxFile" name="shxFile" accept=".shx" (change)="handleFileInput($event, 'shxFile')"
+                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+      </div>
+      
+      <div>
+          <label for="dbfFile" class="block text-sm font-medium text-gray-700">Archivo DBF:</label>
+          <input type="file" id="dbfFile" name="dbfFile" accept=".dbf" (change)="handleFileInput($event, 'dbfFile')"
+                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+      </div>
         <button type="submit" [disabled]="!campoForm.valid" 
           class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
           Registrar Campo

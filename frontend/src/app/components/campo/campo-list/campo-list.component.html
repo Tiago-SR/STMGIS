@@ -3,7 +3,6 @@
     <label for="empresa" class="block text-sm font-medium text-gray-700">Filtrar por Empresa:</label>
     <select [(ngModel)]="selectedEmpresa" (ngModelChange)="filterCampos()">
       <option [value]="0">Todos</option>  <!-- Opción para mostrar todos los campos -->
-
       <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
     </select>
   </div>
@@ -11,9 +10,6 @@
     Crear Campo
   </button>
 </div>
-
-
-
 <div class="grid grid-cols-3 gap-4">
   <div *ngFor="let campo of campos" class="max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
     <a href="#">

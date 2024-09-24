@@ -6,5 +6,8 @@ export class Campo {
     departamento: string = '';
     empresaId: number = 0;
     is_active: boolean  = true;
+    dbfFile: any;
+    shpFile: any;
+    shxFile: any;
   }
   

@@ -15,7 +15,7 @@ import { Campo } from '../../../models/campo.model';
 export class CampoFormComponent implements OnInit {
   empresas: Empresa[] = [];
   campo: Campo = new Campo();
-  selectedFile: File[] | null = null; // Para el archivo SHP
+  selectedFiles: {[key: string]: File | null} = {};
 
 
   constructor(
@@ -39,16 +39,14 @@ export class CampoFormComponent implements OnInit {
       }
     });
   }
-
-  // Manejar la carga del archivo SHP (descomentar en el HTML)
-  handleFileInput(event: Event) {
-    const element = event.target as HTMLInputElement;
-    if (element.files && element.files.length > 0) {
-      this.selectedFile = Array.from(element.files);
+  handleFileInput(event: any, fileType: string): void {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      this.selectedFiles[fileType] = files.item(0);
     }
   }
-  
 
+ 
   // Enviar los datos del formulario
   onSubmit(form: NgForm) {
     if (form.valid) {
@@ -60,10 +58,16 @@ export class CampoFormComponent implements OnInit {
       formData.append('departamento', this.campo.departamento);
       formData.append('empresa', this.campo.empresaId.toString());
       formData.append('is_active', 'true');
-      if (this.selectedFile) {
-          Array.from(this.selectedFile).forEach(file => {
-          formData.append('files', file);
-        });
+
+      
+      if (this.selectedFiles['shpFile']) {
+        formData.append('shpFile', this.selectedFiles['shpFile']);
+      }
+      if (this.selectedFiles['shxFile']) {
+        formData.append('shxFile', this.selectedFiles['shxFile']);
+      }
+      if (this.selectedFiles['dbfFile']) {
+        formData.append('dbfFile', this.selectedFiles['dbfFile']);
       }
 
       // Enviar los datos al servicio
