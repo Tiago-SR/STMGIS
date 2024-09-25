@@ -21,7 +21,7 @@ class CampoViewSet(viewsets.ModelViewSet):
     queryset = Campo.objects.filter(is_active=True)
     serializer_class = CampoSerializer
     parser_classes = (MultiPartParser, FormParser, JSONParser)  # Permite JSON y multipart
-    def list (self, request):        
+    def list(self, request):        
         empresa_id = request.query_params.get('empresa')  # Obtiene el parámetro de la consulta
         if empresa_id:
             print("Empresa ID recibido:", empresa_id)
@@ -35,8 +35,9 @@ class CampoViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         else:
-            serializer = CampoSerializer(self.queryset, many=True)
-            return Response({'data': serializer.data, 'success': True})
+            campos = Campo.objects.filter(is_active=True)
+            serializer = CampoSerializer(campos, many=True)
+            return Response({'data': serializer.data, 'success': True}, status=status.HTTP_200_OK)
     
     def create(self, request, *args, **kwargs):
             with transaction.atomic():
