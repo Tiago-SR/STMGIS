@@ -5,6 +5,8 @@ import { CampoService } from '../../../services/campo.service';
 import { EmpresaService } from '../../../services/empresa.service';
 import { Campo } from '../../../models/campo.model';
 import { Empresa } from '../../../models/empresa.model';
+import { ToastrService } from 'ngx-toastr';
+import { setThrowInvalidWriteToSignalError } from '@angular/core/primitives/signals';
 
 @Component({
   selector: 'app-campo-edit',
@@ -20,8 +22,9 @@ export class CampoEditComponent implements OnInit {
     private campoService: CampoService,
     private empresaService: EmpresaService,
     private route: ActivatedRoute,
-    private router: Router
-  ) {}
+    private router: Router,
+    private toastr: ToastrService
+  ) { }
 
   ngOnInit() {
     const id = this.route.snapshot.params['id'];
@@ -38,7 +41,8 @@ export class CampoEditComponent implements OnInit {
           this.loadEmpresa(campo.empresa);
         } else {
           console.error('Empresa ID no definido para el campo');
-        }     
+          this.toastr.error('Error', 'Empresa ID no definido para el campo');
+        }
       },
       error: (err) => console.error('Error al cargar campo:', err)
     });
@@ -50,7 +54,10 @@ export class CampoEditComponent implements OnInit {
         this.empresa = empresa;
         this.empresaNombre = empresa.nombre;
       },
-      error: (err) => console.error('Error al cargar empresa:', err)
+      error: (err) => {
+        console.error('Error al cargar empresa:', err),
+          this.toastr.error('Error al cargar la empresa', 'Error');
+      }
     });
   }
 
@@ -58,11 +65,20 @@ export class CampoEditComponent implements OnInit {
     if (form.valid) {
       this.campoService.updateCampo(this.campo.id!, this.campo).subscribe({
         next: (res) => {
-          console.log('Campo actualizado:', res);          
-          this.router.navigate(['/campos']); // Ajusta la ruta según necesidad
+          console.log('Campo actualizado:', res);
+          this.toastr.success('Exito', 'Campo actualizado');
+          this.router.navigate(['/campos'], {
+            state: { message: 'Campo actualizado con éxito', type: 'success' }
+          });
         },
-        error: (err) => console.error('Error al actualizar campo:', err)
+        error: (err) => {
+          console.error('Error al actualizar campo:', err);
+          this.toastr.error('Error al actualizar campo', err);
+        }
+
       });
+    } else {
+      this.toastr.error('Error', 'Formulario inválido');
     }
   }
 }

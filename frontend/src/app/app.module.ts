@@ -12,6 +12,9 @@ import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.com
 import { EmpresaForm2Component } from './components/empresa/empresa-form2/empresa-form2.component';
 import { EmpresaListComponent } from './components/empresa/empresa-list/empresa-list.component';
 import { EmpresaEditComponent } from './components/empresa/empresa-edit/empresa-edit.component';
+import { ToastrModule } from 'ngx-toastr';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations'; 
+
 
 @NgModule({
   declarations: [
@@ -28,7 +31,16 @@ import { EmpresaEditComponent } from './components/empresa/empresa-edit/empresa-
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    HttpClientModule
+    HttpClientModule,
+    BrowserAnimationsModule,
+    ToastrModule.forRoot({
+      // Configuración opcional
+      timeOut: 3000,
+      positionClass: 'toast-bottom-right',
+      closeButton: true,
+      progressBar: true,
+      preventDuplicates: true,
+    }),
   ],
   providers: [EmpresaService],
   bootstrap: [AppComponent]

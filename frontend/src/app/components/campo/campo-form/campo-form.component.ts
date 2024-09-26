@@ -5,6 +5,7 @@ import { EmpresaService } from '../../../services/empresa.service';
 import { Router } from '@angular/router';
 import { Empresa } from '../../../models/empresa.model';
 import { Campo } from '../../../models/campo.model';
+import { ToastrService } from 'ngx-toastr';
 
 
 @Component({
@@ -21,7 +22,8 @@ export class CampoFormComponent implements OnInit {
   constructor(
     private campoService: CampoService,
     private empresaService: EmpresaService,
-    private router: Router
+    private router: Router,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
@@ -36,6 +38,7 @@ export class CampoFormComponent implements OnInit {
       },
       error: (err) => {
         console.error('Error al cargar empresas:', err);
+        this.toastr.error('Error al cargar empresas', 'Error');
       }
     });
   }
@@ -73,11 +76,14 @@ export class CampoFormComponent implements OnInit {
       // Enviar los datos al servicio
       this.campoService.createCampo(formData).subscribe({
         next: (res) => {
-          console.log('Campo registrado:', res);
-          this.router.navigate(['/campos']); // Redirigir después del registro
+          console.log('Campo registrado:', res);         
+          this.router.navigate(['/campos'], {
+            state: { message: 'Campo actualizado con éxito', type: 'success' }
+          });
         },
         error: (err) => {
           console.error('Error al registrar el campo:', err);
+          this.toastr.error('Error al registrar el campo', err);
         }
       });
     }
