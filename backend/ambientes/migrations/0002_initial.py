@@ -9,14 +9,14 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('empresa', '0001_initial'),
-        ('user', '0001_initial'),
+        ('ambientes', '0001_initial'),
+        ('campo', '0001_initial'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='empresa',
-            name='owner',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='user.admin'),
+            model_name='ambiente',
+            name='campo',
+            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='ambientes', to='campo.campo'),
         ),
     ]
