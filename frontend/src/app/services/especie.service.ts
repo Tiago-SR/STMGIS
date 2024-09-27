@@ -7,7 +7,7 @@ import { Especie } from '../models/especie.model';
   providedIn: 'root'
 })
 export class EspecieService {
-  private baseUrl = 'http://api.proyecto.local/especies';
+  private baseUrl = 'http://api.proyecto.local/especies/';
 
   constructor(private http: HttpClient) {}
 
@@ -20,14 +20,14 @@ export class EspecieService {
   }
 
   obtenerEspecie(id: string): Observable<Especie> {
-    return this.http.get<Especie>(`${this.baseUrl}/${id}`);
+    return this.http.get<Especie>(`${this.baseUrl}${id}`);
   }
 
   actualizarEspecie(id: string, especie: Especie): Observable<Especie> {
-    return this.http.put<Especie>(`${this.baseUrl}/${id}/`, especie);
+    return this.http.put<Especie>(`${this.baseUrl}${id}/`, especie);
   }
 
   eliminarEspecie(id: string): Observable<void> {
-    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+    return this.http.delete<void>(`${this.baseUrl}${id}`);
   }
 }

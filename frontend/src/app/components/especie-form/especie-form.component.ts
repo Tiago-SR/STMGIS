@@ -2,6 +2,7 @@ import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
 import { Especie } from '../../models/especie.model';
 import { EspecieService } from '../../services/especie.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-especie-form',
@@ -17,12 +18,13 @@ export class EspecieFormComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private especieService: EspecieService
+    private especieService: EspecieService,
+    private toastr: ToastrService
   ) {}
 
   ngOnInit(): void {
     this.especieForm = this.fb.group({
-      nombre: ['', Validators.required],
+      nombre: ['', [Validators.required, Validators.maxLength(100)]],
       humedad_minima: [0, [Validators.required, Validators.min(0)]],
       humedad_maxima: [0, [Validators.required, Validators.min(0)]],
       nitrogeno: [0, [Validators.min(0)]],
@@ -35,6 +37,7 @@ export class EspecieFormComponent implements OnInit {
     });
   }
 
+
   humedadMaximaMayorQueMinima(group: AbstractControl): ValidationErrors | null {
     const humedadMinima = group.get('humedad_minima')?.value;
     const humedadMaxima = group.get('humedad_maxima')?.value;
@@ -45,12 +48,16 @@ export class EspecieFormComponent implements OnInit {
     if (especie) {
       this.especieId = especie.id || null;
       this.cargarEspecieParaEditar(especie);
+    } else {
+      this.especieId = null;
+      this.especieForm.reset(); // Resetear formulario para nueva creación
     }
     this.mostrarModal = true;
   }
 
   cerrarModal(): void {
     this.mostrarModal = false;
+    this.especieId = null;
   }
 
   cargarEspecieParaEditar(especie: Especie): void {
@@ -67,34 +74,48 @@ export class EspecieFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-  if (this.especieForm.valid) {
-    const nutrientes = {
-      Nitrogeno: this.especieForm.get('nitrogeno')?.value || 0,
-      Fosforo: this.especieForm.get('fosforo')?.value || 0,
-      Potasio: this.especieForm.get('potasio')?.value || 0
-    };
+    if (this.especieForm.valid) {
+      const nutrientes = {
+        Nitrogeno: this.especieForm.get('nitrogeno')?.value || 0,
+        Fosforo: this.especieForm.get('fosforo')?.value || 0,
+        Potasio: this.especieForm.get('potasio')?.value || 0
+      };
 
-    const especieEditada: Especie = {
-      id: this.especieId,
-      ...this.especieForm.value,
-      nutrientes
-    };
+      const especieEditada: Especie = {
+        id: this.especieId,
+        ...this.especieForm.value,
+        nutrientes
+      };
 
-    if (this.especieId) {
-      this.especieService.actualizarEspecie(this.especieId, especieEditada).subscribe({
-        next: (especie) => {
-          this.especieActualizada.emit(especie);
-          this.cerrarModal();
-          this.especieForm.reset();
-        },
-        error: (error) => {
-          console.error('Error al actualizar la especie:', error);
-        }
-      });
+      if (this.especieId) {
+        this.especieService.actualizarEspecie(this.especieId, especieEditada).subscribe({
+          next: (especie) => {
+            this.especieActualizada.emit(especie);
+            this.toastr.success(`Especie "${especie.nombre}" actualizada con éxito`);
+            this.cerrarModal();
+            this.especieForm.reset();
+          },
+          error: (error) => {
+            this.toastr.error('Error al actualizar la especie', 'Error');
+            console.error('Error al actualizar la especie:', error);
+          }
+        });
+      } else {
+        this.especieService.crearEspecie(especieEditada).subscribe({
+          next: (especie) => {
+            this.especieActualizada.emit(especie);
+            this.toastr.success(`Especie "${especie.nombre}" creada con éxito`);
+            this.cerrarModal();
+            this.especieForm.reset();
+          },
+          error: (error) => {
+            this.toastr.error('Error al crear la especie', 'Error');
+            console.error('Error al crear la especie:', error);
+          }
+        });
+      }
+    } else {
+      this.especieForm.markAllAsTouched();
     }
-  } else {
-    this.especieForm.markAllAsTouched();
   }
-}
-
 }

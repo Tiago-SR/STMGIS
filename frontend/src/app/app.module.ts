@@ -12,15 +12,11 @@ import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.com
 import { EmpresaForm2Component } from './components/empresa/empresa-form2/empresa-form2.component';
 import { EmpresaListComponent } from './components/empresa/empresa-list/empresa-list.component';
 import { EmpresaEditComponent } from './components/empresa/empresa-edit/empresa-edit.component';
-import { ToastrModule } from 'ngx-toastr';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-
-import { EmpresaEditComponent } from './empresa-edit/empresa-edit.component';
 import { EspecieFormComponent } from './components/especie-form/especie-form.component';
 import { EspecieCardComponent } from './components/especie-card/especie-card.component';
 import { EspecieListComponent } from './components/especie-list/especie-list.component';
-import {BrowserAnimationsModule} from "@angular/platform-browser/animations";
-import {ToastrModule} from "ngx-toastr";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { ToastrModule } from "ngx-toastr";
 
 @NgModule({
   declarations: [
@@ -31,8 +27,7 @@ import {ToastrModule} from "ngx-toastr";
     EmpresaEditComponent,
     EspecieFormComponent,
     EspecieCardComponent,
-    EspecieListComponent
-    EmpresaEditComponent,
+    EspecieListComponent,
     CampoFormComponent,
     CampoListComponent,
     CampoEditComponent
@@ -45,7 +40,6 @@ import {ToastrModule} from "ngx-toastr";
     BrowserAnimationsModule,
       ReactiveFormsModule,
     ToastrModule.forRoot({
-      // Configuración opcional
       timeOut: 3000,
       positionClass: 'toast-bottom-right',
       closeButton: true,

@@ -11,6 +11,7 @@ import { EspecieFormComponent } from '../especie-form/especie-form.component';
 })
 export class EspecieListComponent implements OnInit {
   especies: Especie[] = [];
+  cargando: boolean = true;
   mostrarModal: boolean = false;
   especieSeleccionada: Especie | null = null;
 
@@ -23,9 +24,21 @@ export class EspecieListComponent implements OnInit {
   }
 
   cargarEspecies(): void {
-    this.especieService.obtenerEspecies().subscribe((data: Especie[]) => {
-      this.especies = data;
+    this.cargando = true;
+    this.especieService.obtenerEspecies().subscribe({
+      next: (data: Especie[]) => {
+        this.especies = data;
+        this.cargando = false;
+      },
+      error: (error) => {
+        this.toastr.error('Error al cargar las especies', 'Error');
+        this.cargando = false;
+      }
     });
+  }
+
+  abrirModalCreacion(): void {
+    this.formComponent.abrirModal();
   }
 
   abrirModal(especie: Especie): void {
@@ -62,6 +75,8 @@ export class EspecieListComponent implements OnInit {
     const index = this.especies.findIndex(e => e.id === especieActualizada.id);
     if (index !== -1) {
       this.especies[index] = especieActualizada;
+    } else {
+      this.especies.push(especieActualizada);
     }
   }
 }
