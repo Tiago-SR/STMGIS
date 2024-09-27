@@ -1,0 +1,8 @@
+logs/
+gwc/
+security/masterpw.info
+security/filter
+security/auth
+security/usergroup/default/users.xml
+security/usergroup/default/users.properties
+
