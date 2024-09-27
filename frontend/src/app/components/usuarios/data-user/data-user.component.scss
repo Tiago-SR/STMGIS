@@ -1,0 +1,7 @@
+:host {
+    @apply flex min-w-full flex-1 justify-center
+}
+
+.drag-over {
+    @apply border-dashed border-2 border-gray-300 rounded-lg
+}

@@ -5,7 +5,16 @@ import { AppComponent } from './app.component';
 import { HeaderComponent } from './components/header/header.component';
 import { EmpresaService } from './services/empresa.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HTTP_INTERCEPTORS, HttpClientModule } from '@angular/common/http';
+import { LoginComponent } from './components/login/login.component';
+import { AuthInterceptor } from './interceptors/auth.interceptor';
+import { ProfileComponent } from './components/profile/profile.component';
+import { ListUserComponent } from './components/usuarios/list-user/list-user.component';
+import { UserCardComponent } from './components/usuarios/list-user/user-card/user-card.component';
+import { UserCreateModalComponent } from './components/usuarios/user-create-modal/user-create-modal.component';
+import { RegisterComponent } from './components/register/register.component';
+import { CommonModule } from '@angular/common';
+import { DataUserComponent } from './components/usuarios/data-user/data-user.component';
 import { CampoFormComponent } from './components/campo/campo-form/campo-form.component';
 import { CampoListComponent } from './components/campo/campo-list/campo-list.component';
 import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.component';
@@ -25,6 +34,13 @@ import { ToastrModule } from "ngx-toastr";
     EmpresaListComponent,
     EmpresaForm2Component,
     EmpresaEditComponent,
+    LoginComponent,
+    ProfileComponent,
+    ListUserComponent,
+    UserCardComponent,
+    UserCreateModalComponent,
+    RegisterComponent,
+    DataUserComponent,
     EspecieFormComponent,
     EspecieCardComponent,
     EspecieListComponent,
@@ -37,8 +53,9 @@ import { ToastrModule } from "ngx-toastr";
     AppRoutingModule,
     FormsModule,
     HttpClientModule,
+    ReactiveFormsModule,
+    CommonModule,
     BrowserAnimationsModule,
-      ReactiveFormsModule,
     ToastrModule.forRoot({
       timeOut: 3000,
       positionClass: 'toast-bottom-right',
@@ -47,7 +64,10 @@ import { ToastrModule } from "ngx-toastr";
       preventDuplicates: true,
     }),
   ],
-  providers: [EmpresaService],
+  providers: [
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
+    EmpresaService
+  ],
   bootstrap: [AppComponent]
 })
 export class AppModule { }

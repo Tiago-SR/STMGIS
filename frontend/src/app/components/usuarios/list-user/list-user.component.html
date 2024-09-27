@@ -1,0 +1,22 @@
+<main class="container">
+    <div class="flex justify-between">
+        <h1 class="text-3xl">Lista de Usuarios</h1>
+        <button data-modal-target="create-user-modal" data-modal-toggle="create-user-modal" type="button" class="text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">
+            Invitar Usuario
+        </button>
+    </div>
+    <div *ngIf="userList$ | async as userList; else loaderAndError" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <app-user-card *ngFor="let user of userList"  [user]="user" />
+    </div>
+    <ng-template #loaderAndError>
+        <section *ngIf="hasError; else loader">
+            <p>Algo salió mal. Intentelo de nuevo mas tarde.</p>
+        </section>
+        <ng-template #loader>
+            <div class="loader-wrapper">
+                <div class="loader is-loading"></div>
+            </div>
+        </ng-template>
+    </ng-template>
+</main>
+<app-user-create-modal />
