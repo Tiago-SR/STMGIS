@@ -11,7 +11,7 @@ from rest_framework import viewsets
 from campo.models import Campo
 from campo.serializers import CampoSerializer
 from django.contrib.gis.geos import GEOSGeometry
-import shapefile
+# import shapefile
 from django.db import transaction
 
 

@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'empresa.apps.EmpresaConfig',
     'campo.apps.CampoConfig',
     'ambientes.apps.AmbientesConfig',
+    'especie.apps.EspecieConfig'
 ]
 
 MIDDLEWARE = [

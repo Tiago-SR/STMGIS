@@ -20,17 +20,14 @@ from rest_framework import routers
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
-from ambientes.views import FileUploadView  
-
-
-
+from ambientes.views import FileUploadView
+from especie import views as especie_view
 
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
 router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
 router.register(r'campos', campo_view.CampoViewSet, basename="Campos")
-
-
+router.register(r'especies', especie_view.EspecieViewSet, basename="Especies")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
