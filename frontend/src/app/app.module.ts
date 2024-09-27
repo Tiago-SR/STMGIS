@@ -1,15 +1,20 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { EmpresaComponent } from './components/empresa/empresa.component';
 import { HeaderComponent } from './components/header/header.component';
-import { EmpresaListComponent } from './components/empresa-list/empresa-list.component';
-import { EmpresaForm2Component } from './components/empresa-form2/empresa-form2.component';
 import { EmpresaService } from './services/empresa.service';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
+import { CampoFormComponent } from './components/campo/campo-form/campo-form.component';
+import { CampoListComponent } from './components/campo/campo-list/campo-list.component';
+import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.component';
+import { EmpresaForm2Component } from './components/empresa/empresa-form2/empresa-form2.component';
+import { EmpresaListComponent } from './components/empresa/empresa-list/empresa-list.component';
+import { EmpresaEditComponent } from './components/empresa/empresa-edit/empresa-edit.component';
+import { ToastrModule } from 'ngx-toastr';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+
 import { EmpresaEditComponent } from './empresa-edit/empresa-edit.component';
 import { EspecieFormComponent } from './components/especie-form/especie-form.component';
 import { EspecieCardComponent } from './components/especie-card/especie-card.component';
@@ -20,7 +25,6 @@ import {ToastrModule} from "ngx-toastr";
 @NgModule({
   declarations: [
     AppComponent,
-    EmpresaComponent,
     HeaderComponent,    
     EmpresaListComponent,
     EmpresaForm2Component,
@@ -28,18 +32,26 @@ import {ToastrModule} from "ngx-toastr";
     EspecieFormComponent,
     EspecieCardComponent,
     EspecieListComponent
+    EmpresaEditComponent,
+    CampoFormComponent,
+    CampoListComponent,
+    CampoEditComponent
   ],
   imports: [
-    BrowserAnimationsModule,
-    ToastrModule.forRoot({
-      positionClass: 'toast-bottom-right',
-      preventDuplicates: true,
-    }),
     BrowserModule,
     AppRoutingModule,
     FormsModule,
     HttpClientModule,
-    ReactiveFormsModule
+    BrowserAnimationsModule,
+      ReactiveFormsModule,
+    ToastrModule.forRoot({
+      // Configuración opcional
+      timeOut: 3000,
+      positionClass: 'toast-bottom-right',
+      closeButton: true,
+      progressBar: true,
+      preventDuplicates: true,
+    }),
   ],
   providers: [EmpresaService],
   bootstrap: [AppComponent]
