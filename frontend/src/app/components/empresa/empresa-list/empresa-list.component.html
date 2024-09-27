@@ -1,0 +1,41 @@
+<!-- <div class="grid grid-cols-3 gap-4">
+    <div *ngFor="let empresa of empresas" class="bg-white p-4 rounded-lg shadow-md">
+        <h2 class="text-lg font-semibold">{{ empresa.nombre }}</h2>
+        <p>RUT: {{ empresa.rut }}</p>
+        <p>Dirección: {{ empresa.direccion }}</p>
+        <div class="flex justify-between items-center mt-4" *ngIf="empresa.id">
+            <button (click)="editarEmpresa(empresa.id, empresa)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                Editar
+            </button>
+            <button (click)="softDeleteEmpresa(empresa.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                Eliminar
+            </button>
+        </div>
+    </div>
+</div> -->
+<div class="flex justify-end items-center mb-4 w-full">
+  <button routerLink="/empresas/nuevo" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+      Crear Empresa
+  </button>
+</div>
+
+
+<div class="grid grid-cols-3 gap-4">
+    <div *ngFor="let empresa of empresas" class="max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+      <a href="#">
+        <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ empresa.nombre }}</h5>
+      </a>
+      <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">RUT: {{ empresa.rut }}</p>
+      <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Dirección: {{ empresa.direccion }}</p>
+  
+      <div class="flex justify-between items-center mt-4" *ngIf="empresa.id">
+        <button (click)="editarEmpresa(empresa.id, empresa)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Editar
+        </button>
+        <button (click)="softDeleteEmpresa(empresa.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+  

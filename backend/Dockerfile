@@ -7,7 +7,7 @@ RUN apt-get update \
     && apt-get install -y libgeos++-dev \
     && apt-get install -y proj-bin \
     && apt-get install -y gdal-bin \
-    && apt-get install -y libgdal-dev
+    && apt-get install -y libgdal-dev 
 
 # Establece el directorio de trabajo en /app
 WORKDIR /usr/src/app
