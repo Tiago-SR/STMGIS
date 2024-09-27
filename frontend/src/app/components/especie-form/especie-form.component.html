@@ -1,0 +1,113 @@
+<!-- Modal -->
+<div *ngIf="mostrarModal" class="fixed inset-0 z-10 overflow-y-auto">
+  <div class="flex items-center justify-center min-h-screen px-4">
+    <div class="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 z-20">
+      <button (click)="cerrarModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
+        &#x2715;
+      </button>
+      <form [formGroup]="especieForm" (ngSubmit)="onSubmit()" class="max-w-lg mx-auto p-6 bg-white rounded-lg mt-4">
+        <h1 class="text-2xl font-bold mb-6 text-center">Formulario de Especie</h1>
+
+        <div class="mb-4">
+          <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
+          <input type="text" id="nombre" formControlName="nombre"
+            class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="Nombre de la especie">
+          <div *ngIf="especieForm.get('nombre')?.invalid && especieForm.get('nombre')?.touched"
+            class="text-red-600 text-sm">
+            El nombre es requerido.
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+          <textarea id="descripcion" formControlName="descripcion" rows="4"
+            class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="Escribe una descripción opcional"></textarea>
+        </div>
+
+        <h1 class="text-xl font-semibold mb-2 mt-6 text-gray-800 border-b-2 pb-2">Filtros</h1>
+        <div class="mb-4 flex flex-col md:flex-row md:space-x-4">
+          <div class="flex-1">
+            <label for="humedad_minima" class="block text-sm font-medium text-gray-700">Humedad mínima</label>
+            <input type="number" id="humedad_minima" formControlName="humedad_minima" min="0" step="0.1"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="0.00">
+            <div *ngIf="especieForm.get('humedad_minima')?.invalid && especieForm.get('humedad_minima')?.touched"
+              class="text-red-600 text-sm">
+              La humedad mínima es requerida y debe ser positiva.
+            </div>
+          </div>
+          <div class="flex-1">
+            <label for="humedad_maxima" class="block text-sm font-medium text-gray-700">Humedad máxima</label>
+            <input type="number" id="humedad_maxima" formControlName="humedad_maxima" min="0" step="0.1"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500
+              focus:border-indigo-500 sm:text-sm" placeholder="0.00">
+            <div *ngIf="especieForm.get('humedad_maxima')?.invalid && especieForm.get('humedad_maxima')?.touched"
+              class="text-red-600 text-sm">
+              La humedad máxima es requerida y debe ser positiva.
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="especieForm.hasError('humedadMaximaMenor') && (especieForm.get('humedad_maxima')?.touched || especieForm.get('humedad_minima')?.touched)"
+          class="text-red-600 text-sm mb-4 w-full">
+          La humedad máxima debe ser mayor que la humedad mínima.
+        </div>
+
+        <div class="mb-4">
+          <label for="variacion_admitida" class="block text-sm font-medium text-gray-700">Variación admitida</label>
+          <input type="number" id="variacion_admitida" formControlName="variacion_admitida" min="0" step="0.1"
+            class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="0.00">
+          <div *ngIf="especieForm.get('variacion_admitida')?.invalid && especieForm.get('variacion_admitida')?.touched"
+            class="text-red-600 text-sm">
+            La variación admitida es requerida y debe ser positiva.
+          </div>
+        </div>
+
+        <h1 class="text-xl font-semibold mb-2 mt-6 text-gray-800 border-b-2 pb-2">Coeficiente de extracción de nutrientes</h1>
+        <div class="mb-4 flex flex-col md:flex-row md:space-x-4">
+          <div class="flex-1">
+            <label for="nitrogeno" class="block text-sm font-medium text-gray-700">Nitrógeno</label>
+            <input type="number" id="nitrogeno" formControlName="nitrogeno" min="0" step="0.1"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="0.00">
+            <div *ngIf="especieForm.get('nitrogeno')?.invalid && especieForm.get('nitrogeno')?.touched"
+              class="text-red-600 text-sm">
+              El valor debe ser positivo.
+            </div>
+          </div>
+          <div class="flex-1">
+            <label for="fosforo" class="block text-sm font-medium text-gray-700">Fósforo</label>
+            <input type="number" id="fosforo" formControlName="fosforo" min="0" step="0.1"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="0.00">
+            <div *ngIf="especieForm.get('fosforo')?.invalid && especieForm.get('fosforo')?.touched"
+              class="text-red-600 text-sm">
+              El valor debe ser positivo.
+            </div>
+          </div>
+          <div class="flex-1">
+            <label for="potasio" class="block text-sm font-medium text-gray-700">Potasio</label>
+            <input type="number" id="potasio" formControlName="potasio" min="0" step="0.1"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="0.00">
+            <div *ngIf="especieForm.get('potasio')?.invalid && especieForm.get('potasio')?.touched"
+              class="text-red-600 text-sm">
+              El valor debe ser positivo.
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            [disabled]="especieForm.invalid">
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="fixed inset-0 bg-gray-800 bg-opacity-50 z-10" (click)="cerrarModal()"></div>
+</div>

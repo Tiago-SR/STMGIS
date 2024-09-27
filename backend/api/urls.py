@@ -19,11 +19,12 @@ from django.urls import path, include
 from rest_framework import routers
 from user import views as user_view
 from empresa import views as empresa_view
-
+from especie import views as especie_view
 
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
 router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
+router.register(r'especies', especie_view.EspecieViewSet, basename="Especies")
 
 urlpatterns = [
     path('admin/', admin.site.urls),
