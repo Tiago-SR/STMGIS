@@ -13,6 +13,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 from datetime import timedelta
 import os
+from dotenv import load_dotenv
+
+load_dotenv() 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +31,8 @@ SECRET_KEY = 'django-insecure-xlg2830+2mzog&st)_x6ny-d$5p4g%d4v-e!kj-!gq5tm_m#&v
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    'api.proyecto.local'
+    'api.proyecto.local',
+    'localhost'
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -54,6 +58,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.gis',
     'rest_framework',
+    'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'user.apps.UserConfig',
     'empresa.apps.EmpresaConfig'
@@ -120,6 +125,8 @@ SIMPLE_JWT = {
     'SIGNING_KEY': SECRET_KEY,
 }
 
+AUTHENTICATION_BACKENDS = ['user.auth_backend.EmailBackend']
+
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
 
@@ -162,3 +169,12 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'user.User'
+
+FRONTEND_URL = 'http://proyecto.local'
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # El host SMTP (ejemplo para Gmail)
+EMAIL_PORT = 587  # El puerto SMTP
+EMAIL_USE_TLS = True  # Si el servidor requiere TLS
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # Tu dirección de correo
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # Tu contraseña

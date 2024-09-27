@@ -1,0 +1,63 @@
+<main id="bg-login" class="w-full flex items-center justify-center">
+    <div class="bg-white bg-opacity-30 backdrop-blur-lg shadow-md rounded-lg p-8 max-w-lg w-full">
+        <div class="flex justify-center mb-8">
+            <h1 class="block text-gray-700 text-3xl font-bold mb-2">Registrarse</h1>
+        </div>
+        <form [formGroup]="userData" (ngSubmit)="onSubmit()">
+            <div class="mb-4">
+                <p class="text-red-600 font-semibold pl-1 hover:text-red-800 hover:cursor-pointer hover:scale-105" (click)="errorMsg = ''">{{ errorMsg }}</p>
+            </div>
+            <div class="mb-4">
+                <div class="flex justify-between gap-2 flex-col sm:flex-row">
+                    <input formControlName="firstName" id="firstName" type="text" class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Nombre">
+                    <input formControlName="lastName" id="lastName" type="text" class="w-full shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Apellido">
+                </div>
+                <div *ngIf="firstName?.invalid && (firstName?.dirty || firstName?.touched || formSubmitted)" class="text-red-600 font-semibold pl-1">
+                    <div *ngIf="firstName?.hasError('required')">
+                        El nombre es requerido.
+                    </div>
+                </div>
+                <div *ngIf="lastName?.invalid && (lastName?.dirty || lastName?.touched || formSubmitted)" class="text-red-600 font-semibold pl-1">
+                    <div *ngIf="lastName?.hasError('required')">
+                        El apellido es requerido.
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                <input formControlName="nickname" id="username" type="text" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Username">
+                <div *ngIf="userName?.invalid && (userName?.dirty || userName?.touched || formSubmitted)" class="text-red-600 font-semibold pl-1">
+                    <div *ngIf="userName?.hasError('required')">
+                        El nickname es requerido.
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                <input formControlName="password" id="password" type="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Contraseña">
+                <div *ngIf="password?.invalid && (password?.dirty || password?.touched || formSubmitted)" class="text-red-600 font-semibold pl-1">
+                    <div *ngIf="password?.hasError('required')">
+                        La contraseña es requerida.
+                    </div>
+                    <div *ngIf="password?.hasError('minlength')">
+                        La contraseña debe tener al menos 4 caracteres.
+                    </div>
+                </div>
+            </div>
+            <div class="mb-6">
+                <input formControlName="rePassword" id="rePassword" type="password" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Repite la contraseña">
+                <div *ngIf="rePassword?.invalid && (rePassword?.dirty || rePassword?.touched || formSubmitted)" class="text-red-600 font-semibold pl-1">
+                    <div *ngIf="rePassword?.hasError('required')">
+                        La confirmación de la contraseña es requerida.
+                    </div>
+                    <div *ngIf="rePassword?.hasError('notEqual')">
+                        Las contraseñas no coinciden.
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <button class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded w-full focus:outline-none focus:shadow-outline" type="submit">
+                Registrar
+                </button>
+            </div>
+        </form>
+    </div>
+</main>

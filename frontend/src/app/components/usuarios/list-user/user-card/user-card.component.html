@@ -1,6 +1,6 @@
 <div class="border border-black rounded-md p-2 flex flex-col">
-    <p class="text-xl font-bold">Nombre Apellido</p>
-    <p class="text-lg">email</p>
-    <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Debitis commodi non, velit quia omnis nisi officia eaque, inventore blanditiis molestias natus laudantium enim tenetur facilis! Perspiciatis recusandae iste quidem eveniet.</p>
-    <button class="mt-2 text-white bg-gray-800 hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Ver</button>
+    <p class="text-xl font-bold">{{user.first_name}} {{user.last_name}}</p>
+    <p class="text-lg">{{user.email}}</p>
+    <p>{{ user.descripcion ? user.descripcion : '--No tiene descripcion--' }}</p>
+    <a [routerLink]="[user.id]" class="mt-2 text-white bg-gray-800 text-center hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Ver</a>
 </div>

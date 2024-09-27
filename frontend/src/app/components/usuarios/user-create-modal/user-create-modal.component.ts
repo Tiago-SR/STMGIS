@@ -1,4 +1,7 @@
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component } from '@angular/core';
+import { FormControl, Validators } from '@angular/forms';
+import { UsuarioService } from '../../../services/usuario.service';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-user-create-modal',
@@ -6,9 +9,37 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   styleUrl: './user-create-modal.component.scss'
 })
 export class UserCreateModalComponent {
-  // @Input() isModalActive: boolean = false;
-  // @Output() closeModalEvent = new EventEmitter<void>();
-  // closeModal(): void {
-  //   this.closeModalEvent.emit();
-  // }
+  emailToInvite = new FormControl('', [Validators.required, Validators.email]); 
+  formSubmitted = false;
+  error: string[] = [];
+
+  constructor(private userService: UsuarioService, private toast: ToastrService) { }
+
+  submit() {
+    this.formSubmitted = true;
+    this.error = [];
+    if (this.emailToInvite.hasError('required')) this.error.push('El email es requerido');
+    if (this.emailToInvite.hasError('email')) this.error.push('El email no es válido');
+    const email = this.emailToInvite.value;
+    if (this.emailToInvite.valid && email) {
+      this.userService.inviteUser(email).subscribe({
+        next: (response) => {
+          this.emailToInvite.reset();
+          this.formSubmitted = false;
+          this.error = [];
+          this.toast.success('Usuario invitado correctamente');
+        },
+        error: (error) => {
+          if (error.error) {
+            this.error.push(error.error);
+          } else {
+            this.error.push('Error al invitar al usuario');
+          }
+          this.formSubmitted = false;
+        },
+      })
+    } else {
+      this.formSubmitted = false;
+    }
+  }
 }

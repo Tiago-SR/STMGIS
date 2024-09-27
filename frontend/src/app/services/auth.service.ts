@@ -25,8 +25,8 @@ export class AuthService {
     return JSON.parse(atob(token.split('.')[1])).userName
   }
 
-  login(username: string, password: string): Observable<any> {
-    return this.http.post(this.apiUrl, { username, password });
+  login(email: string, password: string): Observable<any> {
+    return this.http.post(this.apiUrl, { email, password });
   }
   get isLoggedIn(): Observable<{isLogged: boolean, nickName: string}> {
     return this.loggedIn.asObservable();
@@ -83,5 +83,13 @@ export class AuthService {
     const userType = JSON.parse(atob(token.split('.')[1])).userType
     if (userType !== UserType.ADMIN && userType !== UserType.RESPONSABLE) return null
     return userType
+  }
+
+  checkRegisterToken(token: string): Observable<any> {
+    return this.http.get('http://api.proyecto.local/register/check_register_token?token=' + token);
+  }
+
+  register(token:string, username: string, password: string, firstName: string, lastName: string) {
+    return this.http.post('http://api.proyecto.local/register/', { token, username, password, firstName, lastName });
   }
 }

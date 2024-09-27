@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
 })
 export class LoginComponent {
   userData = new FormGroup({
-    nickname: new FormControl('', Validators.required),
+    email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [
       Validators.required, 
       Validators.minLength(4) 
@@ -25,32 +25,32 @@ export class LoginComponent {
     this.formSubmitted = true
     if (this.userData.status == 'VALID') {
       const data = this.userData.value
-      if (data.nickname && data.password)
-        this.login(data.nickname, data.password)
-      else {
-        // AQUI SE DEBERIA MOSTRAR UN ERROR
-      }
-    }
+      if (data.email && data.password)
+        this.login(data.email, data.password)
+      else this.formSubmitted = false
+    } else this.formSubmitted = false    
   }
 
-  login(username: string, password: string) {
-    this.authService.login(username, password).subscribe({
+  login(email: string, password: string) {
+    this.authService.login(email, password).subscribe({
       next: (response) => {
+        this.formSubmitted = false;
         this.authService.setTokens(response.access, response.refresh)
         this.router.navigate(['/']);
       },
       error: (error) => {
+        this.formSubmitted = false;
         if (error.status === 401) {
-          this.errorMsg = "Nickname o contraseña incorrectos."
+          this.errorMsg = "Email o contraseña incorrectos."
         } else {
-          console.error("Error al Iniciar Sesion, reintentelo.");
+          this.errorMsg = "Error al Iniciar Sesion, reintentelo.";
         }
       }
     });
   }
 
-  get userName() {
-    return this.userData.get('nickname');
+  get email() {
+    return this.userData.get('email');
   }
   get password() {
     return this.userData.get('password');

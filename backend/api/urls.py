@@ -27,6 +27,7 @@ from empresa import views as empresa_view
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
 router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
+router.register(r'register', user_view.RegisterViewSet, basename="Register")
 
 urlpatterns = [
     # Ruta para obtener el token (login)

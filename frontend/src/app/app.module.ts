@@ -17,6 +17,11 @@ import { ProfileComponent } from './components/profile/profile.component';
 import { ListUserComponent } from './components/usuarios/list-user/list-user.component';
 import { UserCardComponent } from './components/usuarios/list-user/user-card/user-card.component';
 import { UserCreateModalComponent } from './components/usuarios/user-create-modal/user-create-modal.component';
+import { RegisterComponent } from './components/register/register.component';
+import { ToastrModule } from 'ngx-toastr';
+import { CommonModule } from '@angular/common';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { DataUserComponent } from './components/usuarios/data-user/data-user.component';
 
 @NgModule({
   declarations: [
@@ -30,14 +35,19 @@ import { UserCreateModalComponent } from './components/usuarios/user-create-moda
     ProfileComponent,
     ListUserComponent,
     UserCardComponent,
-    UserCreateModalComponent
+    UserCreateModalComponent,
+    RegisterComponent,
+    DataUserComponent
   ],
   imports: [
     BrowserModule,
     AppRoutingModule,
     FormsModule,
     HttpClientModule,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    CommonModule,
+    BrowserAnimationsModule,
+    ToastrModule.forRoot()
   ],
   providers: [
     { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },

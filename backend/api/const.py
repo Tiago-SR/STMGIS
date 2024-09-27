@@ -1,5 +1,3 @@
-
-
 ADMIN = 'admin'
 RESPONSABLE = 'responsable'
 USER_TYPE_CHOICES = (

@@ -21,11 +21,9 @@ export class HeaderComponent implements OnInit {
     this.authService.checkAndRenewToken();
     this.authService.isLoggedIn.subscribe(info => {
       this.isLogged = info.isLogged;
-      if (info.isLogged)
+      if (info.isLogged) 
         this.nickName = info.nickName
-      
     });
-    
   }
 
   logout() {
