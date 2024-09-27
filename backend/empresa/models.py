@@ -8,7 +8,6 @@ class Empresa(models.Model):
     nombre = models.CharField(max_length=255)
     rut = models.CharField(max_length=12)
     direccion = models.CharField(max_length=255)
-    owner = models.ForeignKey(Admin, null=False, blank=False, on_delete=models.CASCADE)
     is_deleted = models.BooleanField(default=False)  # Campo para soft delete
 
 

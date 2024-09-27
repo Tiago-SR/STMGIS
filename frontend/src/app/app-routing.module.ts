@@ -18,9 +18,9 @@ import { EmpresaForm2Component } from "./components/empresa/empresa-form2/empres
 import { EmpresaEditComponent } from "./components/empresa/empresa-edit/empresa-edit.component";
 
 const routes: Routes = [
-  { path: 'empresas', component: EmpresaListComponent},
-  { path: 'empresas/:id', component: EmpresaForm2Component},
-  { path: 'editar-empresa/:id', component: EmpresaEditComponent },
+  { path: 'empresas', component: EmpresaListComponent , canActivate: [authAdminGuard] },
+  { path: 'empresas/:id', component: EmpresaForm2Component , canActivate: [authAdminGuard] },
+  { path: 'editar-empresa/:id', component: EmpresaEditComponent , canActivate: [authAdminGuard] },
   { path: 'login', component: LoginComponent, canActivate: [noAuthGuard] },
   { path: 'register', component: RegisterComponent, canActivate: [noAuthGuard] },
   { path: 'profile', component: ProfileComponent, canActivate: [authResponsableGuard] },
