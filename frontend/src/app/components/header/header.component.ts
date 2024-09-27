@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
+import { initFlowbite } from 'flowbite';
 
 @Component({
   selector: 'app-header',
@@ -24,6 +25,7 @@ export class HeaderComponent implements OnInit {
       if (info.isLogged) 
         this.nickName = info.nickName
     });
+    initFlowbite();
   }
 
   logout() {

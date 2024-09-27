@@ -22,12 +22,16 @@ from .jwt_personalizado import CustomTokenObtainPairView
 
 from user import views as user_view
 from empresa import views as empresa_view
-
+from campo import views as campo_view
+from ambientes.views import FileUploadView
+from especie import views as especie_view
 
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
 router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
 router.register(r'register', user_view.RegisterViewSet, basename="Register")
+router.register(r'campos', campo_view.CampoViewSet, basename="Campos")
+router.register(r'especies', especie_view.EspecieViewSet, basename="Especies")
 
 urlpatterns = [
     # Ruta para obtener el token (login)
@@ -36,4 +40,9 @@ urlpatterns = [
 
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
+    path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
+
+    #path('empresas/<int:empresa_id>/campos/', campo_view.campos_por_empresa, name='campos_por_empresa'),
+
+
 ]

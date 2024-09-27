@@ -1,0 +1,30 @@
+<div class="flex justify-between items-center mb-4">
+  <div>
+    <label for="empresa" class="block text-sm font-medium text-gray-700">Filtrar por Empresa:</label>
+    <select [(ngModel)]="selectedEmpresa" (ngModelChange)="filterCampos()">
+      <option [value]="0">Todos</option>  <!-- Opción para mostrar todos los campos -->
+      <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+    </select>
+  </div>
+  <button (click)="nuevoCampo()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+    Crear Campo
+  </button>
+</div>
+<div class="grid grid-cols-3 gap-4">
+  <div *ngFor="let campo of campos" class="max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700">
+    <a href="#">
+      <h5 class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{{ campo.nombre }}</h5>
+    </a>
+    <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Superficie: {{ campo.superficie }} ha</p>
+    <p class="mb-3 font-normal text-gray-700 dark:text-gray-400">Departamento: {{ campo.departamento }}</p>
+
+    <div class="flex justify-between items-center mt-4" *ngIf="campo.id">
+      <button (click)="editarCampo(campo.id, campo)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        Editar
+      </button>
+      <button (click)="softDeleteCampo(campo.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+        Eliminar
+      </button>
+    </div>
+  </div>
+</div>

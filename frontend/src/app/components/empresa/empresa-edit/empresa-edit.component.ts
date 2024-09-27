@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { NgForm } from '@angular/forms';
-import { Empresa } from '../models/empresa.model';
-import { EmpresaService } from '../services/empresa.service';
+import { EmpresaService } from '../../../services/empresa.service';
+import { Empresa } from '../../../models/empresa.model';
 
 @Component({
   selector: 'app-empresa-edit',

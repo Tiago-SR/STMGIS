@@ -16,6 +16,7 @@ import os
 from dotenv import load_dotenv
 
 load_dotenv() 
+from corsheaders.defaults import default_headers
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -37,6 +38,12 @@ ALLOWED_HOSTS = [
 
 CORS_ALLOWED_ORIGINS = [
     'http://proyecto.local',
+]
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'Cache-Control',
+    'Pragma',
+    'Expires',
 ]
 
 # O si quieres permitir a todos los dominios (no recomendado para producción):
@@ -61,7 +68,10 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
     'user.apps.UserConfig',
-    'empresa.apps.EmpresaConfig'
+    'empresa.apps.EmpresaConfig',
+    'campo.apps.CampoConfig',
+    'ambientes.apps.AmbientesConfig',
+    'especie.apps.EspecieConfig'
 ]
 
 MIDDLEWARE = [
@@ -92,6 +102,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'api.wsgi.application'
 
