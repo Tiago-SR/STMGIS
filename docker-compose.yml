@@ -1,12 +1,13 @@
 # docker-compose up -d
 
-# Comando para build de la imagen de docker. Se ejecuta SOLO UNA VEZ
-# docker build -t lab-front-test:v1.0-dev -f ./frontend/dev.Dockerfile ./frontend/
+#  Comando para build de la imagen de docker. Se ejecuta SOLO UNA VEZ
+#  docker build -t lab-front-test:v1.0-dev -f ./frontend/dev.Dockerfile ./frontend/
 
 # Comando para build de la imagen de docker del backend. Se ejecuta SOLO UNA VEZ
 # docker build -t lab-back-test:v1.0-dev -f ./backend/Dockerfile ./backend/
 
-#  C:\Windows\System32\drivers\etc\hosts agregar api.proyecto.local y proyecto.local apuntando a 127.0.0.1
+# C:\Windows\System32\drivers\etc\hosts agregar api.proyecto.local y proyecto.local apuntando a 127.0.0.1
+
 
 
 services:
