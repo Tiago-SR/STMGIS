@@ -22,8 +22,11 @@
       <button (click)="editarCampo(campo.id, campo)" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
         Editar
       </button>
-      <button (click)="softDeleteCampo(campo.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+      <button *ngIf="isAdmin && campo.is_active" (click)="softDeleteCampo(campo.id)" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
         Eliminar
+      </button>
+      <button *ngIf="!campo.is_active && isAdmin" (click)="activateCampo(campo.id)" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+        Activar
       </button>
     </div>
   </div>

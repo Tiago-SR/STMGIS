@@ -17,7 +17,11 @@ export class CampoFormComponent implements OnInit {
   empresas: Empresa[] = [];
   campo: Campo = new Campo();
   selectedFiles: {[key: string]: File | null} = {};
-
+  departamentos: string[] = [
+    'Artigas', 'Canelones', 'Cerro Largo', 'Colonia', 'Durazno', 'Flores', 'Florida',
+    'Lavalleja', 'Maldonado', 'Montevideo', 'Paysandú', 'Río Negro', 'Rivera',
+    'Rocha', 'Salto', 'San José', 'Soriano', 'Tacuarembó', 'Treinta y Tres'
+  ].sort(); 
 
   constructor(
     private campoService: CampoService,
@@ -30,7 +34,7 @@ export class CampoFormComponent implements OnInit {
     this.loadEmpresas();
   }
 
-  // Cargar las empresas para el combo box
+
   loadEmpresas() {
     this.empresaService.getAllEmpresas().subscribe({
       next: (empresas) => {
@@ -73,7 +77,7 @@ export class CampoFormComponent implements OnInit {
         formData.append('dbfFile', this.selectedFiles['dbfFile']);
       }
 
-      // Enviar los datos al servicio
+   
       this.campoService.createCampo(formData).subscribe({
         next: (res) => {
           console.log('Campo registrado:', res);         
@@ -87,5 +91,9 @@ export class CampoFormComponent implements OnInit {
         }
       });
     }
+  }
+  get isFormValid() {
+    return this.campo.empresaId && this.campo.nombre && this.campo.superficie && this.campo.departamento &&
+           this.selectedFiles['shpFile'] && this.selectedFiles['shxFile'] && this.selectedFiles['dbfFile'];
   }
 }

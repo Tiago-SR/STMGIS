@@ -20,7 +20,7 @@ class Campo(models.Model):
         self.is_active = False  # Marcar el campo como inactivo en lugar de eliminarlo
         self.save()
         # Aplicar el soft delete a los objetos Ambiente relacionados
-        self.ambientes.update(is_active=False)
+        self.ambientes.all().update(is_active=False)
 
     def __str__(self):
         return self.nombre
