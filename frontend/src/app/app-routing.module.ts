@@ -16,6 +16,7 @@ import { EspecieListComponent } from "./components/especie-list/especie-list.com
 import { EmpresaListComponent } from "./components/empresa/empresa-list/empresa-list.component";
 import { EmpresaForm2Component } from "./components/empresa/empresa-form2/empresa-form2.component";
 import { EmpresaEditComponent } from "./components/empresa/empresa-edit/empresa-edit.component";
+import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
 
 const routes: Routes = [
   { path: 'empresas', component: EmpresaListComponent , canActivate: [authAdminGuard] },
@@ -30,6 +31,7 @@ const routes: Routes = [
   { path: 'campos/editar/:id', component: CampoEditComponent, canActivate: [authResponsableGuard] },
   { path: 'campos/nuevo', component: CampoFormComponent, canActivate: [authResponsableGuard] },
   { path: 'especies', component: EspecieListComponent, canActivate: [authAdminGuard] },
+  { path: 'reset-password', component: ForgotPasswordComponent, canActivate: [noAuthGuard] },
   // { path: '', redirectTo: '/campos', pathMatch: 'full' },  // Redirecciona a la lista de campos por defecto
   // { path: '**', redirectTo: '/campos' } ,
   { path: '**', redirectTo: '' }

@@ -62,6 +62,25 @@ class UserViewSet(viewsets.ModelViewSet):
         email.send()
         return Response({'message': 'Invitación enviada correctamente'}, status=200)
 
+    @action(methods=['post'], detail=False)
+    def forgotpassword(self, request):
+        email = request.data.get('email', None)
+        if not email:
+            return Response('El email es requerido', status=400)
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response('El email no está registrado', status=400)
+        token, _ = Token.objects.get_or_create(user=user)
+        reset_url = settings.FRONTEND_URL + '/reset-password?token=' + token.key
+        email = EmailMessage(
+            'Recuperación de contraseña',
+            f'Por favor, restablece tu contraseña usando el siguiente enlace: {reset_url}',
+            settings.EMAIL_HOST_USER,
+            [email]
+        )
+        email.fail_silently = False
+        email.send()
+        return Response('Email enviado correctamente', status=200)
 
 class RegisterViewSet(viewsets.ViewSet):
     def create(self, request):
@@ -98,6 +117,28 @@ class RegisterViewSet(viewsets.ViewSet):
         token.delete()
 
         return Response({'message': 'Registro completado correctamente', 'pass': password}, status=200)
+
+    @action(methods=['post'], detail=False)
+    def recovery_password(self, request):
+        token = request.data.get('token', None)
+        try:
+            token = Token.objects.get(key=token)
+        except Token.DoesNotExist:
+            return Response('Token inválido o expirado', status=400)
+
+        user = token.user
+
+        password = request.data.get('password', None)
+        if not password:
+            return Response('La contraseña es requerida', status=400)
+
+        user.set_password(password)
+        user.save()
+
+        # Opcionalmente eliminar el token después de que el usuario se haya registrado
+        token.delete()
+
+        return Response('Contraseña recuperada correctamente', status=200)
 
     @action(methods=['get'], detail=False)
     def check_register_token(self, request):
