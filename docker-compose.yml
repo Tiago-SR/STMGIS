@@ -1,17 +1,19 @@
 # docker-compose up -d
 
-# Comando para build de la imagen de docker. Se ejecuta SOLO UNA VEZ
-# docker build -t lab-front-test:v1.0-dev -f ./frontend/dev.Dockerfile ./frontend/
+#  Comando para build de la imagen de docker. Se ejecuta SOLO UNA VEZ
+#  docker build -t lab-front-test:v1.0-dev -f ./frontend/dev.Dockerfile ./frontend/
 
 # Comando para build de la imagen de docker del backend. Se ejecuta SOLO UNA VEZ
 # docker build -t lab-back-test:v1.0-dev -f ./backend/Dockerfile ./backend/
 
-#  C:\Windows\System32\drivers\etc\hosts agregar api.proyecto.local y proyecto.local apuntando a 127.0.0.1
+# C:\Windows\System32\drivers\etc\hosts agregar api.proyecto.local y proyecto.local apuntando a 127.0.0.1
+
 
 
 services:
   db:
     image: postgis/postgis:15-3.3
+    container_name: db
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
@@ -40,12 +42,14 @@ services:
 
   geoserver:
     image: kartoza/geoserver:latest
-    volumes:
-      - ./geoserver_data:/opt/geoserver/data_dir
     ports:
       - "8081:8080"
+    volumes:
+      - geoserver_data:/opt/geoserver/data_dir
     environment:
-      - GEOSERVER_DATA_DIR=/opt/geoserver/data_dir
+      GEOSERVER_DATA_DIR: /opt/geoserver/data_dir
+      GEOSERVER_ADMIN_USER: admin
+      GEOSERVER_ADMIN_PASSWORD: geoserver
     depends_on:
       - db
     networks:
@@ -53,6 +57,7 @@ services:
 
   backend:
     image: lab-back-test:v1.0-dev
+    container_name: backend
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/__pycache__/
@@ -73,6 +78,7 @@ services:
 
   frontend:
     image: lab-front-test:v1.0-dev
+    container_name: frontend
     volumes:
       - ./frontend:/app
     ports:
@@ -87,6 +93,7 @@ services:
   # Proxy inverso para el frontend.
   proxy:
     image: nginx
+    container_name: proxy
     ports:
       - "80:80"
     volumes:

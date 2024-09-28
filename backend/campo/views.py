@@ -14,9 +14,6 @@ from django.contrib.gis.geos import GEOSGeometry
 import shapefile
 from django.db import transaction
 
-
-
-
 class CampoViewSet(viewsets.ModelViewSet):
     queryset = Campo.objects.filter(is_active=True)
     serializer_class = CampoSerializer
@@ -54,6 +51,7 @@ class CampoViewSet(viewsets.ModelViewSet):
                         self.handle_uploaded_shapefile(shp_file, shx_file, dbf_file, campo)
                         return Response(serializer.data, status=status.HTTP_201_CREATED)
                     except Exception as e:
+                        transaction.set_rollback(True)
                         return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 else:
                     return Response({"error": "Missing shapefile components desde view campo"}, status=status.HTTP_400_BAD_REQUEST)
@@ -64,8 +62,6 @@ class CampoViewSet(viewsets.ModelViewSet):
                 fields = sf.fields[1:]  # Omite el primer campo, que usualmente es un campo de borrado
                 field_names = [field[0] for field in fields]  # Obtiene los nombres de los campos
 
-
-
                 for shapeRecord in sf.shapeRecords():
                     geom = shapeRecord.shape.__geo_interface__
                     if geom['type'] == 'Polygon':
@@ -75,15 +71,27 @@ class CampoViewSet(viewsets.ModelViewSet):
                         multi_poly = MultiPolygon([Polygon(poly) for poly in geom['coordinates']])
                     
                     # Diccionario clave-valor con los datos del shapeRecord
-                    metadata = {field: value for field, value in zip(field_names, shapeRecord.record)}
+                    #metadata = {field: value for field, value in zip(field_names, shapeRecord.record)}
 
 
                     Ambiente.objects.create(
                         campo=campo,
-                        #datos=shapeRecord.record, 
-                        datos=metadata,
+                        name  = shapeRecord.record['Name'],                        
+                        area = shapeRecord.record['Area'],
+                        ia = shapeRecord.record['IA'],
+                        lote = shapeRecord.record['Lote'],
+                        sist_prod = shapeRecord.record['Sist Prod'],
+                        zona = shapeRecord.record['Zona'],
+                        tipo_suelo = shapeRecord.record['Tipo Suelo'],
+                        posicion = shapeRecord.record['Posición'],
+                        prof = shapeRecord.record['Prof'],
+                        restriccion =   shapeRecord.record['Restriccio'],
+                        ambiente = shapeRecord.record['AMBIENTE'],
+                        idA = shapeRecord.record['ID'], 
+                        is_active = True,                
                         ambiente_geom=multi_poly  
                     )
+                   
         except Exception as e:
             raise Exception(f"Error processing shapefile: {str(e)}")
 

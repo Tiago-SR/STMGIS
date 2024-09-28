@@ -17,6 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
+from rest_framework_simplejwt.views import TokenRefreshView
+from .jwt_personalizado import CustomTokenObtainPairView
+
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
@@ -26,10 +29,15 @@ from especie import views as especie_view
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
 router.register(r'empresas', empresa_view.EmpresaViewSet, basename="Empresas")
+router.register(r'register', user_view.RegisterViewSet, basename="Register")
 router.register(r'campos', campo_view.CampoViewSet, basename="Campos")
 router.register(r'especies', especie_view.EspecieViewSet, basename="Especies")
 
 urlpatterns = [
+    # Ruta para obtener el token (login)
+    path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
     path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
