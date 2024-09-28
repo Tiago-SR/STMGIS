@@ -8,6 +8,7 @@ import { EspecieListComponent } from "./components/especie-list/especie-list.com
 import { EmpresaListComponent } from "./components/empresa/empresa-list/empresa-list.component";
 import { EmpresaForm2Component } from "./components/empresa/empresa-form2/empresa-form2.component";
 import { EmpresaEditComponent } from "./components/empresa/empresa-edit/empresa-edit.component";
+import { MapaComponent } from './components/mapa/mapa.component';
 
 const routes: Routes = [
   { path: 'empresas', component: EmpresaListComponent},
@@ -17,6 +18,7 @@ const routes: Routes = [
   { path: 'campos/editar/:id', component: CampoEditComponent },
   { path: 'campos/nuevo', component: CampoFormComponent },
   { path: 'especies', component: EspecieListComponent},
+  { path: 'mapa', component: MapaComponent},
   // { path: '', redirectTo: '/campos', pathMatch: 'full' },  // Redirecciona a la lista de campos por defecto
   // { path: '**', redirectTo: '/campos' } ,
   { path: '**', redirectTo: '' }
