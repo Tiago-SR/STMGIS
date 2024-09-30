@@ -31,17 +31,18 @@ export class MapaComponent implements OnInit {
       basemap: 'hybrid'
     });
 
-    const hillshadeLayer = new TileLayer({
-      url: 'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer',
-      opacity: 0.5
-    });
+    // const hillshadeLayer = new TileLayer({
+    //   url: 'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer',
+    //   opacity: 0.5
+    // });
 
     const contourLayer = new FeatureLayer({
       url: 'https://services.arcgisonline.com/arcgis/rest/services/Elevation/Contours/MapServer',
       opacity: 1
     });
 
-    this.map.addMany([hillshadeLayer, contourLayer]);
+    // this.map.addMany([hillshadeLayer, contourLayer]);
+    this.map.addMany([contourLayer]);
 
     this.view = new MapView({
       container: 'viewDiv',
