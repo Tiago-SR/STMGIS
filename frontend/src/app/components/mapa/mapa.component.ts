@@ -7,8 +7,6 @@ import esri = __esri;
 import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
 import { CampoService } from '../../services/campo.service';
 import { Campo } from '../../models/campo.model';
-import FeatureLayer from '@arcgis/core/layers/FeatureLayer';
-import TileLayer from '@arcgis/core/layers/TileLayer';
 
 @Component({
   selector: 'app-mapa',
@@ -31,24 +29,11 @@ export class MapaComponent implements OnInit {
       basemap: 'hybrid'
     });
 
-    // const hillshadeLayer = new TileLayer({
-    //   url: 'https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer',
-    //   opacity: 0.5
-    // });
-
-    const contourLayer = new FeatureLayer({
-      url: 'https://services.arcgisonline.com/arcgis/rest/services/Elevation/Contours/MapServer',
-      opacity: 1
-    });
-
-    // this.map.addMany([hillshadeLayer, contourLayer]);
-    this.map.addMany([contourLayer]);
-
     this.view = new MapView({
       container: 'viewDiv',
       map: this.map,
-      center: [-56.5176, -34.0644],
-      zoom: 10
+      center: [-56.0698, -32.4122], 
+      zoom: 8
     });
 
     this.loadCampos();
@@ -64,7 +49,7 @@ export class MapaComponent implements OnInit {
         if (response.success) {
           this.campos = response.data;
         } else {
-          console.error('No se pudieron cargar todos los campos');
+          console.error('No se pudieron cargar todos los campos')
           this.campos = [];
         }
       },
@@ -78,12 +63,28 @@ export class MapaComponent implements OnInit {
   onCampoSelected(uuid: string): void {
     this.selectedUuid = uuid;
 
-    const geojsonUrl = `http://localhost:8081/geoserver/stmgis_workspace/ows?service=WFS&version=2.0.0&request=GetFeature&typeName=stmgis_workspace:ambientes_ambiente&outputFormat=application/json&CQL_FILTER=campo_id='${uuid}'`;
-
+    if(!uuid){
+      if (this.geojsonLayer) {
+        this.map.remove(this.geojsonLayer); // Eliminar la capa existente
+      }
+  
+      // Zoom al estado inicial
+      this.view.goTo({
+        center: [-56.0698, -32.4122],
+        zoom: 8
+      });
+  
+      // Limpiar cualquier resaltado
+      this.removeHighlight();
+      return;
+    }
+  
+    const geojsonUrl = `http://api.proyecto.local/geojson/?campo_id=${uuid}`;
+  
     if (this.geojsonLayer) {
       this.map.remove(this.geojsonLayer);
     }
-
+  
     const tipoSueloRenderer = new UniqueValueRenderer({
       field: 'IA',
       uniqueValueInfos: [
@@ -130,7 +131,7 @@ export class MapaComponent implements OnInit {
       }),
       defaultLabel: 'Otro tipo de suelo'
     });
-
+  
     this.geojsonLayer = new GeoJSONLayer({
       url: geojsonUrl,
       title: 'Ambientes',
@@ -161,25 +162,21 @@ export class MapaComponent implements OnInit {
       },
       renderer: tipoSueloRenderer
     });
-
+  
     this.map.add(this.geojsonLayer);
-
+  
     this.geojsonLayer.when(() => {
       this.geojsonLayer.queryFeatures().then((featureSet) => {
-        if (featureSet.features.length > 0) {
+        if (featureSet.features.length > 0 && featureSet.features[0].geometry) {
           let extent = featureSet.features[0].geometry.extent.clone();
           featureSet.features.forEach((feature: esri.Graphic, index: number) => {
-
-            console.log('Feature:', feature);
-            console.log('Attributes:', feature.attributes);
-
-            if (index > 0) {
+            if (index > 0 && feature.geometry) {
               extent = extent.union(feature.geometry.extent);
             }
           });
           this.view.goTo(extent.expand(1.2));
         } else {
-          console.log('No se encontraron entidades para el campo seleccionado.');
+          console.log('No se encontraron entidades para el campo seleccionado o las geometrías son nulas.');
         }
       });
     });
