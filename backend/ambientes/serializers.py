@@ -3,7 +3,7 @@ from .models import Ambiente
 from campo.serializers import CampoSerializer
 
 class AmbienteSerializer(GeoFeatureModelSerializer):
-    campo = CampoSerializer(read_only=True)  # Si deseas incluir detalles del campo
+    campo = CampoSerializer(read_only=True)
 
     class Meta:
         model = Ambiente

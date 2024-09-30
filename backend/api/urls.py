@@ -19,14 +19,12 @@ from django.urls import path, include
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
 from .jwt_personalizado import CustomTokenObtainPairView
-
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
 from ambientes.views import FileUploadView, ambiente_geojson_view
 from ambientes import views as ambientes_view
 from especie import views as especie_view
-
 
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
@@ -39,13 +37,8 @@ urlpatterns = [
     # Ruta para obtener el token (login)
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
     path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
-
-    #path('empresas/<int:empresa_id>/campos/', campo_view.campos_por_empresa, name='campos_por_empresa'),
-
-
 ]

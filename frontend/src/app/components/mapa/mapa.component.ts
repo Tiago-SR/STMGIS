@@ -65,16 +65,12 @@ export class MapaComponent implements OnInit {
 
     if(!uuid){
       if (this.geojsonLayer) {
-        this.map.remove(this.geojsonLayer); // Eliminar la capa existente
+        this.map.remove(this.geojsonLayer);
       }
-  
-      // Zoom al estado inicial
       this.view.goTo({
         center: [-56.0698, -32.4122],
         zoom: 8
       });
-  
-      // Limpiar cualquier resaltado
       this.removeHighlight();
       return;
     }

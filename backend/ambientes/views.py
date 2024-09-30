@@ -5,8 +5,8 @@ from campo.models import Campo
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status, viewsets, generics  # Agregamos la importación de generics
-from rest_framework_gis.filters import InBBOXFilter  # Agregamos el filtro BBOX para geoespacial
+from rest_framework import status, viewsets, generics
+from rest_framework_gis.filters import InBBOXFilter
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 import shapefile
 import json
@@ -26,7 +26,7 @@ def ambiente_geojson_view(request):
         "geojson",
         queryset,
         geometry_field="ambiente_geom",
-        fields=["name", "area", "ia", "lote", "sist_prod", "zona", "tipo_suelo", "posicion", "prof", "restriccion", "ambiente", "idA", "is_active"]  # Campos adicionales
+        fields=["name", "area", "ia", "lote", "sist_prod", "zona", "tipo_suelo", "posicion", "prof", "restriccion", "ambiente", "idA", "is_active"]
     )
 
     geojson = json.loads(geojson_str)

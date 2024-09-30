@@ -32,8 +32,6 @@ const routes: Routes = [
   { path: 'campos/nuevo', component: CampoFormComponent, canActivate: [authResponsableGuard] },
   { path: 'especies', component: EspecieListComponent, canActivate: [authAdminGuard] },
   { path: 'mapa', component: MapaComponent},
-  // { path: '', redirectTo: '/campos', pathMatch: 'full' },  // Redirecciona a la lista de campos por defecto
-  // { path: '**', redirectTo: '/campos' } ,
   { path: '**', redirectTo: '' }
 ];
 
