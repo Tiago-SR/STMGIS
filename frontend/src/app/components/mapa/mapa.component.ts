@@ -85,7 +85,7 @@ export class MapaComponent implements OnInit {
       field: 'IA',
       uniqueValueInfos: [
         {
-          value: 3,
+          value: 1,
           symbol: new SimpleFillSymbol({
             color: [255, 0, 0, 0.3],
             outline: {
@@ -93,7 +93,7 @@ export class MapaComponent implements OnInit {
               width: 1
             }
           }),
-          label: 'IA 3'
+          label: 'IA 1'
         },
         {
           value: 2,
@@ -107,7 +107,7 @@ export class MapaComponent implements OnInit {
           label: 'IA 2'
         },
         {
-          value: 1,
+          value: 3,
           symbol: new SimpleFillSymbol({
             color: [0, 255, 0, 0.3],
             outline: {
@@ -115,7 +115,7 @@ export class MapaComponent implements OnInit {
               width: 1
             }
           }),
-          label: 'IA 1'
+          label: 'IA 3'
         }
       ],
       defaultSymbol: new SimpleFillSymbol({
@@ -138,8 +138,6 @@ export class MapaComponent implements OnInit {
           {
             type: 'fields',
             fieldInfos: [
-              { fieldName: '__OBJECTID', label: 'Object ID' },
-              { fieldName: 'id', label: 'ID' },
               { fieldName: 'name', label: 'Nombre' },
               { fieldName: 'area', label: 'Área (ha)', format: { digitSeparator: true, places: 2 } },
               { fieldName: 'ia', label: 'IA' },
