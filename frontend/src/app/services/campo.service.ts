@@ -33,9 +33,6 @@ export class CampoService {
         return this.http.get<any>(`${this.apiUrl}?empresa=${id}`);
     }
 
-    // createCampo(formData: FormData): Observable<any> {
-    //     return this.http.post<any>(this.apiUrl, formData);
-    // }
     createCampo(formData: FormData): Observable<any> {
         return this.http.post<any>(this.apiUrl, formData).pipe(
             catchError(error => {
@@ -49,8 +46,20 @@ export class CampoService {
         return this.http.put<any>(`${this.apiUrl}${id}/`, campo);
     }
 
-    deleteCampo(id: number): Observable<any> {
-        return this.http.patch(`http://api.proyecto.local/campos/${id}/`, { is_active: false });
+    // deleteCampo(id: number): Observable<any> {
+    //     return this.http.patch(`http://api.proyecto.local/campos/${id}/`, { is_active: false });
 
+    // }
+    deleteCampo(id: number): Observable<any> {
+        return this.http.patch(`${this.apiUrl}${id}/deactivate/`, {}).pipe(
+            catchError(error => {
+                console.error('Error al desactivar el campo:', error);
+                return throwError(error);
+            })
+        );
     }
+
+    activateCampo(id: number): Observable<any> {
+        return this.http.post(`${this.apiUrl}activate/${id}/`, {});
+      }
 }
