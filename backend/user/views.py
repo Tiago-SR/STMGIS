@@ -37,6 +37,21 @@ class UserViewSet(viewsets.ModelViewSet):
             return Response('Tipo de usuario no válido', status=400)
         return Response(serializer.data)
 
+    def partial_update(self, request, *args, **kwargs):
+        user = User.objects.filter(pk=kwargs['pk'], is_staff=False, is_superuser=False)
+        if not user.exists():
+            return Response('Usuario no encontrado', status=404)
+        user = user.first()
+        if user.user_type == RESPONSABLE:
+            self.queryset = Responsable.objects.all()
+            self.serializer_class = ResponsableSerializer
+            empresas_ids = request.data.get('empresas')
+            if not empresas_ids is None:
+                responsable = Responsable.objects.filter(id=user.id).first()
+                responsable.empresas.clear()
+                responsable.empresas.add(*empresas_ids)
+            
+        return super().partial_update(request, *args, **kwargs)
 
     @action(methods=['post'], detail=False)
     def invite(self, request):
