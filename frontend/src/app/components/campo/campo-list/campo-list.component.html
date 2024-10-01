@@ -1,8 +1,8 @@
 <div class="flex justify-between items-center mb-4">
   <div>
     <label for="empresa" class="block text-sm font-medium text-gray-700">Filtrar por Empresa:</label>
-    <select [(ngModel)]="selectedEmpresa" (ngModelChange)="filterCampos()">
-      <option [value]="0">Todos</option>  <!-- Opción para mostrar todos los campos -->
+    <select [formControl]="selectedEmpresa" (ngModelChange)="filterCampos()">
+      <option value="" selected>Todos</option>  <!-- Opción para mostrar todos los campos -->
       <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
     </select>
   </div>

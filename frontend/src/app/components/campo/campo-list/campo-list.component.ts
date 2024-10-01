@@ -7,6 +7,7 @@ import { Empresa } from '../../../models/empresa.model';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../services/auth.service';
 import { UserType } from '../../../enums/user-type';
+import { FormControl } from '@angular/forms';
 
 
 @Component({
@@ -17,7 +18,7 @@ import { UserType } from '../../../enums/user-type';
 export class CampoListComponent implements OnInit {
   empresas: Empresa[] = [];
   campos: Campo[] = [];
-  selectedEmpresa: number = 0;
+  selectedEmpresa = new FormControl('');
   isAdmin = false; 
 
 
@@ -89,8 +90,9 @@ export class CampoListComponent implements OnInit {
   }
 
   filterCampos() {
-    if (this.selectedEmpresa>0) {
-      this.campoService.getCamposByEmpresa(this.selectedEmpresa).subscribe({
+    const selectedEmpresa = this.selectedEmpresa.value;
+    if (this.selectedEmpresa.valid && selectedEmpresa) {
+      this.campoService.getCamposByEmpresa(selectedEmpresa).subscribe({
         next: (campos) => {
           if (campos.success) {
             this.campos = campos.data;

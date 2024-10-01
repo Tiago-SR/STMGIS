@@ -9,10 +9,13 @@ class Cultivo(models.Model):
     campo = models.ForeignKey('campo.Campo', on_delete=models.CASCADE)
     gestion = models.ForeignKey('gestion.Gestion', on_delete=models.CASCADE)
     especie = models.ForeignKey('especie.Especie', on_delete=models.CASCADE)
-    sub_total = models.FloatField()
+    sup_total = models.FloatField()
     rinde_prom = models.FloatField()
     # mapa_rendimiento = models.PointField()
     # rinde_por_ambiente --> si
 
     class Meta:
         ordering = ['nombre']
+
+    def __str__(self):
+        return self.nombre

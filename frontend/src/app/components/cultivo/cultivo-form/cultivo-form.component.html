@@ -1,14 +1,66 @@
 <!-- Modal -->
 <div *ngIf="mostrarModal" class="fixed inset-0 z-10 overflow-y-auto">
     <div class="flex items-center justify-center min-h-screen px-4">
-      <div class="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 z-20">
+      <div class="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-4 z-20">
         <button (click)="cerrarModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
           &#x2715;
         </button>
-        <form [formGroup]="cultivoForm" (ngSubmit)="onSubmit()" class="max-w-lg mx-auto p-6 bg-white rounded-lg mt-4">
-          <h1 class="text-2xl font-bold mb-6 text-center">Formulario de Cultivo</h1>
+        <form [formGroup]="cultivoForm" (ngSubmit)="onSubmit()" class="max-w-lg mx-auto p-4 bg-white rounded-lg mt-4">
+          <h1 class="text-2xl font-bold mb-4 text-center">Formulario de Cultivo</h1>
+
+          <div class="mb-2">
+            <label for="empresa" class="block text-sm font-medium text-gray-700">Lista de Empresas</label>
+            <select id="empresa" formControlName="empresa" (change)="cargarCampos()" 
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="null" disabled selected>Selecciona una empresa</option>
+              <option *ngFor="let empresa of empresas" [ngValue]="empresa.id">{{ empresa.nombre }}</option>
+            </select>
+            <div *ngIf="cultivoForm.get('empresa')?.invalid && cultivoForm.get('empresa')?.touched"
+              class="text-red-600 text-sm">
+              Debe seleccionar una empresa
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label for="campo" class="block text-sm font-medium text-gray-700">Lista de campos</label>
+            <select id="campo" formControlName="campo"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="null" disabled selected>Selecciona un campo</option>
+              <option *ngFor="let campo of campos" [ngValue]="campo.id">{{ campo.nombre }}</option>
+            </select>
+            <div *ngIf="cultivoForm.get('campo')?.invalid && cultivoForm.get('campo')?.touched"
+              class="text-red-600 text-sm">
+              Debe seleccionar un campo
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label for="gestion" class="block text-sm font-medium text-gray-700">Lista de Gestiones</label>
+            <select id="gestion" formControlName="gestion"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="null" disabled selected>Selecciona una gestion</option>
+              <option *ngFor="let gestion of gestiones" [ngValue]="gestion.id">{{ gestion.name }}</option>
+            </select>
+            <div *ngIf="cultivoForm.get('gestion')?.invalid && cultivoForm.get('gestion')?.touched"
+              class="text-red-600 text-sm">
+              Debe seleccionar una gestion
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <label for="especie" class="block text-sm font-medium text-gray-700">Lista de Especies</label>
+            <select id="especie" formControlName="especie"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+              <option value="null" disabled selected>Selecciona una especie</option>
+              <option *ngFor="let especie of especies" [ngValue]="especie.id">{{ especie.nombre }}</option>
+            </select>
+            <div *ngIf="cultivoForm.get('especie')?.invalid && cultivoForm.get('especie')?.touched"
+              class="text-red-600 text-sm">
+              Debe seleccionar una especie
+            </div>
+          </div>
   
-          <div class="mb-4">
+          <div class="mb-2">
             <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
             <input type="text" id="nombre" formControlName="nombre"
               class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -19,14 +71,14 @@
             </div>
           </div>
   
-          <div class="mb-4">
+          <div class="mb-2">
             <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
             <textarea id="descripcion" formControlName="descripcion" rows="4"
               class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
               placeholder="Escribe una descripción opcional"></textarea>
           </div>
 
-          <div class="mb-4">
+          <div class="mb-2">
             <label for="sup_total" class="block text-sm font-medium text-gray-700">Superficie Total</label>
             <input type="number" id="sup_total" formControlName="sup_total" min="0"
               class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -37,7 +89,7 @@
             </div>
           </div>
           
-          <div class="mb-4">
+          <div class="mb-2">
             <label for="rinde_prom" class="block text-sm font-medium text-gray-700">Promedio de Rendimiento</label>
             <input type="number" id="rinde_prom" formControlName="rinde_prom" min="0"
               class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
@@ -49,7 +101,7 @@
           </div>
 
           <div class="flex justify-end">
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-indigo-400 disabled:hover:cursor-not-allowed"
               [disabled]="cultivoForm.invalid">
               Guardar
             </button>
