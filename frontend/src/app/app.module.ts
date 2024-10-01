@@ -50,7 +50,7 @@ import { ModalForgotPasswordComponent } from './components/login/modal-forgot-pa
     CampoFormComponent,
     CampoListComponent,
     CampoEditComponent,
-    MapaComponent
+    MapaComponent,
     ForgotPasswordComponent,
     ModalForgotPasswordComponent
   ],
