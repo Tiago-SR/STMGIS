@@ -71,7 +71,8 @@ INSTALLED_APPS = [
     'empresa.apps.EmpresaConfig',
     'campo.apps.CampoConfig',
     'ambientes.apps.AmbientesConfig',
-    'especie.apps.EspecieConfig'
+    'especie.apps.EspecieConfig',
+    'gestion.apps.GestionConfig'
 ]
 
 MIDDLEWARE = [
