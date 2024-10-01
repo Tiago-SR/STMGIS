@@ -18,6 +18,7 @@ import { EmpresaForm2Component } from "./components/empresa/empresa-form2/empres
 import { EmpresaEditComponent } from "./components/empresa/empresa-edit/empresa-edit.component";
 import { MapaComponent } from './components/mapa/mapa.component';
 import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
+import { CultivoListComponent } from './components/cultivo/cultivo-list/cultivo-list.component';
 
 const routes: Routes = [
   { path: 'empresas', component: EmpresaListComponent , canActivate: [authAdminGuard] },
@@ -34,6 +35,7 @@ const routes: Routes = [
   { path: 'especies', component: EspecieListComponent, canActivate: [authAdminGuard] },
   { path: 'mapa', component: MapaComponent},
   { path: 'reset-password', component: ForgotPasswordComponent, canActivate: [noAuthGuard] },
+  { path: 'cultivo', component: CultivoListComponent, canActivate: [authResponsableGuard] },
   { path: '**', redirectTo: '' }
 ];
 

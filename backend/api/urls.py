@@ -27,6 +27,7 @@ from ambientes import views as ambientes_view
 from campo.views import CampoViewSet
 from especie import views as especie_view
 from gestion import views as gestion_view
+from cultivo import views as cultivo_view
 
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
@@ -35,6 +36,7 @@ router.register(r'register', user_view.RegisterViewSet, basename="Register")
 router.register(r'campos', campo_view.CampoViewSet, basename="Campos")
 router.register(r'especies', especie_view.EspecieViewSet, basename="Especies")
 router.register(r'gestiones', gestion_view.GestionViewSet, basename="Gestiones")
+router.register(r'cultivos', cultivo_view.CultivoViewSet, basename="Cultivos")
 
 urlpatterns = [
     # Ruta para obtener el token (login)

@@ -1,0 +1,62 @@
+<!-- Modal -->
+<div *ngIf="mostrarModal" class="fixed inset-0 z-10 overflow-y-auto">
+    <div class="flex items-center justify-center min-h-screen px-4">
+      <div class="relative bg-white rounded-lg shadow-lg w-full max-w-2xl p-6 z-20">
+        <button (click)="cerrarModal()" class="absolute top-4 right-4 text-gray-600 hover:text-gray-800">
+          &#x2715;
+        </button>
+        <form [formGroup]="cultivoForm" (ngSubmit)="onSubmit()" class="max-w-lg mx-auto p-6 bg-white rounded-lg mt-4">
+          <h1 class="text-2xl font-bold mb-6 text-center">Formulario de Cultivo</h1>
+  
+          <div class="mb-4">
+            <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
+            <input type="text" id="nombre" formControlName="nombre"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Nombre del cultivo">
+            <div *ngIf="cultivoForm.get('nombre')?.invalid && cultivoForm.get('nombre')?.touched"
+              class="text-red-600 text-sm">
+              El nombre es inválido.
+            </div>
+          </div>
+  
+          <div class="mb-4">
+            <label for="descripcion" class="block text-sm font-medium text-gray-700">Descripción</label>
+            <textarea id="descripcion" formControlName="descripcion" rows="4"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Escribe una descripción opcional"></textarea>
+          </div>
+
+          <div class="mb-4">
+            <label for="sup_total" class="block text-sm font-medium text-gray-700">Superficie Total</label>
+            <input type="number" id="sup_total" formControlName="sup_total" min="0"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Superficie total del cultivo">
+            <div *ngIf="cultivoForm.get('sup_total')?.invalid && cultivoForm.get('sup_total')?.touched"
+              class="text-red-600 text-sm">
+              La superficie total es inválida.
+            </div>
+          </div>
+          
+          <div class="mb-4">
+            <label for="rinde_prom" class="block text-sm font-medium text-gray-700">Promedio de Rendimiento</label>
+            <input type="number" id="rinde_prom" formControlName="rinde_prom" min="0"
+              class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+              placeholder="Promedio de rendimiento del cultivo">
+            <div *ngIf="cultivoForm.get('rinde_prom')?.invalid && cultivoForm.get('rinde_prom')?.touched"
+              class="text-red-600 text-sm">
+              El promedio es inválido.
+            </div>
+          </div>
+
+          <div class="flex justify-end">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+              [disabled]="cultivoForm.invalid">
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="fixed inset-0 bg-gray-800 bg-opacity-50 z-10" (click)="cerrarModal()"></div>
+  </div>
+  

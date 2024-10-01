@@ -29,6 +29,9 @@ import { ToastrModule } from "ngx-toastr";
 import { MapaComponent } from './components/mapa/mapa.component';
 import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
 import { ModalForgotPasswordComponent } from './components/login/modal-forgot-password/modal-forgot-password.component';
+import { CultivoListComponent } from './components/cultivo/cultivo-list/cultivo-list.component';
+import { CultivoFormComponent } from './components/cultivo/cultivo-form/cultivo-form.component';
+import { CultivoCardComponent } from './components/cultivo/cultivo-card/cultivo-card.component';
 
 @NgModule({
   declarations: [
@@ -52,7 +55,10 @@ import { ModalForgotPasswordComponent } from './components/login/modal-forgot-pa
     CampoEditComponent,
     MapaComponent,
     ForgotPasswordComponent,
-    ModalForgotPasswordComponent
+    ModalForgotPasswordComponent,
+    CultivoListComponent,
+    CultivoFormComponent,
+    CultivoCardComponent
   ],
   imports: [
     BrowserModule,
