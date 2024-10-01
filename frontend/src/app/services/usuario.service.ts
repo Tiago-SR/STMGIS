@@ -13,6 +13,10 @@ export class  UsuarioService {
     return this.http.post(`${this.baseUrl}invite/`, { email });
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}forgotpassword/`, { email });
+  }
+  
   getAllUsers(): Observable<any> {
     return this.http.get(`${this.baseUrl}`);
   }

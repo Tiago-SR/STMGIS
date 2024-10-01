@@ -26,6 +26,8 @@ import { EspecieCardComponent } from './components/especie-card/especie-card.com
 import { EspecieListComponent } from './components/especie-list/especie-list.component';
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ToastrModule } from "ngx-toastr";
+import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
+import { ModalForgotPasswordComponent } from './components/login/modal-forgot-password/modal-forgot-password.component';
 
 @NgModule({
   declarations: [
@@ -46,7 +48,9 @@ import { ToastrModule } from "ngx-toastr";
     EspecieListComponent,
     CampoFormComponent,
     CampoListComponent,
-    CampoEditComponent
+    CampoEditComponent,
+    ForgotPasswordComponent,
+    ModalForgotPasswordComponent
   ],
   imports: [
     BrowserModule,
