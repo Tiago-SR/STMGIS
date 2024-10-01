@@ -21,8 +21,12 @@
         </div>
         <div>
           <label for="departamento" class="block text-sm font-medium text-gray-700">Departamento:</label>
-          <input type="text" id="departamento" [(ngModel)]="campo.departamento" name="departamento" required 
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+          <!-- <input type="text" id="departamento" [(ngModel)]="campo.departamento" name="departamento" required 
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"> -->
+            <select id="departamento" [(ngModel)]="campo.departamento" name="departamento" required
+            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+            <option *ngFor="let departamento of departamentos" [value]="departamento">{{ departamento }}</option>
+          </select>
         </div>
         <div>
           <p class="text-xs text-gray-500">Los Archivos a cargar deben tener SRC: 4236</p>
@@ -43,7 +47,7 @@
           <input type="file" id="dbfFile" name="dbfFile" accept=".dbf" (change)="handleFileInput($event, 'dbfFile')"
                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
       </div>
-        <button type="submit" [disabled]="!campoForm.valid" 
+        <button type="submit" [disabled]="!isFormValid" 
           class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
           Registrar Campo
         </button>

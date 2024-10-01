@@ -24,6 +24,7 @@ from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
 from ambientes.views import FileUploadView
+from campo.views import CampoViewSet
 from especie import views as especie_view
 
 router = routers.DefaultRouter()
@@ -41,6 +42,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include(router.urls)),
     path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
+    path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
+
 
     #path('empresas/<int:empresa_id>/campos/', campo_view.campos_por_empresa, name='campos_por_empresa'),
 
