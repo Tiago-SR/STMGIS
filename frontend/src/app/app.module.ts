@@ -27,6 +27,8 @@ import { EspecieListComponent } from './components/especie-list/especie-list.com
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ToastrModule } from "ngx-toastr";
 import { MapaComponent } from './components/mapa/mapa.component';
+import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
+import { ModalForgotPasswordComponent } from './components/login/modal-forgot-password/modal-forgot-password.component';
 
 @NgModule({
   declarations: [
@@ -49,6 +51,8 @@ import { MapaComponent } from './components/mapa/mapa.component';
     CampoListComponent,
     CampoEditComponent,
     MapaComponent
+    ForgotPasswordComponent,
+    ModalForgotPasswordComponent
   ],
   imports: [
     BrowserModule,

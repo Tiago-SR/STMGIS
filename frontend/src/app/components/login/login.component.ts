@@ -1,14 +1,15 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component } from '@angular/core';
 import { AuthService } from '../../services/auth.service';
 import { FormControl, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { initFlowbite } from 'flowbite';
 
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss'
 })
-export class LoginComponent {
+export class LoginComponent implements AfterViewInit {
   userData = new FormGroup({
     email: new FormControl('', [Validators.required, Validators.email]),
     password: new FormControl('', [
@@ -20,6 +21,10 @@ export class LoginComponent {
   errorMsg: string = '';
 
   constructor(private authService: AuthService, private router: Router) {}
+
+  ngAfterViewInit(): void {
+    initFlowbite()
+  }
 
   onSubmit() {
     this.formSubmitted = true

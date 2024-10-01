@@ -8,7 +8,8 @@ import { UserType } from '../enums/user-type';
   providedIn: 'root'
 })
 export class AuthService {
-  private apiUrl = 'http://api.proyecto.local/api/token/';
+  private baseUrl = 'http://api.proyecto.local/';
+  private apiUrl = this.baseUrl + 'api/token/';
 
   private loggedIn = new BehaviorSubject<{isLogged: boolean, nickName: string}>({ isLogged: this.hasToken(), nickName: this.nickName});
   private userType = new BehaviorSubject<string>('');
@@ -86,10 +87,14 @@ export class AuthService {
   }
 
   checkRegisterToken(token: string): Observable<any> {
-    return this.http.get('http://api.proyecto.local/register/check_register_token?token=' + token);
+    return this.http.get(this.baseUrl + 'register/check_register_token?token=' + token);
   }
 
   register(token:string, username: string, password: string, firstName: string, lastName: string) {
-    return this.http.post('http://api.proyecto.local/register/', { token, username, password, firstName, lastName });
+    return this.http.post(this.baseUrl + 'register/', { token, username, password, firstName, lastName });
+  }
+
+  recoveryPassword(token: string, password: string): Observable<any> {
+    return this.http.post(this.baseUrl + `register/recovery_password/`, { token, password });
   }
 }
