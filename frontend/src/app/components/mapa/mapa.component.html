@@ -1,0 +1,17 @@
+<div class="flex flex-col h-[95vh]">
+  <div class="mb-4 p-4">
+    <label for="campoSelect" class="block text-gray-700 text-sm font-bold mb-2">Seleccionar Campo:</label>
+    <select id="campoSelect" #campoSelect (change)="onCampoSelected(campoSelect.value)"
+      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      <option value="" selected>Seleccione un campo</option> <!-- Opción para deseleccionar -->
+      <option *ngFor="let campo of campos" [value]="campo.id">
+        {{ campo.nombre }}
+      </option>
+    </select>
+  </div>
+
+  <div class="flex-1">
+    <div id="viewDiv" class="h-full w-full"></div>
+    <div id="tooltip" class="absolute bg-white p-2 border rounded shadow" style="display: none;"></div>
+  </div>
+</div>

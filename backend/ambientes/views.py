@@ -5,24 +5,52 @@ from campo.models import Campo
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets, generics
+from rest_framework_gis.filters import InBBOXFilter
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 import shapefile
+import json
+from django.core.serializers import serialize
+from django.http import JsonResponse
+from .serializers import AmbienteSerializer
 
+def ambiente_geojson_view(request):
+    campo_id = request.GET.get('campo_id', None)
+    
+    if campo_id:
+        queryset = Ambiente.objects.filter(campo__id=campo_id)
+    else:
+        queryset = Ambiente.objects.all()
+
+    geojson_str = serialize(
+        "geojson",
+        queryset,
+        geometry_field="ambiente_geom",
+        fields=["name", "area", "ia", "lote", "sist_prod", "zona", "tipo_suelo", "posicion", "prof", "restriccion", "ambiente", "idA", "is_active"]
+    )
+
+    geojson = json.loads(geojson_str)
+
+    return JsonResponse(geojson)
 
 def handle_uploaded_shapefile(shp, shx, dbf, request):
     try:
         with shapefile.Reader(shp=shp, shx=shx, dbf=dbf) as sf:
             for shapeRecord in sf.shapeRecords():
                 geom = shapeRecord.shape.__geo_interface__
+                
+                if not geom['coordinates']:
+                    continue  # Saltar geometrías vacías
+                
                 if geom['type'] == 'Polygon':
                     poly = Polygon(geom['coordinates'][0])
                 elif geom['type'] == 'MultiPolygon':
-                    poly = MultiPolygon([Polygon(poly) for poly in geom['coordinates']])
-                
-                # Transforma la geometría a EPSG:4326 si es necesario
-                if geom.srid != 4326:
-                    geom.transform(4326)
-                
+                    poly = MultiPolygon([Polygon(poly_coords[0]) for poly_coords in geom['coordinates']])
+
+                if poly.srid != 4326:
+                    poly.srid = 4326
+                    poly.transform(4326)
+
                 campo_id = shapeRecord.record.get('Campo')
                 campo = Campo.objects.filter(id=campo_id).first()
                 if not campo:
@@ -48,6 +76,7 @@ def handle_uploaded_shapefile(shp, shx, dbf, request):
     except Exception as e:
         print(f"Error al procesar el shapefile: {e}")
         raise Exception("Error processing the shapefile: " + str(e))
+
 
 
 class FileUploadView(APIView):

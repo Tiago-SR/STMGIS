@@ -1,12 +1,12 @@
-
-
-from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from .models import Ambiente
-from campo.serializers import CampoSerializer  # Asumiendo que quieres incluir detalles sobre el campo
+from campo.serializers import CampoSerializer
 
+class AmbienteSerializer(GeoFeatureModelSerializer):
+    campo = CampoSerializer(read_only=True)
 
-class AmbienteSerializer(serializers.ModelSerializer):
-    campo = CampoSerializer(read_only=True)  
     class Meta:
         model = Ambiente
-        fields = '__all__'
+        geo_field = "ambiente_geom"
+        fields = ('id', 'name', 'area', 'ia', 'lote', 'sist_prod', 'zona', 'tipo_suelo',
+                  'posicion', 'prof', 'restriccion', 'ambiente', 'idA', 'is_active', 'campo')

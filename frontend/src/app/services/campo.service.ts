@@ -1,7 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { catchError, Observable, throwError } from 'rxjs';
-import { Campo } from '../models/campo.model';
+import { catchError , Observable, throwError } from 'rxjs';
 
 @Injectable({
     providedIn: 'root'
@@ -12,9 +11,6 @@ export class CampoService {
 
     constructor(private http: HttpClient) { }
 
-    // getCampos(): Observable<any> {
-    //     return this.http.get<any>(this.apiUrl);
-    // }
     getCampos(): Observable<any> {
          const headers = new HttpHeaders({
             'Cache-Control': 'no-cache, no-store, must-revalidate',

@@ -26,6 +26,7 @@ import { EspecieCardComponent } from './components/especie-card/especie-card.com
 import { EspecieListComponent } from './components/especie-list/especie-list.component';
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ToastrModule } from "ngx-toastr";
+import { MapaComponent } from './components/mapa/mapa.component';
 import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
 import { ModalForgotPasswordComponent } from './components/login/modal-forgot-password/modal-forgot-password.component';
 
@@ -49,6 +50,7 @@ import { ModalForgotPasswordComponent } from './components/login/modal-forgot-pa
     CampoFormComponent,
     CampoListComponent,
     CampoEditComponent,
+    MapaComponent
     ForgotPasswordComponent,
     ModalForgotPasswordComponent
   ],
