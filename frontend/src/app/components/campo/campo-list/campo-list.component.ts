@@ -5,6 +5,8 @@ import { Router } from '@angular/router';
 import { EmpresaService } from '../../../services/empresa.service';
 import { Empresa } from '../../../models/empresa.model';
 import { ToastrService } from 'ngx-toastr';
+import { AuthService } from '../../../services/auth.service';
+import { UserType } from '../../../enums/user-type';
 
 
 @Component({
@@ -16,24 +18,29 @@ export class CampoListComponent implements OnInit {
   empresas: Empresa[] = [];
   campos: Campo[] = [];
   selectedEmpresa: number = 0;
+  isAdmin = false; 
+
 
 
   constructor(
     private empresaService: EmpresaService,
     private campoService: CampoService,
     private router: Router,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private authService: AuthService
+
     ) {}
 
   ngOnInit() {
     this.loadEmpresas();
     this.loadCampos();
+    this.checkAdminStatus();
 
     const navigation = this.router.getCurrentNavigation();
     const state = navigation?.extras?.state;
     
     if (state) {
-      // Mostrar el mensaje si está presente
+     
       if (state["message"]) {
         if (state["type"] === 'success') {
           this.toastr.success(state["message"], 'Éxito');
@@ -61,7 +68,7 @@ export class CampoListComponent implements OnInit {
     this.campoService.getCampos().subscribe({
       next: (response) => {
         if (response.success) {
-          this.campos = response.data;  // Asegúrate de que esta asignación se está haciendo correctamente
+          this.campos = response.data;  
         } else {
           console.error('No se pudieron cargar todos los campos');
           this.campos = [];
@@ -77,6 +84,10 @@ export class CampoListComponent implements OnInit {
       }
     });
   }
+  checkAdminStatus() {
+    this.isAdmin = this.authService.getUserType() === UserType.ADMIN;
+  }
+
   filterCampos() {
     if (this.selectedEmpresa>0) {
       this.campoService.getCamposByEmpresa(this.selectedEmpresa).subscribe({
@@ -97,7 +108,7 @@ export class CampoListComponent implements OnInit {
         }
       });
     } else {
-      this.loadCampos(); // Esto recargará todos los campos solo si no hay una empresa seleccionada
+      this.loadCampos(); 
     }
   }
 
@@ -115,12 +126,17 @@ export class CampoListComponent implements OnInit {
         console.log('Campo eliminado');
         this.toastr.success('Campo eliminado correctamente', 'Éxito');
 
-        this.loadCampos();  // Recargar la lista para reflejar los cambios
+        this.loadCampos();  
       },
       error: (error) => {
         console.error('Error al eliminar campo', error);
         this.toastr.error('Error al eliminar campo', 'Error');
       } 
+    });
+  }
+  activateCampo(id: number) {
+    this.campoService.activateCampo(id).subscribe(() => {
+      this.filterCampos(); 
     });
   }
 }

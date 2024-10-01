@@ -24,6 +24,7 @@ from empresa import views as empresa_view
 from campo import views as campo_view
 from ambientes.views import FileUploadView, ambiente_geojson_view
 from ambientes import views as ambientes_view
+from campo.views import CampoViewSet
 from especie import views as especie_view
 
 router = routers.DefaultRouter()
@@ -41,4 +42,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
+    path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
 ]
