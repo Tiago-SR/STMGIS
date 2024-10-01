@@ -1,3 +1,6 @@
+:host {
+  @apply flex min-w-full flex-1
+}
 #tooltip {
     pointer-events: none;
     z-index: 10;
