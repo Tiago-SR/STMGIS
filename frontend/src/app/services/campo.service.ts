@@ -25,7 +25,7 @@ export class CampoService {
         return this.http.get<any>(`${this.apiUrl}${id}/`);
     }
 
-    getCamposByEmpresa(id: number): Observable<any> {
+    getCamposByEmpresa(id: string): Observable<any> {
         return this.http.get<any>(`${this.apiUrl}?empresa=${id}`);
     }
 

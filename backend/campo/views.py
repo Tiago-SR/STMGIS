@@ -36,7 +36,7 @@ class CampoViewSet(viewsets.ModelViewSet):
         empresa_id = request.query_params.get('empresa')  # Obtiene el parámetro de la consulta
 
         if empresa_id:
-                    campos = campos.filter(empresa_id=empresa_id)
+            campos = campos.filter(empresa_id=empresa_id)
 
         if campos.exists():
             serializer = CampoSerializer(campos, many=True)
