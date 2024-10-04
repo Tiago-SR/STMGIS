@@ -1,7 +1,7 @@
 <div class="min-h-screen bg-gray-100 flex flex-col justify-center items-center px-6">
     <div class="w-full max-w-3xl bg-white shadow-md rounded px-8 pt-4 pb-8 mb-4">
       <p class="text-lg font-semibold text-gray-700 mb-4">Editar Campo</p>
-      <form (ngSubmit)="onSubmit(campoForm)" #campoForm="ngForm" class="space-y-4" enctype="multipart/form-data">
+      <form [formGroup]="campoForm" (ngSubmit)="onSubmit()" class="space-y-4" enctype="multipart/form-data">
         <div>
             <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre Empresa:</label>
             <input type="text" readonly value="{{ empresaNombre }}" 
@@ -9,18 +9,20 @@
           </div>
         <div>
           <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre del Campo:</label>
-          <input type="text" id="nombre" [(ngModel)]="campo.nombre" name="nombre" required 
+          <input type="text" id="nombre" formControlName="nombre" required 
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
         </div>
         <div>
           <label for="superficie" class="block text-sm font-medium text-gray-700">Superficie (has):</label>
-          <input type="number" id="superficie" [(ngModel)]="campo.superficie" name="superficie" required 
+          <input type="number" formControlName="superficie" id="superficie" required 
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
         </div>
         <div>
           <label for="departamento" class="block text-sm font-medium text-gray-700">Departamento:</label>
-          <input type="text" id="departamento" [(ngModel)]="campo.departamento" name="departamento" required 
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <select id="departamento" formControlName="departamento"  required
+            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+            <option *ngFor="let departamento of departamentos" [value]="departamento">{{ departamento }}</option>
+          </select>
         </div>
         <!-- Omitir la parte del archivo SHP si no es necesario -->
         <button type="submit" [disabled]="!campoForm.valid" 

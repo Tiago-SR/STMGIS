@@ -26,7 +26,7 @@ export class EmpresaEditComponent implements OnInit {
     }
   }
 
-  loadEmpresa(id: number) {
+  loadEmpresa(id: string) {
     this.empresaService.getEmpresaById(id).subscribe({
       next: (empresa) => this.empresa = empresa,
       error: (err) => console.error('Error al cargar empresa', err)

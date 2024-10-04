@@ -20,6 +20,9 @@ export class CultivoService {
   actualizarCultivo(id: string, cultivo: Cultivo): Observable<Cultivo> {
     return this.http.put<Cultivo>(`${this.baseUrl}${id}/`, cultivo);
   }
+  actualizarParcialCultivo(id: string, cultivo: Cultivo): Observable<Cultivo> {
+    return this.http.patch<Cultivo>(`${this.baseUrl}${id}/`, cultivo);
+  }
   crearCultivo(cultivo: Cultivo): Observable<Cultivo> {
     return this.http.post<Cultivo>(this.baseUrl, cultivo);
   }

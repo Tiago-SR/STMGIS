@@ -12,4 +12,7 @@ export class GestionService {
   getAllGestiones(): Observable<Gestion[]> {
     return this.http.get<Gestion[]>(`${this.baseUrl}`);
   }
+  getGestionById(id: string): Observable<Gestion> {
+    return this.http.get<Gestion>(`${this.baseUrl}${id}`);
+  }
 }
