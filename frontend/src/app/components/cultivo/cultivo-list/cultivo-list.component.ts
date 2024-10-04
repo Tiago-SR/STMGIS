@@ -30,7 +30,6 @@ export class CultivoListComponent implements OnInit {
         this.cargando = false;
       },
       error: (error) => {
-        this.toast.error('Error al cargar los cultivos', 'Error');
         this.cargando = false;
       }
     });

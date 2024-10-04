@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { NgForm } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CampoService } from '../../../services/campo.service';
 import { EmpresaService } from '../../../services/empresa.service';
 import { Router } from '@angular/router';
@@ -15,29 +15,42 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class CampoFormComponent implements OnInit {
   empresas: Empresa[] = [];
-  campo: Campo = new Campo();
+  campo!: Campo;
   selectedFiles: {[key: string]: File | null} = {};
   departamentos: string[] = [
     'Artigas', 'Canelones', 'Cerro Largo', 'Colonia', 'Durazno', 'Flores', 'Florida',
     'Lavalleja', 'Maldonado', 'Montevideo', 'Paysandú', 'Río Negro', 'Rivera',
     'Rocha', 'Salto', 'San José', 'Soriano', 'Tacuarembó', 'Treinta y Tres'
   ].sort(); 
+  campoForm!: FormGroup;
 
   constructor(
     private campoService: CampoService,
     private empresaService: EmpresaService,
     private router: Router,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private fb: FormBuilder
   ) {}
 
   ngOnInit(): void {
     this.loadEmpresas();
+    this.campoForm = this.fb.group({
+      nombre: ['', [Validators.required, Validators.maxLength(100)]],
+      superficie: [0, [Validators.required, Validators.min(0)]],
+      empresa: [null, [Validators.required]],
+      departamento: [null, [Validators.required]],
+      dbfFile: [null, [Validators.required]],
+      shpFile: [null, [Validators.required]],
+      shxFile: [null, [Validators.required]]
+    });
   }
 
 
   loadEmpresas() {
     this.empresaService.getAllEmpresas().subscribe({
       next: (empresas) => {
+        console.log('adsasdasda', empresas);
+        
         this.empresas = empresas;
       },
       error: (err) => {
@@ -55,15 +68,15 @@ export class CampoFormComponent implements OnInit {
 
  
   // Enviar los datos del formulario
-  onSubmit(form: NgForm) {
-    if (form.valid) {
+  onSubmit() {
+    if (this.campoForm.valid) {
       const formData = new FormData();
 
       // Añadir los datos del campo al formData
-      formData.append('nombre', this.campo.nombre);
-      formData.append('superficie', this.campo.superficie.toString());
-      formData.append('departamento', this.campo.departamento);
-      formData.append('empresa', this.campo.empresaId.toString());
+      formData.append('nombre', this.campoForm.get('nombre')?.value);
+      formData.append('superficie', this.campoForm.get('superficie')?.value);
+      formData.append('departamento', this.campoForm.get('departamento')?.value);
+      formData.append('empresa', this.campoForm.get('empresa')?.value);
       formData.append('is_active', 'true');
 
       
@@ -93,7 +106,6 @@ export class CampoFormComponent implements OnInit {
     }
   }
   get isFormValid() {
-    return this.campo.empresaId && this.campo.nombre && this.campo.superficie && this.campo.departamento &&
-           this.selectedFiles['shpFile'] && this.selectedFiles['shxFile'] && this.selectedFiles['dbfFile'];
+    return this.campoForm.valid && this.selectedFiles['shpFile'] && this.selectedFiles['shxFile'] && this.selectedFiles['dbfFile'];
   }
 }

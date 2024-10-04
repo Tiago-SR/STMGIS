@@ -38,10 +38,8 @@ export class CultivoFormComponent {
     private especieService: EspecieService
   ) {}
 
-  ngOnInit(): void {
-    this.cargarEmpresas();
-    this.cargarGestiones();
-    this.cargarEspecies();
+  ngOnInit(): void {    
+
     this.cultivoForm = this.fb.group({
       nombre: ['', [Validators.required, Validators.maxLength(100)]],
       descripcion: [''],
@@ -52,14 +50,8 @@ export class CultivoFormComponent {
       gestion: [null, [Validators.required]],
       especie: [null, [Validators.required]]
     });
-    this.cultivoForm.get('empresa')?.valueChanges.subscribe((empresaSeleccionada) => {
-      if (empresaSeleccionada) {
-        this.cultivoForm.get('campo')?.enable(); // Habilitamos el select de campos
-      } else {
-        this.cultivoForm.get('campo')?.disable(); // Deshabilitamos el select si no hay empresa seleccionada
-      }
-    });
   }
+
   cargarEmpresas(): void {
     this.empresaService.getAllEmpresas().subscribe({
       next: (empresas) => {
@@ -82,6 +74,7 @@ export class CultivoFormComponent {
       error: (error) => {
         this.toastr.error('No tiene campos', 'Error al cargar los campos');
         console.error('Error al cargar los campos:', error);
+        this.campos = [];
       }
     });
   }
@@ -118,6 +111,20 @@ export class CultivoFormComponent {
     } else {
       this.cultivoId = null;
       this.cultivoForm.reset(); // Resetear formulario para nueva creación
+      this.cargarEmpresas();
+      this.cargarGestiones();
+      this.cargarEspecies();
+      this.cultivoForm.get('empresa')?.enable();
+      this.cultivoForm.get('gestion')?.enable();
+      this.cultivoForm.get('especie')?.enable();
+      this.cultivoForm.get('empresa')?.valueChanges.subscribe((empresaSeleccionada) => {
+        if (empresaSeleccionada) {
+          this.cultivoForm.get('campo')?.enable(); // Habilitamos el select de campos
+        } else {
+          this.cultivoForm.get('campo')?.disable(); // Deshabilitamos el select si no hay empresa seleccionada
+        }
+      });
+      this.cultivoForm.get('campo')?.disable();
     }
     this.mostrarModal = true;
   }
@@ -126,13 +133,83 @@ export class CultivoFormComponent {
     this.cultivoId = null;
   }
   cargandoCultivoParaEditar(cultivo: Cultivo): void {
+    this.campoService.getCampoById(cultivo.campo).subscribe({
+      next: (campo) => {
+        this.campos = [campo];
+        this.cultivoForm.patchValue({
+          campo: campo.id
+        });
+        this.cultivoForm.get('campo')?.disable();
+        this.cargarEmpresa(campo.empresa);
+        this.cargarGestion(cultivo.gestion);
+        this.cargarEspecie(cultivo.especie)
+      },
+      error: (error) => {
+        this.toastr.error('Error al cargar el campo', 'Error');
+        console.error('Error al cargar el campo:', error);
+        this.cerrarModal();
+      }
+    });
     this.cultivoForm.patchValue({
       nombre: cultivo.nombre,
       rinde_prom: cultivo.rinde_prom,
       sup_total: cultivo.sup_total,
+      descripcion: cultivo.descripcion
 
     });
   }
+  cargarEmpresa(empresaId: string): void {
+    this.empresaService.getEmpresaById(empresaId).subscribe({
+      next: (empresa) => {
+        this.empresas = [empresa];
+        this.cultivoForm.patchValue({
+          empresa: empresa.id
+        });
+        this.cultivoForm.get('empresa')?.disable();
+      },
+      error: (error) => {
+        this.toastr.error('Error al cargar la empresa', 'Error');
+        console.error('Error al cargar la empresa:', error);
+        this.cerrarModal();
+      }
+    });
+  }
+
+  cargarGestion(gestionId: string): void {
+    this.gestionService.getGestionById(gestionId).subscribe({
+      next: (gestion) => {
+        this.gestiones = [gestion];
+        this.cultivoForm.patchValue({
+          gestion: gestion.id
+        });
+        this.cultivoForm.get('gestion')?.disable();
+      },
+      error: (error) => {
+        this.toastr.error('Error al cargar la gestión', 'Error');
+        console.error('Error al cargar la gestión:', error);
+        this.cerrarModal();
+      }
+    });
+    
+  }
+
+  cargarEspecie(especieId: string): void {
+    this.especieService.obtenerEspecie(especieId).subscribe({
+      next: (especie) => {
+        this.especies = [especie];
+        this.cultivoForm.patchValue({
+          especie: especie.id
+        });
+        this.cultivoForm.get('especie')?.disable();
+      },
+      error: (error) => {
+        this.toastr.error('Error al cargar la especie', 'Error');
+        console.error('Error al cargar la especie:', error);
+        this.cerrarModal();
+      }
+    });
+  }
+
   onSubmit(): void {    
     if (this.cultivoForm.valid) {
       const cultivoEditado: Cultivo = {
@@ -141,7 +218,7 @@ export class CultivoFormComponent {
       };
 
       if (this.cultivoId) {
-        this.cultivoService.actualizarCultivo(this.cultivoId, cultivoEditado).subscribe({
+        this.cultivoService.actualizarParcialCultivo(this.cultivoId, cultivoEditado).subscribe({
           next: (cultivo) => {
             this.cultivoActualizado.emit(cultivo);
             this.toastr.success(`Especie "${cultivo.nombre}" actualizada con éxito`);

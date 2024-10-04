@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { catchError , Observable, throwError } from 'rxjs';
+import { Campo } from '../models/campo.model';
 
 @Injectable({
     providedIn: 'root'
@@ -21,8 +22,8 @@ export class CampoService {
         return this.http.get<any>(this.apiUrl, { headers });
     }      
 
-    getCampoById(id: number): Observable<any> {
-        return this.http.get<any>(`${this.apiUrl}${id}/`);
+    getCampoById(id: string): Observable<Campo> {
+        return this.http.get<Campo>(`${this.apiUrl}${id}/`);
     }
 
     getCamposByEmpresa(id: string): Observable<any> {
@@ -38,7 +39,7 @@ export class CampoService {
         );
     }
 
-    updateCampo(id: number, campo: any): Observable<any> {
+    updateCampo(id: number, campo: Campo): Observable<any> {
         return this.http.put<any>(`${this.apiUrl}${id}/`, campo);
     }
 
