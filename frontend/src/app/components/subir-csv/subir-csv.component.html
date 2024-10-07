@@ -1,0 +1,65 @@
+<div class="max-w-3xl mx-auto p-6 bg-white shadow-md rounded-md">
+    <h2 class="text-2xl font-semibold mb-6 text-center">Subir Archivos CSV al Cultivo</h2>
+  
+    <div class="mb-4">
+      <label for="empresa" class="block text-gray-700 font-medium mb-2">Empresa:</label>
+      <select id="empresa" [(ngModel)]="empresaSeleccionadaId" (change)="onEmpresaChange()"
+        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="" disabled selected>Selecciona una Empresa</option>
+        <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+      </select>
+    </div>
+  
+    <div class="mb-4" *ngIf="campos.length > 0">
+      <label for="campo" class="block text-gray-700 font-medium mb-2">Campo:</label>
+      <select id="campo" [(ngModel)]="campoSeleccionadoId" (change)="onCampoChange()"
+        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="" disabled selected>Selecciona un Campo</option>
+        <option *ngFor="let campo of campos" [value]="campo.id">{{ campo.nombre }}</option>
+      </select>
+    </div>
+  
+    <div class="mb-4" *ngIf="especies.length > 0">
+      <label for="especie" class="block text-gray-700 font-medium mb-2">Especie:</label>
+      <select id="especie" [(ngModel)]="especieSeleccionadaId" (change)="onEspecieChange()"
+        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="" disabled selected>Selecciona una Especie</option>
+        <option *ngFor="let especie of especies" [value]="especie.id">{{ especie.nombre }}</option>
+      </select>
+    </div>
+  
+    <form [formGroup]="csvForm" (ngSubmit)="subirArchivosCsv()" novalidate>
+      <div class="mb-4">
+        <label for="cultivo" class="block text-gray-700 font-medium mb-2">Cultivo:</label>
+        <select id="cultivo" formControlName="cultivo"
+          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+          <option value="" disabled selected>Selecciona un Cultivo</option>
+          <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">{{ cultivo.nombre }}</option>
+        </select>
+        <div *ngIf="csvForm.get('cultivo')?.hasError('noCultivos') && csvForm.get('cultivo')?.touched" class="text-red-500 text-sm">
+          No hay cultivos disponibles para esta especie.
+        </div>
+      </div>      
+    
+      <div class="mb-4">
+        <label for="archivosCsv" class="block text-gray-700 font-medium mb-2">Selecciona Archivos CSV:</label>
+        <input type="file" id="archivosCsv" (change)="onArchivoSeleccionado($event)" multiple accept=".csv"
+          class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <div *ngIf="csvForm.get('archivos')?.invalid && csvForm.get('archivos')?.touched" class="text-red-500 text-sm">
+          Debes subir al menos un archivo CSV.
+        </div>
+      </div>
+    
+      <div *ngIf="csvForm.invalid && csvForm.touched" class="text-red-500 text-sm mb-4">
+        Por favor, completa todos los campos obligatorios antes de enviar.
+      </div>
+    
+      <button type="submit" [disabled]="csvForm.invalid"
+        class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        Subir Archivos CSV
+      </button>
+    </form>
+    
+    
+  </div>
+  

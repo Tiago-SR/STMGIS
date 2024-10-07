@@ -7,6 +7,9 @@ import esri = __esri;
 import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
 import { CampoService } from '../../services/campo.service';
 import { Campo } from '../../models/campo.model';
+import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
+
 
 @Component({
   selector: 'app-mapa',
@@ -17,6 +20,7 @@ export class MapaComponent implements OnInit {
   map!: Map;
   view!: MapView;
   geojsonLayer!: GeoJSONLayer;
+  cultivoDataLayer!: GeoJSONLayer;
   campos: Campo[] = [];
   selectedUuid: string = '';
   originalSymbol: esri.Symbol | null = null;
@@ -206,6 +210,74 @@ export class MapaComponent implements OnInit {
         tooltipElement.style.display = 'none';
         this.removeHighlight();
       }
+    });
+  }
+
+  onCargarCsv(): void {
+    if (!this.selectedUuid) {
+      return;
+    }
+  
+    const cultivoDataUrl = `http://api.proyecto.local/cultivodata-geojson/?campo_id=${this.selectedUuid}`;
+  
+    if (this.cultivoDataLayer) {
+      this.map.remove(this.cultivoDataLayer);
+    }
+  
+    // Definir los valores mínimo y máximo para 'prod'
+    const minProdValue = 0; // Ajusta este valor según tus datos
+    const maxProdValue = 10; // Ajusta este valor según tus datos
+  
+    this.cultivoDataLayer = new GeoJSONLayer({
+      url: cultivoDataUrl,
+      title: 'Cultivo Data',
+      outFields: ['*'],
+      renderer: new SimpleRenderer({
+        symbol: new SimpleMarkerSymbol({
+          style: 'circle',
+          color: 'blue', // Será sobrescrito por visualVariables
+          size: '8px',
+          outline: {
+            color: [255, 255, 0],
+            width: 1
+          }
+        }),
+        visualVariables: [
+          {
+            type: 'color',
+            field: 'prod',
+            stops: [
+              { value: minProdValue, color: 'red' },
+              { value: (minProdValue + maxProdValue) / 2, color: 'yellow' },
+              { value: maxProdValue, color: 'green' }
+            ]
+          } as esri.ColorVariableProperties
+        ]
+      }),
+      popupTemplate: {
+        title: 'Cultivo Data',
+        content: [
+          {
+            type: 'fields',
+            fieldInfos: [
+              { fieldName: 'prod', label: 'Prod' }
+            ]
+          }
+        ]
+      }
+    });
+    
+  
+    this.map.add(this.cultivoDataLayer);
+  
+    // Opcional: ajustar la vista para incluir ambas capas
+    Promise.all([this.geojsonLayer.when(), this.cultivoDataLayer.when()]).then(() => {
+      this.view.goTo({
+        target: [
+          this.geojsonLayer.fullExtent
+        ],
+        options: { duration: 1000, easing: 'ease-in-out' }
+      });
     });
   }
 

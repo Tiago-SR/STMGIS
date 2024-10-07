@@ -19,6 +19,7 @@ import { EmpresaEditComponent } from "./components/empresa/empresa-edit/empresa-
 import { MapaComponent } from './components/mapa/mapa.component';
 import { ForgotPasswordComponent } from './components/login/forgot-password/forgot-password.component';
 import { CultivoListComponent } from './components/cultivo/cultivo-list/cultivo-list.component';
+import { SubirCsvComponent } from './components/subir-csv/subir-csv.component';
 
 const routes: Routes = [
   { path: 'empresas', component: EmpresaListComponent , canActivate: [authAdminGuard] },
@@ -36,6 +37,7 @@ const routes: Routes = [
   { path: 'mapa', component: MapaComponent},
   { path: 'reset-password', component: ForgotPasswordComponent, canActivate: [noAuthGuard] },
   { path: 'cultivo', component: CultivoListComponent, canActivate: [authResponsableGuard] },
+  { path: 'subir-csv', component: SubirCsvComponent, canActivate: [authResponsableGuard] },
   { path: '**', redirectTo: '' }
 ];
 
