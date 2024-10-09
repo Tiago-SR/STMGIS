@@ -32,6 +32,7 @@ import { ModalForgotPasswordComponent } from './components/login/modal-forgot-pa
 import { CultivoListComponent } from './components/cultivo/cultivo-list/cultivo-list.component';
 import { CultivoFormComponent } from './components/cultivo/cultivo-form/cultivo-form.component';
 import { CultivoCardComponent } from './components/cultivo/cultivo-card/cultivo-card.component';
+import { SubirCsvComponent } from './components/subir-csv/subir-csv.component';
 
 @NgModule({
   declarations: [
@@ -58,7 +59,8 @@ import { CultivoCardComponent } from './components/cultivo/cultivo-card/cultivo-
     ModalForgotPasswordComponent,
     CultivoListComponent,
     CultivoFormComponent,
-    CultivoCardComponent
+    CultivoCardComponent,
+    SubirCsvComponent
   ],
   imports: [
     BrowserModule,

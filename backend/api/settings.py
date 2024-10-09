@@ -46,6 +46,13 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
     'Expires',
 ]
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
 # O si quieres permitir a todos los dominios (no recomendado para producción):
 # CORS_ALLOW_ALL_ORIGINS = True
 

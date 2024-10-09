@@ -1,8 +1,25 @@
 :host {
   @apply flex min-w-full flex-1
 }
+
 #tooltip {
-    pointer-events: none;
-    z-index: 10;
-  }
-  
+  pointer-events: none;
+  z-index: 10;
+}
+
+.floating-table {
+  position: absolute;
+  top: 10px; /* Ajuste para la esquina superior */
+  right: 10px; /* Separación del borde derecho */
+  width: 30%; /* Ajustar ancho de la tabla */
+  z-index: 9999; /* Asegura que esté encima del mapa */
+  background-color: white; /* Fondo blanco para mayor visibilidad */
+}
+
+#viewDiv {
+  position: relative;
+}
+
+.no-focus-outline:focus {
+  outline: none; /* Elimina el borde azul cuando el mapa recibe foco */
+}

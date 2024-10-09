@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import Cultivo from '../models/cultivo.model';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -11,9 +11,6 @@ export class CultivoService {
 
   constructor(private http: HttpClient) { }
 
-  obtenerCultivos(): Observable<Cultivo[]> {
-    return this.http.get<Cultivo[]>(this.baseUrl);
-  }
   eliminarCultivo(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}${id}`);
   }
@@ -26,4 +23,21 @@ export class CultivoService {
   crearCultivo(cultivo: Cultivo): Observable<Cultivo> {
     return this.http.post<Cultivo>(this.baseUrl, cultivo);
   }
+
+  obtenerCultivos(parametrosFiltro?: any): Observable<Cultivo[]> {
+    let params = new HttpParams();
+    if (parametrosFiltro) {
+      Object.keys(parametrosFiltro).forEach(key => {
+        if (parametrosFiltro[key] !== null && parametrosFiltro[key] !== undefined) {
+          params = params.append(key, parametrosFiltro[key]);
+        }
+      });
+    }
+    return this.http.get<Cultivo[]>(this.baseUrl, { params });
+  }
+
+  subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
+  }
+  
 }
