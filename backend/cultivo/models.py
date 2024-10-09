@@ -27,8 +27,9 @@ class CultivoData(models.Model):
     humedad = models.FloatField(null=True, blank=True)
     masa_rend_seco = models.FloatField(null=True, blank=True)
     velocidad = models.FloatField(null=True, blank=True)
-    prod = models.CharField(max_length=255, null=True, blank=True)
     fecha = models.DateField()
+    rendimiento_real = models.FloatField(null=True, blank=True)
+    rendimiento_relativo = models.FloatField(null=True, blank=True)
 
     class Meta:
         verbose_name = 'Cultivo Data'

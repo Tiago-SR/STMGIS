@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenRefreshView
-from cultivo.views import cultivodata_geojson_view
+from cultivo.views import cultivodata_geojson_view, sse_notify
 from .jwt_personalizado import CustomTokenObtainPairView
 from user import views as user_view
 from empresa import views as empresa_view
@@ -48,4 +48,5 @@ urlpatterns = [
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
     path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
+    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')
 ]

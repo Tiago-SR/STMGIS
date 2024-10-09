@@ -1,4 +1,3 @@
-<!-- mapa.component.html -->
 <div class="w-full flex flex-col">
   <div class="mb-4 p-4 flex items-center">
     <label for="campoSelect" class="block text-gray-700 text-sm font-bold mb-2 mr-2">Seleccionar Campo:</label>
@@ -9,15 +8,55 @@
         {{ campo.nombre }}
       </option>
     </select>
-    <!-- Add the 'Cargar CSV' button -->
     <button (click)="onCargarCsv()" [disabled]="!selectedUuid"
       class="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none">
-      Cargar CSV
+      Cargar mapas de rendimiento
     </button>
   </div>
 
-  <div class="flex-1">
+  <div class="relative flex-1">
     <div id="viewDiv" class="h-full w-full"></div>
+
+    <div class="floating-table bg-white p-4 border rounded shadow-lg">
+      <h2 class="font-bold text-lg">Referencias de Percentiles</h2>
+      <table class="min-w-full border-collapse border border-gray-300 mt-2">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="border border-gray-300 px-4 py-2">Percentil</th>
+            <th class="border border-gray-300 px-4 py-2">Valor Calculado</th>
+            <th class="border border-gray-300 px-4 py-2">Color</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="border border-gray-300 px-4 py-2">0-19%</td>
+            <td class="border border-gray-300 px-4 py-2">{{ p19 | number:'1.2-2' }}</td>
+            <td class="border border-gray-300 px-4 py-2" style="background-color: red;">Rojo</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 px-4 py-2">20-39%</td>
+            <td class="border border-gray-300 px-4 py-2">{{ p39 | number:'1.2-2' }}</td>
+            <td class="border border-gray-300 px-4 py-2" style="background-color: orange;">Naranja</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 px-4 py-2">40-59%</td>
+            <td class="border border-gray-300 px-4 py-2">{{ p59 | number:'1.2-2' }}</td>
+            <td class="border border-gray-300 px-4 py-2" style="background-color: yellow;">Amarillo</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 px-4 py-2">60-79%</td>
+            <td class="border border-gray-300 px-4 py-2">{{ p79 | number:'1.2-2' }}</td>
+            <td class="border border-gray-300 px-4 py-2" style="background-color: lightgreen;">Verde claro</td>
+          </tr>
+          <tr>
+            <td class="border border-gray-300 px-4 py-2">80-100%</td>
+            <td class="border border-gray-300 px-4 py-2">{{ p100 | number:'1.2-2' }}</td>
+            <td class="border border-gray-300 px-4 py-2" style="background-color: green;">Verde oscuro</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
     <div id="tooltip" class="absolute bg-white p-2 border rounded shadow" style="display: none;"></div>
   </div>
 </div>

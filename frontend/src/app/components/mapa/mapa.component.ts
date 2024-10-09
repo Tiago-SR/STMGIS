@@ -25,6 +25,11 @@ export class MapaComponent implements OnInit {
   selectedUuid: string = '';
   originalSymbol: esri.Symbol | null = null;
   highlightedGraphic: esri.Graphic | null = null;
+  p19: number = 0;
+  p39: number = 0;
+  p59: number = 0;
+  p79: number = 0;
+  p100: number = 0;
 
   constructor(private campoService: CampoService) { }
 
@@ -67,14 +72,28 @@ export class MapaComponent implements OnInit {
   onCampoSelected(uuid: string): void {
     this.selectedUuid = uuid;
 
-    if(!uuid){
+    this.selectedUuid = uuid;
+
+    if (!uuid) {
+      this.p19 = 0;
+      this.p39 = 0;
+      this.p59 = 0;
+      this.p79 = 0;
+      this.p100 = 0;
+  
       if (this.geojsonLayer) {
         this.map.remove(this.geojsonLayer);
       }
+  
+      if (this.cultivoDataLayer) {
+        this.map.remove(this.cultivoDataLayer);
+      }
+  
       this.view.goTo({
         center: [-56.0698, -32.4122],
         zoom: 8
       });
+  
       this.removeHighlight();
       return;
     }
@@ -224,62 +243,78 @@ export class MapaComponent implements OnInit {
       this.map.remove(this.cultivoDataLayer);
     }
   
-    // Definir los valores mínimo y máximo para 'prod'
-    const minProdValue = 0; // Ajusta este valor según tus datos
-    const maxProdValue = 10; // Ajusta este valor según tus datos
+    // Obtener los datos del GeoJSON desde el endpoint
+    fetch(cultivoDataUrl)
+      .then(response => response.json())
+      .then(data => {
+        const rendimientos = data.features.map((feature: any) => feature.properties.rendimiento_relativo);
   
-    this.cultivoDataLayer = new GeoJSONLayer({
-      url: cultivoDataUrl,
-      title: 'Cultivo Data',
-      outFields: ['*'],
-      renderer: new SimpleRenderer({
-        symbol: new SimpleMarkerSymbol({
-          style: 'circle',
-          color: 'blue', // Será sobrescrito por visualVariables
-          size: '8px',
-          outline: {
-            color: [255, 255, 0],
-            width: 1
-          }
-        }),
-        visualVariables: [
-          {
-            type: 'color',
-            field: 'prod',
-            stops: [
-              { value: minProdValue, color: 'red' },
-              { value: (minProdValue + maxProdValue) / 2, color: 'yellow' },
-              { value: maxProdValue, color: 'green' }
+        rendimientos.sort((a: number, b: number) => a - b);
+  
+        const getPercentileValue = (percentile: number) => {
+          const index = Math.floor((percentile / 100) * rendimientos.length);
+          return rendimientos[index] || rendimientos[rendimientos.length - 1]; // Ajuste para el 100%
+        };
+  
+        this.p19 = getPercentileValue(19);
+        this.p39 = getPercentileValue(39);
+        this.p59 = getPercentileValue(59);
+        this.p79 = getPercentileValue(79);
+        this.p100 = getPercentileValue(100);
+  
+        this.cultivoDataLayer = new GeoJSONLayer({
+          url: cultivoDataUrl,
+          title: 'Cultivo Data',
+          outFields: ['*'],
+          renderer: new SimpleRenderer({
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: 'blue',
+              size: '8px',
+              outline: {
+                color: [255, 255, 0],
+                width: 1
+              }
+            }),
+            visualVariables: [
+              {
+                type: 'color',
+                field: 'rendimiento_relativo',
+                stops: [
+                  { value: rendimientos[0], color: 'red' },
+                  { value: this.p19, color: 'red' },
+                  { value: this.p19 + 0.001, color: 'orange' },
+                  { value: this.p39, color: 'orange' },
+                  { value: this.p39 + 0.001, color: 'yellow' },
+                  { value: this.p59, color: 'yellow' },
+                  { value: this.p59 + 0.001, color: 'lightgreen' },
+                  { value: this.p79, color: 'lightgreen' },
+                  { value: this.p79 + 0.001, color: 'green' },
+                  { value: this.p100, color: 'green' }
+                ]
+              } as esri.ColorVariableProperties
             ]
-          } as esri.ColorVariableProperties
-        ]
-      }),
-      popupTemplate: {
-        title: 'Cultivo Data',
-        content: [
-          {
-            type: 'fields',
-            fieldInfos: [
-              { fieldName: 'prod', label: 'Prod' }
+          }),
+          popupTemplate: {
+            title: 'Cultivo Data',
+            content: [
+              {
+                type: 'fields',
+                fieldInfos: [
+                  { fieldName: 'prod', label: 'Prod' }
+                ]
+              }
             ]
           }
-        ]
-      }
-    });
-    
+        });
   
-    this.map.add(this.cultivoDataLayer);
-  
-    // Opcional: ajustar la vista para incluir ambas capas
-    Promise.all([this.geojsonLayer.when(), this.cultivoDataLayer.when()]).then(() => {
-      this.view.goTo({
-        target: [
-          this.geojsonLayer.fullExtent
-        ],
-        options: { duration: 1000, easing: 'ease-in-out' }
+        this.map.add(this.cultivoDataLayer);
+      })
+      .catch(error => {
+        console.error('Error al cargar los datos del GeoJSON:', error);
       });
-    });
   }
+    
 
   highlightFeature(graphic: esri.Graphic) {
     if (this.highlightedGraphic && this.originalSymbol) {
