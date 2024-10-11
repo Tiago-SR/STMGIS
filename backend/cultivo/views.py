@@ -194,20 +194,23 @@ def save_csv_to_database(file_content, cultivo, file_name):
         humedad_minima = especie.humedad_minima
         humedad_maxima = especie.humedad_maxima
 
+
+        # Aplicar filtro para 'humedad' 1
+
         df_filtered = df[
             (df['humedad'] >= humedad_minima) &
             (df['humedad'] <= humedad_maxima)
         ].copy()
 
-        # Aplicar filtro para 'masa_rend_seco'
-        mean_masa = df_filtered['masa_rend_seco'].mean()
-        std_masa = df_filtered['masa_rend_seco'].std()
+    
+        # Aplicar filtro para 'anch_fja' 2
+        max_anch_fja = df_filtered['anch_fja'].max()
+        threshold_anch_fja = max_anch_fja * 0.9
         df_filtered = df_filtered[
-            (df_filtered['masa_rend_seco'] >= mean_masa - 3 * std_masa) &
-            (df_filtered['masa_rend_seco'] <= mean_masa + 3 * std_masa)
+            df_filtered['anch_fja'] >= threshold_anch_fja
         ].copy()
 
-        # Aplicar filtro para 'velocidad'
+            # Aplicar filtro para 'velocidad' 3
         mean_velocidad = df_filtered['velocidad'].mean()
         std_velocidad = df_filtered['velocidad'].std()
         df_filtered = df_filtered[
@@ -215,12 +218,15 @@ def save_csv_to_database(file_content, cultivo, file_name):
             (df_filtered['velocidad'] <= mean_velocidad + 3 * std_velocidad)
         ].copy()
 
-        # Aplicar filtro para 'anch_fja'
-        max_anch_fja = df_filtered['anch_fja'].max()
-        threshold_anch_fja = max_anch_fja * 0.9
+        
+        # Aplicar filtro para 'masa_rend_seco' 4
+        mean_masa = df_filtered['masa_rend_seco'].mean()
+        std_masa = df_filtered['masa_rend_seco'].std()
         df_filtered = df_filtered[
-            df_filtered['anch_fja'] >= threshold_anch_fja
+            (df_filtered['masa_rend_seco'] >= mean_masa - 3 * std_masa) &
+            (df_filtered['masa_rend_seco'] <= mean_masa + 3 * std_masa)
         ].copy()
+
 
         # calcular media de masa de rendimiento seco ->
         #  despues hay que hacer masa de rendimiento seco / media obtenida 
@@ -245,7 +251,7 @@ def save_csv_to_database(file_content, cultivo, file_name):
                 masa_rend_seco=row.get('masa_rend_seco'),
                 velocidad=row.get('velocidad'),
                 fecha=row.get('fecha'),
-                rendimiento_relativo = row.get('masa_rend_seco') / media_rendimiento_relativo,
+                rendimiento_relativo = row.get('masa_rend_seco')/ media_rendimiento_relativo,
                 rendimiento_real = 0,
             )
             cultivo_data_instances.append(cultivo_data)
