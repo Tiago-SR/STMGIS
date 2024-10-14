@@ -58,6 +58,7 @@ CACHES = {
 
 # Si necesitas soportar cookies en tus solicitudes CORS:
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition

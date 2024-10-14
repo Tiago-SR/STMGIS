@@ -19,6 +19,7 @@ import io
 import threading
 import uuid
 from django.core.cache import cache
+from django.http import HttpResponse, Http404
 
 class CultivoViewSet(viewsets.ModelViewSet):
     queryset = Cultivo.objects.all().order_by('nombre')
@@ -267,6 +268,96 @@ def save_csv_to_database(file_content, cultivo, file_name):
 
     except Exception as e:
         raise e
+
+
+def normalizar_mapas_rendimiento(request, cultivo_id, siguiente_par=0):
+    try:
+        cultivo = Cultivo.objects.get(id=cultivo_id)
+    except Cultivo.DoesNotExist:
+        return JsonResponse({"error": "Cultivo no encontrado"}, status=404)
+    especie = cultivo.especie
+    variacion_admitida = especie.variacion_admitida
+
+    # Obtener los mapas de rendimiento del cultivo
+    mapas_rendimiento = CultivoData.objects.filter(cultivo=cultivo).order_by('nombre_archivo_csv')
+    if not mapas_rendimiento.exists():
+        return JsonResponse({"error": "No hay mapas de rendimiento para el cultivo"}, status=400)
+    # Convertir los datos en DataFrames de pandas
+    # dataframes = []
+    # for mapa in mapas_rendimiento:
+    #     # Crear DataFrame a partir de los registros en la base de datos
+    #     data = {
+    #         'punto_geografico': [mapa.punto_geografico],
+    #         'anch_fja': [mapa.anch_fja],
+    #         'humedad': [mapa.humedad],
+    #         'masa_rend_seco': [mapa.masa_rend_seco],
+    #         'velocidad': [mapa.velocidad],
+    #         'fecha': [mapa.fecha],
+    #         'rendimiento_real': [mapa.rendimiento_real],
+    #         'rendimiento_relativo': [mapa.rendimiento_relativo],
+    #     }
+    #     df = pd.DataFrame(data)
+    #     dataframes.append(df)
+
+    # Verificar si tenemos suficientes mapas para comparar
+    if len(mapas_rendimiento) <= siguiente_par + 1:
+        return HttpResponse("No hay suficientes mapas para normalizar.", status=400)
+    
+    mapas_list = list(mapas_rendimiento.values(
+        'punto_geografico', 'anch_fja', 'humedad', 'masa_rend_seco', 
+        'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo', 'nombre_archivo_csv'
+    ))
+
+    # Convertir punto_geografico a WKT para que sea serializable
+    for mapa in mapas_list:
+        mapa['punto_geografico'] = mapa['punto_geografico'].wkt
+
+    df = pd.DataFrame(mapas_list)
+
+    # Verificar si tenemos suficientes mapas para comparar
+    archivos_unicos = df['nombre_archivo_csv'].unique()
+    if len(archivos_unicos) <= siguiente_par + 1:
+        return JsonResponse({"error": "No hay suficientes mapas para normalizar."}, status=400)
+
+    # Seleccionar los dos mapas a comparar basados en el nombre del archivo CSV
+    archivo_mapa1 = archivos_unicos[siguiente_par]
+    archivo_mapa2 = archivos_unicos[siguiente_par + 1]
+
+    df1 = df[df['nombre_archivo_csv'] == archivo_mapa1]
+    df2 = df[df['nombre_archivo_csv'] == archivo_mapa2]
+
+    
+    # Calcular el percentil 80 de cada mapa en base al rendimiento seco
+    percentil_80_df1 = df1['masa_rend_seco'].quantile(0.8)
+    percentil_80_df2 = df2['masa_rend_seco'].quantile(0.8)
+
+    # Normalizar los mapas si es necesario
+    coeficiente_ajuste = 1
+    variacion = abs(percentil_80_df1 - percentil_80_df2) / max(percentil_80_df1, percentil_80_df2)
+    if variacion > variacion_admitida:
+        coeficiente_ajuste = percentil_80_df1 / percentil_80_df2
+        df2['rendimiento_real'] = df2['masa_rend_seco'] * coeficiente_ajuste
+    else:
+        df2['rendimiento_real'] = df2['masa_rend_seco']
+
+    cultivo_data = {
+        'id': str(cultivo.id),
+        'nombre': cultivo.nombre,
+        'especie': cultivo.especie.nombre,  # Suponiendo que el modelo Especie tiene un campo 'nombre'
+    }
+    # Renderizar el resultado en el template para la confirmación del usuario
+    context = {
+        'cultivo': cultivo_data,
+        'coeficiente_ajuste': coeficiente_ajuste,
+        'mapa1': df1.to_dict(orient='records'),
+        'mapa2': df2.to_dict(orient='records'),
+        'percentil_80_df1': percentil_80_df1,
+        'percentil_80_df2': percentil_80_df2,
+        'siguiente_par': siguiente_par,
+    }
+    return JsonResponse(context, status=200)
+    #return redirect(f'/resultado-normalizacion/{cultivo_id}')
+
 
 
 def sse_notify(request, upload_id):

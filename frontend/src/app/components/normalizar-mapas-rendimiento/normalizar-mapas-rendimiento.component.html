@@ -1,0 +1,24 @@
+<div class="container mx-auto p-4">
+  <h2 class="text-xl font-semibold mb-6 text-center">Normalización de Mapas de Rendimiento</h2>
+
+  <div *ngIf="mapas.length > 0">
+    <h3 class="font-semibold text-md mb-4">Cultivo: {{ cultivo?.nombre }}</h3>
+
+    <!-- Div para el mapa -->
+    <div id="viewDiv" style="height: 500px;" class="mb-6"></div>
+
+    <div class="mb-4 p-4 bg-white rounded shadow" *ngFor="let mapa of mapas; let i = index">
+      <h4 class="font-semibold text-md mb-2">Mapa {{ i + 1 }}: {{ mapa.nombre_archivo_csv }}</h4>
+      <p>Coeficiente aplicado: {{ coeficientes[i] | number: '1.2-2' }}</p>
+    </div>
+
+    <button (click)="confirmarNormalizacion()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+      Confirmar Normalización
+    </button>
+  </div>
+
+  <div *ngIf="mapas.length === 0" class="text-center text-red-500">
+    No hay mapas disponibles para normalizar.
+  </div>
+</div>
+
