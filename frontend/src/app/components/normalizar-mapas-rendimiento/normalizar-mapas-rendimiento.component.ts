@@ -7,6 +7,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import GeoJSONLayer from '@arcgis/core/layers/GeoJSONLayer';
+import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
+import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 
 
 @Component({
@@ -40,17 +42,21 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initMap();
     this.cultivoId = this.route.snapshot.params['id']; // Obtener el cultivoId de la URL
-    this.cargarDatosNormalizacion();    
-  }
+    this.cargarDatosNormalizacion(); 
+     
+  }  
+  //  ngAfterViewChecked(): void {
+  //    // Intentar inicializar el mapa si aún no se ha inicializado
+  //  if (!this.mapInitialized && document.getElementById('viewDiv')) {
+  //      this.initMap();
+  //      this.mapInitialized = true; // Marcamos como inicializado para evitar múltiples intentos
+      
+  //    }
+  // }
+
   
-  ngAfterViewChecked(): void {
-    // Intentar inicializar el mapa si aún no se ha inicializado
-    if (!this.mapInitialized && document.getElementById('viewDiv')) {
-      this.initMap();
-      this.mapInitialized = true; // Marcamos como inicializado para evitar múltiples intentos
-    }
-  }
   initMap(): void {
     const viewDiv = document.getElementById('viewDiv');
     if (!viewDiv) {
@@ -68,6 +74,12 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       center: [-56.0698, -32.4122],
       zoom: 8
     });
+
+    this.view.when(() => {
+      console.log('Mapa inicializado correctamente');
+    }).catch((error) => {
+      console.error('Error al inicializar el mapa: ', error);
+    });
   }
 
 
@@ -80,8 +92,13 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.cultivo = response.cultivo;
         this.mapas = [response.mapa1, response.mapa2];
         console.log('Mapas asignados:', this.mapas);
+        console.log('Coeficiente de ajuste recibido:', response.coeficiente_ajuste);
 
-        this.coeficientes[this.currentPairIndex + 1] = response.coeficiente_ajuste;
+
+      //  this.coeficientes[this.currentPairIndex + 1] = response.coeficiente_ajuste;
+
+        console.log('GeoJSON Data:', this.mapas[0]);
+        this.addNormalizedMapLayer(this.mapas);
         
         this.cd.detectChanges();
 
@@ -92,6 +109,73 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       }
     );
   }
+
+   addNormalizedMapLayer(geojsonData: any[]): void {
+    if (!this.map) {
+      console.error('El mapa no está inicializado.');
+      return;
+    }
+
+    // Limpiar todas las capas previas del mapa
+    this.map.layers.removeAll();
+
+    geojsonData.forEach((data, index) => {
+      const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
+      console.log('GeoJSON URL:', geoJsonUrl);
+      const geoJsonLayer = new GeoJSONLayer({
+        url: geoJsonUrl,
+        title: `Mapa Normalizado ${index + 1}`,
+        outFields: ['*'],
+        renderer: new SimpleRenderer({
+          symbol: new SimpleMarkerSymbol({
+            style: 'circle',
+            color: index === 0 ? 'blue' : 'red', // Diferenciar el color para cada mapa
+            size: '8px',
+            outline: {
+              color: 'black',
+              width: 0.5
+            }
+          })
+        }),
+        popupTemplate: {
+          title: `Mapa Normalizado ${index + 1}`,
+          content: [
+            {
+              type: 'fields',
+              fieldInfos: [
+                { fieldName: 'anch_fja', label: 'Ancho de Faja' },
+                { fieldName: 'humedad', label: 'Humedad (%)' },
+                { fieldName: 'masa_rend_seco', label: 'Masa de Rendimiento Seco (ton/ha)' },
+                { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
+                { fieldName: 'fecha', label: 'Fecha' },
+                { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
+                { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
+              ]
+            }
+          ]
+        }
+      });
+
+      this.map.add(geoJsonLayer);
+
+      geoJsonLayer.when(() => {
+        geoJsonLayer.queryExtent().then((response) => {
+          if (response.extent) {
+            this.view.goTo(response.extent.expand(1.2));
+          } else {
+            console.log(`No se encontraron entidades o las geometrías son nulas para el mapa ${index + 1}.`);
+          }
+        }).catch((error) => {
+          console.error('Error al calcular el extent del GeoJSONLayer:', error);
+        });
+      }).catch((error) => {
+        console.error('Error al cargar la capa GeoJSON:', error);
+      });
+    });
+  }
+
+
 
   ajustarCoeficiente(value: number) {
     let nuevoValor = this.ajusteForm.get('coeficienteAjuste')?.value + value;
