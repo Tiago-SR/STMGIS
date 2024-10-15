@@ -1,0 +1,58 @@
+<div class="mb-4">
+    <label for="empresa" class="block text-gray-700 font-medium mb-2">Empresa:</label>
+    <select id="empresa" [(ngModel)]="empresaSeleccionadaId" (change)="onEmpresaChange()"
+      class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="" disabled selected>Selecciona una Empresa</option>
+      <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+    </select>
+  </div>
+  
+  <div class="mb-4" *ngIf="campos.length > 0">
+    <label for="campo" class="block text-gray-700 font-medium mb-2">Campo:</label>
+    <select id="campo" [(ngModel)]="campoSeleccionadoId" (change)="onCampoChange()"
+      class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="" disabled selected>Selecciona un Campo</option>
+      <option *ngFor="let campo of campos" [value]="campo.id">{{ campo.nombre }}</option>
+    </select>
+  </div>
+  
+  <div class="mb-4" *ngIf="especies.length > 0">
+    <label for="especie" class="block text-gray-700 font-medium mb-2">Especie:</label>
+    <select id="especie" [(ngModel)]="especieSeleccionadaId" (change)="onEspecieChange()"
+      class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="" disabled selected>Selecciona una Especie</option>
+      <option *ngFor="let especie of especies" [value]="especie.id">{{ especie.nombre }}</option>
+    </select>
+  </div>
+  
+  <div class="mb-4" *ngIf="gestiones.length > 0">
+    <label for="gestion" class="block text-gray-700 font-medium mb-2">Gestión:</label>
+    <select id="gestion" [(ngModel)]="gestionSeleccionadaId" (change)="onGestionChange()"
+      class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+      <option value="" disabled selected>Selecciona una Gestión</option>
+      <option *ngFor="let gestion of gestiones" [value]="gestion.id">{{ gestion.name }}</option>
+    </select>
+  </div>
+  
+  <form [formGroup]="cultivoForm" (ngSubmit)="seleccionarCultivo()" novalidate>
+    <div class="mb-4" *ngIf="cultivos.length > 0">
+      <label for="cultivo" class="block text-gray-700 font-medium mb-2">Cultivo:</label>
+      <select id="cultivo" formControlName="cultivo"
+        class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="" disabled selected>Selecciona un Cultivo</option>
+        <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">{{ cultivo.nombre }}</option>
+      </select>
+      <div *ngIf="cultivoForm.get('cultivo')?.hasError('noCultivos') && cultivoForm.get('cultivo')?.touched" class="text-red-500 text-sm">
+        No hay cultivos disponibles para esta gestión.
+      </div>
+    </div>
+  
+    <div *ngIf="cultivoForm.invalid && cultivoForm.touched" class="text-red-500 text-sm mb-4">
+      Por favor, completa todos los campos obligatorios antes de continuar.
+    </div>
+  
+    <button type="submit" [disabled]="cultivoForm.invalid"
+      class="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+      Seleccionar Cultivo para Normalización
+    </button>
+  </form>
