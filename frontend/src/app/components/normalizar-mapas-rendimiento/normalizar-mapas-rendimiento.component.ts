@@ -30,6 +30,8 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   isLoading = false; // Variable que controla la visibilidad del spinner
   percentil_80_df1!: number;
   percentil_80_df2!: number;
+  selectedVisualizationType: string = 'default'; // Por defecto
+  selectedField: string = 'masa_rend_seco'; // Campo por defecto
 
   constructor(
     private fb: FormBuilder,
@@ -53,16 +55,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     
      
   }  
-  //   ngAfterViewChecked(): void {
-  //     // Intentar inicializar el mapa si aún no se ha inicializado
-  //  if (!this.mapInitialized && document.getElementById('viewDiv')) {
-  //       this.initMap();
-  //       this.mapInitialized = true; // Marcamos como inicializado para evitar múltiples intentos
-      
-  //     }
-  //  }
-
-  
+ 
   initMap(): void {
     const viewDiv = document.getElementById('viewDiv');
     if (!viewDiv) {
@@ -93,6 +86,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   }
 
 
+
   cargarDatosNormalizacion() {
     this.isLoading = true; 
 
@@ -106,7 +100,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         console.log('Mapas asignados:', this.mapas);
 
         this.percentil_80_df1 = response.percentil_80_df1;
-        this.percentil_80_df2 = response.percentil_80_df2;      
+        this.percentil_80_df2 = response.percentil_80_df2;     
 
 
         this.coeficientes = [response.mapa1.coeficiente_aplicado, response.mapa2.coeficiente_aplicado];
@@ -124,74 +118,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       }
     );
   }
-/*
-  addNormalizedMapLayer(geojsonData: any[]): void {
-    if (!this.map) {
-      console.error('El mapa no está inicializado.');
-      return;
-    }
-
-    // Limpiar todas las capas previas del mapa
-    this.map.layers.removeAll();
-
-    geojsonData.forEach((data, index) => {
-      const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
-      console.log('GeoJSON URL:', geoJsonUrl);
-      const geoJsonLayer = new GeoJSONLayer({
-        url: geoJsonUrl,
-        title: `Mapa Normalizado ${index + 1}`,
-        outFields: ['*'],
-        renderer: new SimpleRenderer({
-          symbol: new SimpleMarkerSymbol({
-            style: 'circle',
-            color: index === 0 ? 'blue' : 'red', // Diferenciar el color para cada mapa
-            size: '8px',
-            outline: {
-              color: 'black',
-              width: 0.5
-            }
-          })
-        }),
-        popupTemplate: {
-          title: `Mapa Normalizado ${index + 1}`,
-          content: [
-            {
-              type: 'fields',
-              fieldInfos: [
-                { fieldName: 'anch_fja', label: 'Ancho de Faja' },
-                { fieldName: 'humedad', label: 'Humedad (%)' },
-                { fieldName: 'masa_rend_seco', label: 'Masa de Rendimiento Seco (ton/ha)' },
-                { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
-                { fieldName: 'fecha', label: 'Fecha' },
-                { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
-                { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
-              ]
-            }
-          ]
-        }
-      });
-
-      this.map.add(geoJsonLayer);
-
-      geoJsonLayer.when(() => {
-        geoJsonLayer.queryExtent().then((response) => {
-          if (response.extent) {
-            this.view.goTo(response.extent.expand(1.2));
-          } else {
-            console.log(`No se encontraron entidades o las geometrías son nulas para el mapa ${index + 1}.`);
-          }
-        }).catch((error) => {
-          console.error('Error al calcular el extent del GeoJSONLayer:', error);
-        });
-      }).catch((error) => {
-        console.error('Error al cargar la capa GeoJSON:', error);
-      });
-    });
-  }
-
-   */
- 
+ /* esta funciona
   addNormalizedMapLayer(geojsonData: any[]): void {
     if (!this.map) {
       console.error('El mapa no está inicializado.');
@@ -239,7 +166,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
               color: index === 0 ? 'rgba(255, 128, 128, 0.8)' : 'rgba(128, 128, 255, 0.8)', // Intermedio claro
               size: '8px',
               outline: {
-                color: 'black',
+                color: index === 0 ? 'rgba(255, 128, 128, 0.8)' : 'rgba(128, 128, 255, 0.8)', // Intermedio claro
                 width: 0.5
               }
             }),
@@ -322,8 +249,146 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.isLoading = false; // Ocultar el spinner en caso de error
       });
     });
+  } 
+*/
+
+  onVisualizationTypeChange(): void {
+    if (this.selectedVisualizationType === 'custom') {
+      this.addNormalizedMapLayer(this.mapas, this.selectedField); // Actualiza el mapa según el campo seleccionado
+    } else {
+      this.addNormalizedMapLayer(this.mapas); // Visualización por defecto
+    }
   }
 
+  addNormalizedMapLayer(geojsonData: any[], field: string = 'masa_rend_seco'): void {
+    if (!this.map) {
+      console.error('El mapa no está inicializado.');
+      return;
+    }
+  
+    this.isLoading = true; // Mostrar el spinner al iniciar la carga
+  
+    // Limpiar todas las capas previas del mapa
+    this.map.layers.removeAll();
+  
+    // Encontrar los valores máximos del campo seleccionado en ambos mapas
+    const allFeatures = geojsonData.flatMap(data => data.features);
+    const maxFieldValue = Math.max(...allFeatures.map(f => f.properties[field]));
+  
+    let layersLoaded = 0;
+  
+    geojsonData.forEach((data, index) => {
+      const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
+      console.log('GeoJSON URL:', geoJsonUrl);
+  
+      const renderer = new ClassBreaksRenderer({
+        field, // Usar el campo seleccionado para la clasificación
+        classBreakInfos: [
+          {
+            minValue: 0,
+            maxValue: maxFieldValue / 4,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                width: 0.5
+              }
+            }),
+            label: 'Bajo'
+          },
+          {
+            minValue: maxFieldValue / 4,
+            maxValue: maxFieldValue / 2,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(255, 128, 128, 0.8)' : 'rgba(128, 128, 255, 0.8)',
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(255, 128, 128, 0.8)' : 'rgba(128, 128, 255, 0.8)',
+                width: 0.5
+              }
+            }),
+            label: 'Medio bajo'
+          },
+          {
+            minValue: maxFieldValue / 2,
+            maxValue: (3 * maxFieldValue) / 4,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 255, 0.8)',
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 255, 0.8)',
+                width: 0.5
+              }
+            }),
+            label: 'Medio alto'
+          },
+          {
+            minValue: (3 * maxFieldValue) / 4,
+            maxValue: maxFieldValue,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(128, 0, 0, 0.8)' : 'rgba(0, 0, 128, 0.8)',
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(128, 0, 0, 0.8)' : 'rgba(0, 0, 128, 0.8)',
+                width: 0.5
+              }
+            }),
+            label: 'Alto'
+          }
+        ]
+      });
+  
+      const geoJsonLayer = new GeoJSONLayer({
+        url: geoJsonUrl,
+        title: `Mapa Normalizado ${index + 1}`,
+        outFields: ['*'],
+        renderer: renderer, // Usar el renderizador con las escalas de color
+        popupTemplate: {
+          title: `Mapa Normalizado ${index + 1}`,
+          content: [
+            {
+              type: 'fields',
+              fieldInfos: [
+                { fieldName: 'anch_fja', label: 'Ancho de Faja' },
+                { fieldName: 'humedad', label: 'Humedad (%)' },
+                { fieldName: field, label: `Rendimiento (${field})` },
+                { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
+                { fieldName: 'fecha', label: 'Fecha' }
+              ]
+            }
+          ]
+        }
+      });
+  
+      this.map.add(geoJsonLayer);
+  
+      geoJsonLayer.when(() => {
+        geoJsonLayer.queryExtent().then((response) => {
+          if (response.extent) {
+            this.view.goTo(response.extent.expand(1.2));
+          } else {
+            console.log(`No se encontraron entidades o las geometrías son nulas para el mapa ${index + 1}.`);
+          }
+        }).catch((error) => {
+          console.error('Error al calcular el extent del GeoJSONLayer:', error);
+        }).finally(() => {
+          layersLoaded++;
+          if (layersLoaded === geojsonData.length) {
+            this.isLoading = false; // Ocultar el spinner una vez que todas las capas se hayan cargado
+          }
+        });
+      }).catch((error) => {
+        console.error('Error al cargar la capa GeoJSON:', error);
+        this.isLoading = false; // Ocultar el spinner en caso de error
+      });
+    });
+  }
   
 
   // ajustarCoeficiente(value: number) {
