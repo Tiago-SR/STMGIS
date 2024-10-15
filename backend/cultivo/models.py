@@ -29,6 +29,7 @@ class CultivoData(models.Model):
     velocidad = models.FloatField(null=True, blank=True)
     fecha = models.DateField()
     rendimiento_real = models.FloatField(null=True, blank=True)
+    rendimiento_normalizado = models.FloatField(null=True, blank=True)
     rendimiento_relativo = models.FloatField(null=True, blank=True)
 
     class Meta:

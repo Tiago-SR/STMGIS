@@ -29,7 +29,7 @@ from campo.views import CampoViewSet
 from especie import views as especie_view
 from gestion import views as gestion_view
 from cultivo import views as cultivo_view
-from cultivo.views import CultivoViewSet, normalizar_mapas_rendimiento
+from cultivo.views import CultivoViewSet
 
 
 router = routers.DefaultRouter()
@@ -50,10 +50,5 @@ urlpatterns = [
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
     path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
-    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),
-    path('cultivos/<uuid:cultivo_id>/normalizar/', normalizar_mapas_rendimiento, name='normalizar_mapas_rendimiento'),
-   # path('resultado-normalizacion/<uuid:cultivo_id>/', resultado_normalizacion, name='resultado_normalizacion'),
-    
-
-
+    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')
 ]
