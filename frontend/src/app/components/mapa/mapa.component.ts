@@ -30,6 +30,8 @@ export class MapaComponent implements OnInit {
   p59: number = 0;
   p79: number = 0;
   p100: number = 0;
+  mapLoaded: boolean = false; 
+
 
   constructor(private campoService: CampoService) { }
 
@@ -50,6 +52,8 @@ export class MapaComponent implements OnInit {
     this.view.on('pointer-move', (event) => {
       this.displayFeatureInfo(event);
     });
+    this.hideReferences();
+
   }
 
   loadCampos() {
@@ -87,6 +91,7 @@ export class MapaComponent implements OnInit {
   
       if (this.cultivoDataLayer) {
         this.map.remove(this.cultivoDataLayer);
+        this.mapLoaded = false;
       }
   
       this.view.goTo({
@@ -272,14 +277,31 @@ export class MapaComponent implements OnInit {
               color: 'blue',
               size: '8px',
               outline: {
-                color: [255, 255, 0],
-                width: 1
+                color: 'black',
+                width: 0.001
               }
             }),
             visualVariables: [
               {
                 type: 'color',
+                field: 'rendimiento_relativo',                
+                stops: [
+                  { value: rendimientos[0], color: 'red' },
+                  { value: this.p19, color: 'red' },
+                  { value: this.p19 + 0.001, color: 'orange' },
+                  { value: this.p39, color: 'orange' },
+                  { value: this.p39 + 0.001, color: 'yellow' },
+                  { value: this.p59, color: 'yellow' },
+                  { value: this.p59 + 0.001, color: 'lightgreen' },
+                  { value: this.p79, color: 'lightgreen' },
+                  { value: this.p79 + 0.001, color: 'green' },
+                  { value: this.p100, color: 'green' }
+                ]
+              } as esri.ColorVariableProperties,
+              {
+                type: 'color',
                 field: 'rendimiento_relativo',
+                target: 'outline', 
                 stops: [
                   { value: rendimientos[0], color: 'red' },
                   { value: this.p19, color: 'red' },
@@ -301,7 +323,7 @@ export class MapaComponent implements OnInit {
               {
                 type: 'fields',
                 fieldInfos: [
-                  { fieldName: 'prod', label: 'Prod' }
+                  { fieldName: 'rendimiento_relativo', label: 'rendimiento_relativo' }
                 ]
               }
             ]
@@ -309,9 +331,11 @@ export class MapaComponent implements OnInit {
         });
   
         this.map.add(this.cultivoDataLayer);
+        this.mapLoaded = true;
       })
       .catch(error => {
         console.error('Error al cargar los datos del GeoJSON:', error);
+        this.mapLoaded = false;
       });
   }
     
@@ -339,6 +363,20 @@ export class MapaComponent implements OnInit {
       this.highlightedGraphic.symbol = this.originalSymbol;
       this.highlightedGraphic = null;
       this.originalSymbol = null;
+    }
+  }
+
+  showReferences() {
+    const referenceElement = document.getElementById('references');
+    if (referenceElement) {
+      referenceElement.style.display = 'block';
+    }
+  }
+
+  hideReferences() {
+    const referenceElement = document.getElementById('references');
+    if (referenceElement) {
+      referenceElement.style.display = 'none';
     }
   }
 }

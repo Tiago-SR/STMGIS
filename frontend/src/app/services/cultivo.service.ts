@@ -23,7 +23,6 @@ export class CultivoService {
   crearCultivo(cultivo: Cultivo): Observable<Cultivo> {
     return this.http.post<Cultivo>(this.baseUrl, cultivo);
   }
-
   obtenerCultivos(parametrosFiltro?: any): Observable<Cultivo[]> {
     let params = new HttpParams();
     if (parametrosFiltro) {
@@ -39,5 +38,22 @@ export class CultivoService {
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
+  normalizarMapas(cultivoId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+  }
+
+  // Método para obtener los datos de normalización
+  obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+  }
+
+  resultadoNormalizacion(cultivoId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);
+  }
   
+
+  // Método para confirmar la normalización después de la revisión
+  confirmarNormalizacion(cultivoId: string, coeficienteAjuste: number): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${cultivoId}/confirmar-normalizacion`, { coeficienteAjuste });
+  }
 }

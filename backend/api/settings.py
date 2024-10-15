@@ -58,6 +58,29 @@ CACHES = {
 
 # Si necesitas soportar cookies en tus solicitudes CORS:
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
+        'cultivo': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 
 # Application definition
@@ -82,6 +105,8 @@ INSTALLED_APPS = [
     'especie.apps.EspecieConfig',
     'gestion.apps.GestionConfig',
     'cultivo.apps.CultivoConfig',
+    'channels',
+
 ]
 
 MIDDLEWARE = [
@@ -113,9 +138,14 @@ TEMPLATES = [
     },
 ]
 
+ASGI_APPLICATION = 'api.asgi.application'
+# WSGI_APPLICATION = 'api.wsgi.application'
 
-WSGI_APPLICATION = 'api.wsgi.application'
-
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
