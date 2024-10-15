@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     'especie.apps.EspecieConfig',
     'gestion.apps.GestionConfig',
     'cultivo.apps.CultivoConfig',
+    'channels',
 ]
 
 MIDDLEWARE = [

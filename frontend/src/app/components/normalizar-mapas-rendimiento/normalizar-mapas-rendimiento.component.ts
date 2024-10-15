@@ -9,6 +9,7 @@ import MapView from '@arcgis/core/views/MapView';
 import GeoJSONLayer from '@arcgis/core/layers/GeoJSONLayer';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
+import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';
 
 
 @Component({
@@ -26,7 +27,9 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   map!: Map;
   view!: MapView;
   mapInitialized: boolean = false;
-
+  isLoading = false; // Variable que controla la visibilidad del spinner
+  percentil_80_df1!: number;
+  percentil_80_df2!: number;
 
   constructor(
     private fb: FormBuilder,
@@ -42,19 +45,22 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.isLoading = true; // Mostrar el spinner desde que inicia la carga
+
     this.initMap();
     this.cultivoId = this.route.snapshot.params['id']; // Obtener el cultivoId de la URL
     this.cargarDatosNormalizacion(); 
+    
      
   }  
-  //  ngAfterViewChecked(): void {
-  //    // Intentar inicializar el mapa si aún no se ha inicializado
+  //   ngAfterViewChecked(): void {
+  //     // Intentar inicializar el mapa si aún no se ha inicializado
   //  if (!this.mapInitialized && document.getElementById('viewDiv')) {
-  //      this.initMap();
-  //      this.mapInitialized = true; // Marcamos como inicializado para evitar múltiples intentos
+  //       this.initMap();
+  //       this.mapInitialized = true; // Marcamos como inicializado para evitar múltiples intentos
       
-  //    }
-  // }
+  //     }
+  //  }
 
   
   initMap(): void {
@@ -77,13 +83,19 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
     this.view.when(() => {
       console.log('Mapa inicializado correctamente');
+      this.isLoading = false; // Ocultar el spinner después de que el mapa se inicialice
+
     }).catch((error) => {
       console.error('Error al inicializar el mapa: ', error);
+      this.isLoading = false; // Ocultar el spinner en caso de error
+
     });
   }
 
 
   cargarDatosNormalizacion() {
+    this.isLoading = true; 
+
     // Llamar al backend para obtener los mapas de rendimiento y los coeficientes iniciales
     this.cultivoService.obtenerDatosNormalizacion(this.cultivoId).subscribe(
       response => {
@@ -92,25 +104,28 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.cultivo = response.cultivo;
         this.mapas = [response.mapa1, response.mapa2];
         console.log('Mapas asignados:', this.mapas);
-        console.log('Coeficiente de ajuste recibido:', response.coeficiente_ajuste);
+
+        this.percentil_80_df1 = response.percentil_80_df1;
+        this.percentil_80_df2 = response.percentil_80_df2;      
 
 
-      //  this.coeficientes[this.currentPairIndex + 1] = response.coeficiente_ajuste;
+        this.coeficientes = [response.mapa1.coeficiente_aplicado, response.mapa2.coeficiente_aplicado];
 
         console.log('GeoJSON Data:', this.mapas[0]);
-        this.addNormalizedMapLayer(this.mapas);
-        
+        this.addNormalizedMapLayer(this.mapas);        
         this.cd.detectChanges();
 
       },
       error => {
         this.toastr.error('Error al cargar los datos para la normalización', 'Error');
         console.error('Error al cargar los datos para la normalización:', error);
+        this.isLoading = false; // Ocultar el spinner en caso de error
+
       }
     );
   }
-
-   addNormalizedMapLayer(geojsonData: any[]): void {
+/*
+  addNormalizedMapLayer(geojsonData: any[]): void {
     if (!this.map) {
       console.error('El mapa no está inicializado.');
       return;
@@ -175,47 +190,181 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     });
   }
 
-
-
-  ajustarCoeficiente(value: number) {
-    let nuevoValor = this.ajusteForm.get('coeficienteAjuste')?.value + value;
-    if (nuevoValor < 0) {
-      nuevoValor = 0; // Evitar coeficiente negativo
-    }
-    this.ajusteForm.patchValue({ coeficienteAjuste: nuevoValor });
-  }
-
-  confirmarNormalizacion() {
-    if (this.currentPairIndex >= this.mapas.length - 1) {
-      this.toastr.warning('No hay más mapas para normalizar', 'Proceso finalizado');
+   */
+ 
+  addNormalizedMapLayer(geojsonData: any[]): void {
+    if (!this.map) {
+      console.error('El mapa no está inicializado.');
       return;
     }
   
-    const coeficienteAjuste = this.ajusteForm.get('coeficienteAjuste')?.value;
-    this.coeficientes[this.currentPairIndex + 1] *= coeficienteAjuste;
-  
-    // Corregir: agregar el coeficienteAjuste como argumento
-    this.cultivoService.confirmarNormalizacion(this.cultivo.id, coeficienteAjuste).subscribe(
-      response => {
-        this.toastr.success('Normalización confirmada para el par de mapas', 'Éxito');
-        this.currentPairIndex++;
-        this.actualizarFormulario();
-      },
-      error => {
-        this.toastr.error('Error al confirmar la normalización', 'Error');
-        console.error('Error al confirmar la normalización:', error);
-      }
-    );
-  }
-  actualizarFormulario() {
-    if (this.currentPairIndex < this.mapas.length - 1) {
-      this.ajusteForm.patchValue({ coeficienteAjuste: 1 }); // Reiniciar el coeficiente para el siguiente par
-      this.cargarDatosNormalizacion(); // Cargar el siguiente par de mapas
+    this.isLoading = true; // Mostrar el spinner al iniciar la carga
 
-    } else {
-      this.toastr.info('Se han procesado todos los pares de mapas', 'Proceso completo');
-      this.router.navigate(['/resultado-normalizacion']); // Redirigir a la vista de resultados
-    }
+    // Limpiar todas las capas previas del mapa
+    this.map.layers.removeAll();
+  
+    // Encontrar los valores máximos de masa_rend_seco en ambos mapas
+    const allFeatures = geojsonData.flatMap(data => data.features);
+    const maxMasaRendSeco = Math.max(...allFeatures.map(f => f.properties.masa_rend_seco));
+
+    let layersLoaded = 0;
+  
+    geojsonData.forEach((data, index) => {
+      const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
+      console.log('GeoJSON URL:', geoJsonUrl);
+  
+      const renderer = new ClassBreaksRenderer({
+        field: 'masa_rend_seco', // Campo a usar para la clasificación
+        classBreakInfos: [
+          {
+            minValue: 0,
+            maxValue: maxMasaRendSeco / 4,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.8)', // Blanco
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.8)', // Mismo color que el punto
+                width: 0.5
+              }
+            }),
+            label: 'Bajo'
+          },
+          {
+            minValue: maxMasaRendSeco / 4,
+            maxValue: maxMasaRendSeco / 2,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(255, 128, 128, 0.8)' : 'rgba(128, 128, 255, 0.8)', // Intermedio claro
+              size: '8px',
+              outline: {
+                color: 'black',
+                width: 0.5
+              }
+            }),
+            label: 'Medio bajo'
+          },
+          {
+            minValue: maxMasaRendSeco / 2,
+            maxValue: (3 * maxMasaRendSeco) / 4,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 255, 0.8)', // Intermedio fuerte
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 255, 0.8)', // Mismo color que el punto
+                width: 0.5
+              }
+            }),
+            label: 'Medio alto'
+          },
+          {
+            minValue: (3 * maxMasaRendSeco) / 4,
+            maxValue: maxMasaRendSeco,
+            symbol: new SimpleMarkerSymbol({
+              style: 'circle',
+              color: index === 0 ? 'rgba(128, 0, 0, 0.8)' : 'rgba(0, 0, 128, 0.8)', // Rojo o azul oscuro
+              size: '8px',
+              outline: {
+                color: index === 0 ? 'rgba(128, 0, 0, 0.8)' : 'rgba(0, 0, 128, 0.8)', // Mismo color que el punto
+                width: 0.5
+              }
+            }),
+            label: 'Alto'
+          }
+        ]
+      });
+  
+      const geoJsonLayer = new GeoJSONLayer({
+        url: geoJsonUrl,
+        title: `Mapa Normalizado ${index + 1}`,
+        outFields: ['*'],
+        renderer: renderer, // Usar el renderizador con las escalas de color
+        popupTemplate: {
+          title: `Mapa Normalizado ${index + 1}`,
+          content: [
+            {
+              type: 'fields',
+              fieldInfos: [
+                { fieldName: 'anch_fja', label: 'Ancho de Faja' },
+                { fieldName: 'humedad', label: 'Humedad (%)' },
+                { fieldName: 'masa_rend_seco', label: 'Masa de Rendimiento Seco (ton/ha)' },
+                { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
+                { fieldName: 'fecha', label: 'Fecha' },
+                { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
+                { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
+              ]
+            }
+          ]
+        }
+      });
+  
+      this.map.add(geoJsonLayer);
+  
+      geoJsonLayer.when(() => {
+        geoJsonLayer.queryExtent().then((response) => {
+          if (response.extent) {
+            this.view.goTo(response.extent.expand(1.2));
+          } else {
+            console.log(`No se encontraron entidades o las geometrías son nulas para el mapa ${index + 1}.`);
+          }
+        }).catch((error) => {
+          console.error('Error al calcular el extent del GeoJSONLayer:', error);
+        }).finally(() => {
+          layersLoaded++;
+          if (layersLoaded === geojsonData.length) {
+            this.isLoading = false; // Ocultar el spinner una vez que todas las capas se hayan cargado
+          }
+        });
+      }).catch((error) => {
+        console.error('Error al cargar la capa GeoJSON:', error);
+        this.isLoading = false; // Ocultar el spinner en caso de error
+      });
+    });
   }
+
+  
+
+  // ajustarCoeficiente(value: number) {
+  //   let nuevoValor = this.ajusteForm.get('coeficienteAjuste')?.value + value;
+  //   if (nuevoValor < 0) {
+  //     nuevoValor = 0; // Evitar coeficiente negativo
+  //   }
+  //   this.ajusteForm.patchValue({ coeficienteAjuste: nuevoValor });
+  // }
+
+  // confirmarNormalizacion() {
+  //   if (this.currentPairIndex >= this.mapas.length - 1) {
+  //     this.toastr.warning('No hay más mapas para normalizar', 'Proceso finalizado');
+  //     return;
+  //   }
+  
+  //   const coeficienteAjuste = this.ajusteForm.get('coeficienteAjuste')?.value;
+  //   this.coeficientes[this.currentPairIndex + 1] *= coeficienteAjuste;
+  
+  //   // Corregir: agregar el coeficienteAjuste como argumento
+  //   this.cultivoService.confirmarNormalizacion(this.cultivo.id, coeficienteAjuste).subscribe(
+  //     response => {
+  //       this.toastr.success('Normalización confirmada para el par de mapas', 'Éxito');
+  //       this.currentPairIndex++;
+  //       this.actualizarFormulario();
+  //     },
+  //     error => {
+  //       this.toastr.error('Error al confirmar la normalización', 'Error');
+  //       console.error('Error al confirmar la normalización:', error);
+  //     }
+  //   );
+  // }
+  // actualizarFormulario() {
+  //   if (this.currentPairIndex < this.mapas.length - 1) {
+  //     this.ajusteForm.patchValue({ coeficienteAjuste: 1 }); // Reiniciar el coeficiente para el siguiente par
+  //     this.cargarDatosNormalizacion(); // Cargar el siguiente par de mapas
+
+  //   } else {
+  //     this.toastr.info('Se han procesado todos los pares de mapas', 'Proceso completo');
+  //     this.router.navigate(['/resultado-normalizacion']); // Redirigir a la vista de resultados
+  //   }
+  // }
 
 }

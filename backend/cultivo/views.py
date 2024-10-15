@@ -315,6 +315,7 @@ def normalizar_mapas_rendimiento(request, cultivo_id, siguiente_par=0):
     percentil_80_df2 = df2['masa_rend_seco'].quantile(0.8)
 
     # Normalizar los mapas si es necesario
+    coeficiente_ajuste1 = 1
     coeficiente_ajuste = 1
     variacion = abs(percentil_80_df1 - percentil_80_df2) / max(percentil_80_df1, percentil_80_df2)
     if variacion > variacion_admitida:
@@ -334,7 +335,7 @@ def normalizar_mapas_rendimiento(request, cultivo_id, siguiente_par=0):
     geojson_mapa1 = serialize(
         'geojson',
         queryset_mapa1,
-        geometry_field='punto_geografico',
+        geometry_field='punto_geografico',        
         fields=['anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo']
     )
 
@@ -342,7 +343,7 @@ def normalizar_mapas_rendimiento(request, cultivo_id, siguiente_par=0):
         'geojson',
         queryset_mapa2,
         geometry_field='punto_geografico',
-        fields=['anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo']
+        fields=['anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo' ]
     )
 
     # Preparar el contexto para la respuesta JSON
@@ -354,7 +355,8 @@ def normalizar_mapas_rendimiento(request, cultivo_id, siguiente_par=0):
     
     context = {
         'cultivo': cultivo_data,
-        'coeficiente_ajuste': coeficiente_ajuste,
+        'coeficiente_ajuste1': coeficiente_ajuste1,
+        'coeficiente_ajuste2': coeficiente_ajuste,
         'mapa1': json.loads(geojson_mapa1),
         'mapa2': json.loads(geojson_mapa2),
         'percentil_80_df1': percentil_80_df1,
