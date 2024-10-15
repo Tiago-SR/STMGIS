@@ -1,15 +1,27 @@
 <div class="container mx-auto p-4">
   <h2 class="text-xl font-semibold mb-6 text-center">Normalización de Mapas de Rendimiento</h2>
 
-  <div *ngIf="mapas.length > 0">
+  <div id="viewDiv" style="height: 500px;" class="mb-6"></div>
+
+  <div *ngIf="mapaReferencia && mapaActual">
     <h3 class="font-semibold text-md mb-4">Cultivo: {{ cultivo?.nombre }}</h3>
 
-    <!-- Div para el mapa -->
-    <div id="viewDiv" style="height: 500px;" class="mb-6"></div>
+    <div class="mb-4 p-4 bg-white rounded shadow">
+      <h4 class="font-semibold text-md mb-2">Mapa de Referencia: {{ nombreMapaReferencia || 'Sin nombre' }}</h4>
 
-    <div class="mb-4 p-4 bg-white rounded shadow" *ngFor="let mapa of mapas; let i = index">
-      <h4 class="font-semibold text-md mb-2">Mapa {{ i + 1 }}: {{ mapa.nombre_archivo_csv }}</h4>
-      <p>Coeficiente aplicado: {{ coeficientes[i] | number: '1.2-2' }}</p>
+      <label for="coeficienteAjusteReferencia" class="block text-sm font-medium text-gray-700">Coeficiente de Ajuste (Referencia):</label>
+      <input id="coeficienteAjusteReferencia" type="number" step="0.01" [(ngModel)]="coeficienteAjusteReferencia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+
+      <p>Coeficiente sugerido: {{ coeficienteSugeridoReferencia | number: '1.2-2' }}</p>
+    </div>
+
+    <div class="mb-4 p-4 bg-white rounded shadow">
+      <h4 class="font-semibold text-md mb-2">Mapa Actual: {{ nombreMapaActual || 'Sin nombre' }}</h4>
+
+      <label for="coeficienteAjusteActual" class="block text-sm font-medium text-gray-700">Coeficiente de Ajuste (Actual):</label>
+      <input id="coeficienteAjusteActual" type="number" step="0.01" [(ngModel)]="coeficienteAjusteActual" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+
+      <p>Coeficiente sugerido: {{ coeficienteSugeridoActual | number: '1.2-2' }}</p>
     </div>
 
     <button (click)="confirmarNormalizacion()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
@@ -17,8 +29,7 @@
     </button>
   </div>
 
-  <div *ngIf="mapas.length === 0" class="text-center text-red-500">
-    No hay mapas disponibles para normalizar.
+  <div *ngIf="!mapaReferencia || !mapaActual" class="text-center text-red-500">
+    No hay más mapas disponibles para normalizar.
   </div>
 </div>
-

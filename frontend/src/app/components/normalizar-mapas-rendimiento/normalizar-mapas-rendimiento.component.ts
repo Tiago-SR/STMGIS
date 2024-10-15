@@ -1,6 +1,4 @@
-
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { CultivoService } from '../../services/cultivo.service';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,61 +7,79 @@ import MapView from '@arcgis/core/views/MapView';
 import GeoJSONLayer from '@arcgis/core/layers/GeoJSONLayer';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
-
+import { WebSocketService } from '../../services/web-socket.service';
 
 @Component({
   selector: 'app-normalizar-mapas-rendimiento',
   templateUrl: './normalizar-mapas-rendimiento.component.html',
-  styleUrl: './normalizar-mapas-rendimiento.component.scss'
+  styleUrls: ['./normalizar-mapas-rendimiento.component.scss']
 })
 export class NormalizarMapasRendimientoComponent implements OnInit {
   cultivo: any;
-  mapas: any[] = [];
-  coeficientes: number[] = [];
-  currentPairIndex: number = 0;
-  ajusteForm: FormGroup;
+  mapaReferencia: any;
+  mapaActual: any;
+  nombreMapaReferencia: string = '';
+  nombreMapaActual: string = '';
+  coeficienteAjusteReferencia: number = 1;
+  coeficienteAjusteActual: number = 1;
+  coeficienteSugeridoReferencia: number = 1;
+  coeficienteSugeridoActual: number = 1;
   cultivoId!: string; 
   map!: Map;
   view!: MapView;
-  mapInitialized: boolean = false;
-
 
   constructor(
-    private fb: FormBuilder,
     private cultivoService: CultivoService,
     private toastr: ToastrService,
     private cd: ChangeDetectorRef,
     private router: Router,
-    private route: ActivatedRoute
-  ) {
-    this.ajusteForm = this.fb.group({
-      coeficienteAjuste: [1, Validators.required]
+    private route: ActivatedRoute,
+    private webSocketService: WebSocketService
+  ) {}
+
+  ngOnInit(): void {
+    this.cultivoId = this.route.snapshot.params['id']; 
+    this.initMap();
+
+    // Conectar al WebSocket
+    this.webSocketService.connect(this.cultivoId);
+
+    // Esperar a que el WebSocket esté abierto antes de enviar el mensaje
+    this.webSocketService.onOpen().subscribe(() => {
+      console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
+      this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
+    });
+
+    // Escuchar mensajes del WebSocket
+    this.webSocketService.getMessages().subscribe((data) => {
+      console.log('Mensaje del WebSocket:', data);
+
+      if (data.action === 'nuevos_mapas') {
+        this.mapaReferencia = data.mapa_referencia;
+        this.mapaActual = data.mapa_actual;
+        this.coeficienteSugeridoReferencia = data.coeficiente_sugerido_referencia;
+        this.coeficienteSugeridoActual = data.coeficiente_sugerido_actual;
+        this.coeficienteAjusteReferencia = this.coeficienteSugeridoReferencia;
+        this.coeficienteAjusteActual = this.coeficienteSugeridoActual;
+        this.nombreMapaReferencia = `Mapa Referencia (Acumulado)`;
+        this.nombreMapaActual = `Mapa Actual ${data.current_pair_index + 2}`;
+
+        this.addNormalizedMapLayer();
+        this.cd.detectChanges();
+      } else if (data.action === 'proceso_completado') {
+        this.toastr.info('Se han procesado todos los mapas', 'Proceso completo');
+        this.router.navigate(['/resultado-normalizacion']); // Redirigir a la vista de resultados
+      } else if (data.action === 'proceso_cancelado') {
+        this.toastr.info('El proceso ha sido cancelado', 'Proceso cancelado');
+        this.router.navigate(['/ruta-inicial']); // Redirigir al usuario
+      } else if (data.action === 'error') {
+        this.toastr.error(data.message, 'Error');
+        console.error('Error desde el backend:', data.message);
+      }
     });
   }
 
-  ngOnInit(): void {
-    this.initMap();
-    this.cultivoId = this.route.snapshot.params['id']; // Obtener el cultivoId de la URL
-    this.cargarDatosNormalizacion(); 
-     
-  }  
-  //  ngAfterViewChecked(): void {
-  //    // Intentar inicializar el mapa si aún no se ha inicializado
-  //  if (!this.mapInitialized && document.getElementById('viewDiv')) {
-  //      this.initMap();
-  //      this.mapInitialized = true; // Marcamos como inicializado para evitar múltiples intentos
-      
-  //    }
-  // }
-
-  
   initMap(): void {
-    const viewDiv = document.getElementById('viewDiv');
-    if (!viewDiv) {
-      console.error('viewDiv no encontrado');
-      return;
-    }
-
     this.map = new Map({
       basemap: 'hybrid'
     });
@@ -74,43 +90,9 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       center: [-56.0698, -32.4122],
       zoom: 8
     });
-
-    this.view.when(() => {
-      console.log('Mapa inicializado correctamente');
-    }).catch((error) => {
-      console.error('Error al inicializar el mapa: ', error);
-    });
   }
 
-
-  cargarDatosNormalizacion() {
-    // Llamar al backend para obtener los mapas de rendimiento y los coeficientes iniciales
-    this.cultivoService.obtenerDatosNormalizacion(this.cultivoId).subscribe(
-      response => {
-        console.log('Respuesta recibida:', response); 
-
-        this.cultivo = response.cultivo;
-        this.mapas = [response.mapa1, response.mapa2];
-        console.log('Mapas asignados:', this.mapas);
-        console.log('Coeficiente de ajuste recibido:', response.coeficiente_ajuste);
-
-
-      //  this.coeficientes[this.currentPairIndex + 1] = response.coeficiente_ajuste;
-
-        console.log('GeoJSON Data:', this.mapas[0]);
-        this.addNormalizedMapLayer(this.mapas);
-        
-        this.cd.detectChanges();
-
-      },
-      error => {
-        this.toastr.error('Error al cargar los datos para la normalización', 'Error');
-        console.error('Error al cargar los datos para la normalización:', error);
-      }
-    );
-  }
-
-   addNormalizedMapLayer(geojsonData: any[]): void {
+  addNormalizedMapLayer(): void {
     if (!this.map) {
       console.error('El mapa no está inicializado.');
       return;
@@ -119,13 +101,15 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     // Limpiar todas las capas previas del mapa
     this.map.layers.removeAll();
 
-    geojsonData.forEach((data, index) => {
+    const mapas = [this.mapaReferencia, this.mapaActual];
+
+    mapas.forEach((data, index) => {
       const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
       console.log('GeoJSON URL:', geoJsonUrl);
       const geoJsonLayer = new GeoJSONLayer({
         url: geoJsonUrl,
-        title: `Mapa Normalizado ${index + 1}`,
+        title: `Mapa ${index === 0 ? 'Referencia' : 'Actual'}`,
         outFields: ['*'],
         renderer: new SimpleRenderer({
           symbol: new SimpleMarkerSymbol({
@@ -139,7 +123,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
           })
         }),
         popupTemplate: {
-          title: `Mapa Normalizado ${index + 1}`,
+          title: `Mapa ${index === 0 ? 'Referencia' : 'Actual'}`,
           content: [
             {
               type: 'fields',
@@ -175,47 +159,19 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     });
   }
 
-
-
-  ajustarCoeficiente(value: number) {
-    let nuevoValor = this.ajusteForm.get('coeficienteAjuste')?.value + value;
-    if (nuevoValor < 0) {
-      nuevoValor = 0; // Evitar coeficiente negativo
-    }
-    this.ajusteForm.patchValue({ coeficienteAjuste: nuevoValor });
-  }
-
   confirmarNormalizacion() {
-    if (this.currentPairIndex >= this.mapas.length - 1) {
-      this.toastr.warning('No hay más mapas para normalizar', 'Proceso finalizado');
-      return;
-    }
-  
-    const coeficienteAjuste = this.ajusteForm.get('coeficienteAjuste')?.value;
-    this.coeficientes[this.currentPairIndex + 1] *= coeficienteAjuste;
-  
-    // Corregir: agregar el coeficienteAjuste como argumento
-    this.cultivoService.confirmarNormalizacion(this.cultivo.id, coeficienteAjuste).subscribe(
-      response => {
-        this.toastr.success('Normalización confirmada para el par de mapas', 'Éxito');
-        this.currentPairIndex++;
-        this.actualizarFormulario();
-      },
-      error => {
-        this.toastr.error('Error al confirmar la normalización', 'Error');
-        console.error('Error al confirmar la normalización:', error);
+    // Enviar los coeficientes al backend a través del WebSocket
+    this.webSocketService.sendMessage({
+      action: 'enviar_coeficientes',
+      coeficientes: {
+        coeficiente_mapa_referencia: this.coeficienteAjusteReferencia,
+        coeficiente_mapa_actual: this.coeficienteAjusteActual
       }
-    );
-  }
-  actualizarFormulario() {
-    if (this.currentPairIndex < this.mapas.length - 1) {
-      this.ajusteForm.patchValue({ coeficienteAjuste: 1 }); // Reiniciar el coeficiente para el siguiente par
-      this.cargarDatosNormalizacion(); // Cargar el siguiente par de mapas
-
-    } else {
-      this.toastr.info('Se han procesado todos los pares de mapas', 'Proceso completo');
-      this.router.navigate(['/resultado-normalizacion']); // Redirigir a la vista de resultados
-    }
+    });
   }
 
+  // Al destruir el componente, desconectar el WebSocket
+  ngOnDestroy(): void {
+    this.webSocketService.disconnect();
+  }
 }

@@ -37,4 +37,4 @@ USER myuser
 EXPOSE 8000
 
 # Corre las migraciones y luego ejecuta el servidor de Django
-CMD ["sh", "-c", "/usr/src/app/wait-for-it.sh db:5432 -- python manage.py runserver 0.0.0.0:8000"]
+CMD ["sh", "-c", "/usr/src/app/wait-for-it.sh db:5432 -- uvicorn api.asgi:application --host 0.0.0.0 --port 8000"]
