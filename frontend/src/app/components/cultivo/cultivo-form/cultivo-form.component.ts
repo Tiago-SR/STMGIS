@@ -210,8 +210,12 @@ export class CultivoFormComponent {
     });
   }
 
-  onSubmit(): void {    
+  onSubmit(): void {
     if (this.cultivoForm.valid) {
+      if (!this.campos.find(campo => campo.id === this.cultivoForm.get('campo')?.value)) {
+        this.toastr.error('Campo inválido', 'Error');
+        return;
+      }
       const cultivoEditado: Cultivo = {
         id: this.cultivoId,
         ...this.cultivoForm.value
@@ -246,6 +250,7 @@ export class CultivoFormComponent {
       }
     } else {
       this.cultivoForm.markAllAsTouched();
+      this.toastr.error('Por favor complete el formulario correctamente', 'Error');
     }
   }
 }
