@@ -77,6 +77,8 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
 
     async def procesar_coeficientes(self, coeficientes):
         if self.current_pair_index >= len(self.archivos_unicos) - 1:
+            # Aquí llamamos a calcular_rendimientos_finales
+            await self.calcular_rendimientos_finales()
             await self.send(text_data=json.dumps({
                 'action': 'proceso_completado'
             }))
@@ -90,9 +92,12 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         if self.current_pair_index < len(self.archivos_unicos) - 1:
             await sync_to_async(self.transactional_enviar_nuevos_mapas)()
         else:
+            # Aquí también llamamos a calcular_rendimientos_finales si es el último par
+            await self.calcular_rendimientos_finales()
             await self.send(text_data=json.dumps({
                 'action': 'proceso_completado'
             }))
+
 
     @sync_to_async
     @transaction.atomic
@@ -103,28 +108,66 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
 
         # Ajustar el mapa de referencia (acumulado)
         if self.df_acumulado is not None:
-            self.df_acumulado['rendimiento_relativo'] *= coeficiente_mapa_referencia
+            self.df_acumulado['rendimiento_normalizado'] = self.df_acumulado['masa_rend_seco'] * coeficiente_mapa_referencia
 
             # Actualizar la base de datos para el mapa de referencia
             for index, row in self.df_acumulado.iterrows():
-                CultivoData.objects.filter(id=row['id']).update(rendimiento_relativo=row['rendimiento_relativo'])
+                CultivoData.objects.filter(id=row['id']).update(rendimiento_normalizado=row['rendimiento_normalizado'])
 
         # Ajustar el mapa actual
         archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
         df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
-        df_mapa_actual['rendimiento_relativo'] *= coeficiente_mapa_actual
+        df_mapa_actual['rendimiento_normalizado'] = df_mapa_actual['masa_rend_seco'] * coeficiente_mapa_actual
 
         # Actualizar la base de datos para el mapa actual
         for index, row in df_mapa_actual.iterrows():
-            CultivoData.objects.filter(id=row['id']).update(rendimiento_relativo=row['rendimiento_relativo'])
+            CultivoData.objects.filter(id=row['id']).update(rendimiento_normalizado=row['rendimiento_normalizado'])
 
         # Actualizar el DataFrame original
-        self.df.loc[df_mapa_actual.index, 'rendimiento_relativo'] = df_mapa_actual['rendimiento_relativo']
+        self.df.loc[df_mapa_actual.index, 'rendimiento_normalizado'] = df_mapa_actual['rendimiento_normalizado']
         if self.df_acumulado is not None:
-            self.df.loc[self.df_acumulado.index, 'rendimiento_relativo'] = self.df_acumulado['rendimiento_relativo']
+            self.df.loc[self.df_acumulado.index, 'rendimiento_normalizado'] = self.df_acumulado['rendimiento_normalizado']
 
         # Actualizar el DataFrame acumulado para incluir el mapa actual
         self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
+
+    @sync_to_async
+    def calcular_rendimientos_finales(self):
+        """Calcula rendimiento_relativo y rendimiento_real para todos los registros al finalizar el proceso"""
+        # Obtener el rendimiento promedio del cultivo
+        cultivo = Cultivo.objects.get(id=self.cultivo_id)
+        rinde_promedio_cultivo = cultivo.rinde_prom
+
+        # Calcular la media de rendimiento_normalizado
+        media_rendimiento_normalizado = self.df['rendimiento_normalizado'].mean()
+
+        if media_rendimiento_normalizado == 0 or pd.isna(media_rendimiento_normalizado):
+            media_rendimiento_normalizado = 1  # Evitar división por cero
+
+        # Calcular rendimiento_relativo y rendimiento_real
+        self.df['rendimiento_relativo'] = self.df['rendimiento_normalizado'] / media_rendimiento_normalizado
+        self.df['rendimiento_real'] = self.df['rendimiento_relativo'] * rinde_promedio_cultivo
+
+        # Actualizar la base de datos para todos los registros en lotes
+        updated_instances = []
+        for index, row in self.df.iterrows():
+            instance = CultivoData(
+                id=row['id'],
+                rendimiento_relativo=row['rendimiento_relativo'],
+                rendimiento_real=row['rendimiento_real']
+            )
+            updated_instances.append(instance)
+
+        # Procesar las actualizaciones en lotes más pequeños
+        batch_size = 1000  # Ajusta este valor según tus necesidades y recursos del servidor
+        total_instances = len(updated_instances)
+        logger.info(f"Actualizando {total_instances} registros en lotes de {batch_size}")
+
+        for i in range(0, total_instances, batch_size):
+            batch = updated_instances[i:i + batch_size]
+            with transaction.atomic():
+                CultivoData.objects.bulk_update(batch, ['rendimiento_relativo', 'rendimiento_real'])
+            logger.info(f"Lote {i // batch_size + 1} actualizado exitosamente.")
 
     @sync_to_async
     def obtener_mapas_cultivo(self, cultivo_id):
@@ -223,7 +266,10 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             'geojson',
             queryset_mapa,
             geometry_field='punto_geografico',
-            fields=['anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo']
+            fields=[
+                'anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha',
+                'rendimiento_normalizado', 'rendimiento_relativo', 'rendimiento_real'
+            ]
         )
         return json.loads(geojson_mapa)
 
