@@ -38,14 +38,14 @@ export class CultivoService {
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
-  normalizarMapas(cultivoId: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-  }
+   normalizarMapas(cultivoId: string): Observable<any> {
+     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+   }
 
-  // Método para obtener los datos de normalización
-  obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-  }
+   // Método para obtener los datos de normalización
+   obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
+     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+   }
 
   resultadoNormalizacion(cultivoId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);

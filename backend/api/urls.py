@@ -51,4 +51,5 @@ urlpatterns = [
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
     path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
     path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')
+
 ]

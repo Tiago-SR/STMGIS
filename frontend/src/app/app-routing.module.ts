@@ -41,7 +41,9 @@ const routes: Routes = [
   { path: 'cultivo', component: CultivoListComponent, canActivate: [authResponsableGuard] },
   { path: 'subir-csv', component: SubirCsvComponent, canActivate: [authResponsableGuard] },
   { path: 'normalizar-mapas', component: NormalizarMapasComponent, canActivate: [authResponsableGuard] },
-  { path: 'resultado-normalizacion/:id', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },
+  //{ path: 'resultado-normalizacion/:id', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },
+  { path: 'normalizar-mapas-rendimiento/:cultivoId', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },
+
   { path: '**', redirectTo: '' }
 ];
 

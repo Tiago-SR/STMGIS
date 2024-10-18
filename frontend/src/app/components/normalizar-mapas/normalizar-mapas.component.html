@@ -42,9 +42,7 @@
         <option value="" disabled selected>Selecciona un Cultivo</option>
         <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">{{ cultivo.nombre }}</option>
       </select>
-      <div *ngIf="cultivoForm.get('cultivo')?.hasError('noCultivos') && cultivoForm.get('cultivo')?.touched" class="text-red-500 text-sm">
-        No hay cultivos disponibles para esta gestión.
-      </div>
+      
     </div>
   
     <div *ngIf="cultivoForm.invalid && cultivoForm.touched" class="text-red-500 text-sm mb-4">
