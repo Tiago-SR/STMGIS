@@ -39,7 +39,7 @@ export class CampoService {
         );
     }
 
-    updateCampo(id: number, campo: Campo): Observable<any> {
+    updateCampo(id: string, campo: Campo): Observable<any> {
         return this.http.put<any>(`${this.apiUrl}${id}/`, campo);
     }
 
@@ -47,7 +47,7 @@ export class CampoService {
     //     return this.http.patch(`http://api.proyecto.local/campos/${id}/`, { is_active: false });
 
     // }
-    deleteCampo(id: number): Observable<any> {
+    deleteCampo(id: string): Observable<any> {
         return this.http.patch(`${this.apiUrl}${id}/deactivate/`, {}).pipe(
             catchError(error => {
                 console.error('Error al desactivar el campo:', error);
@@ -56,7 +56,7 @@ export class CampoService {
         );
     }
 
-    activateCampo(id: number): Observable<any> {
+    activateCampo(id: string): Observable<any> {
         return this.http.post(`${this.apiUrl}activate/${id}/`, {});
       }
 }

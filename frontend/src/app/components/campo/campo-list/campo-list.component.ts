@@ -118,11 +118,11 @@ export class CampoListComponent implements OnInit {
     this.router.navigate(['/campos/nuevo']);
   }
 
-  editarCampo(id: number, campo: Campo) {
+  editarCampo(id: string, campo: Campo) {
     this.router.navigate(['campos/editar/',id]);      
   }
 
-  softDeleteCampo(id: number){
+  softDeleteCampo(id: string){
     this.campoService.deleteCampo(id).subscribe({
       next: () => {
         console.log('Campo eliminado');
@@ -136,7 +136,7 @@ export class CampoListComponent implements OnInit {
       } 
     });
   }
-  activateCampo(id: number) {
+  activateCampo(id: string) {
     this.campoService.activateCampo(id).subscribe(() => {
       this.filterCampos(); 
     });

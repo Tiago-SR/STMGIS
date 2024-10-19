@@ -35,6 +35,8 @@ import { CultivoCardComponent } from './components/cultivo/cultivo-card/cultivo-
 import { SubirCsvComponent } from './components/subir-csv/subir-csv.component';
 import { NormalizarMapasComponent } from './components/normalizar-mapas/normalizar-mapas.component';
 import { NormalizarMapasRendimientoComponent } from './components/normalizar-mapas-rendimiento/normalizar-mapas-rendimiento.component';
+import { CultivoVerComponent } from './components/cultivo/cultivo-ver/cultivo-ver.component';
+
 
 @NgModule({
   declarations: [
@@ -64,7 +66,8 @@ import { NormalizarMapasRendimientoComponent } from './components/normalizar-map
     CultivoCardComponent,
     SubirCsvComponent,
     NormalizarMapasComponent,
-    NormalizarMapasRendimientoComponent
+    NormalizarMapasRendimientoComponent,
+    CultivoVerComponent
   ],
   imports: [
     BrowserModule,

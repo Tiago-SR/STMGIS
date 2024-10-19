@@ -23,6 +23,10 @@ export class CultivoService {
   crearCultivo(cultivo: Cultivo): Observable<Cultivo> {
     return this.http.post<Cultivo>(this.baseUrl, cultivo);
   }
+  obtenerCultivo(id: string): Observable<Cultivo> {
+    return this.http.get<Cultivo>(`${this.baseUrl}${id}`);
+  }
+
   obtenerCultivos(parametrosFiltro?: any): Observable<Cultivo[]> {
     let params = new HttpParams();
     if (parametrosFiltro) {

@@ -41,7 +41,6 @@ export class CultivoFormComponent {
   ngOnInit(): void {    
 
     this.cultivoForm = this.fb.group({
-      nombre: ['', [Validators.required, Validators.maxLength(100)]],
       descripcion: [''],
       sup_total: [0, [Validators.required, Validators.min(0)]],
       rinde_prom: [0, [Validators.required, Validators.min(0)]],
@@ -151,7 +150,6 @@ export class CultivoFormComponent {
       }
     });
     this.cultivoForm.patchValue({
-      nombre: cultivo.nombre,
       rinde_prom: cultivo.rinde_prom,
       sup_total: cultivo.sup_total,
       descripcion: cultivo.descripcion
@@ -253,4 +251,20 @@ export class CultivoFormComponent {
       this.toastr.error('Por favor complete el formulario correctamente', 'Error');
     }
   }
+  getNombreCampoSeleccionado(): string {
+    const campoId = this.cultivoForm.get('campo')?.value;
+    const campo = this.campos.find(c => c.id === campoId);
+    return campo ? campo.nombre : '';
+  }
+  getNombreGestionSeleccionada(): string {
+    const gestionId = this.cultivoForm.get('gestion')?.value;
+    const gestion = this.gestiones.find(c => c.id === gestionId);
+    return gestion ? gestion.name : '';
+  }
+  getNombreEspecieSeleccionada(): string {
+    const especieId = this.cultivoForm.get('especie')?.value;
+    const especie = this.especies.find(c => c.id === especieId);
+    return especie ? especie.nombre : '';
+  }
+  
 }
