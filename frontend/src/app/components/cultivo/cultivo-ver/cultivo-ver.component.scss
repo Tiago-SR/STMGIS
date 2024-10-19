@@ -1,0 +1,15 @@
+:host {
+    @apply flex min-w-full flex-1 justify-center
+}
+
+.floating-table {
+    position: absolute;
+    top: 10px; /* Ajuste para la esquina superior */
+    right: 10px; /* Separación del borde derecho */
+    width: max-content; /* Ajustar ancho de la tabla */
+    z-index: 9; /* Asegura que esté encima del mapa */
+    background-color: white; /* Fondo blanco para mayor visibilidad */
+}
+.no-focus-outline:focus {
+    outline: none; /* Elimina el borde azul cuando el mapa recibe foco */
+}
