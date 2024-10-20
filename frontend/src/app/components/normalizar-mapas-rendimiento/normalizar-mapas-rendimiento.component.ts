@@ -26,6 +26,8 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   coeficienteAjusteActual: number = 1;
   coeficienteSugeridoReferencia: number = 1;
   coeficienteSugeridoActual: number = 1;
+  percentil80Referencia: number = 0;
+  percentil80Actual: number = 0;
   cultivoId!: string; 
   map!: Map;
   view!: MapView;
@@ -41,17 +43,21 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
   ngOnInit(): void {
     
-    this.cultivoId = this.route.snapshot.params['id']; 
+    this.cultivoId = this.route.snapshot.params['cultivoId']; 
     this.initMap();
+    // Verifica si el cultivoId es válido antes de proceder
+    if (this.cultivoId) {
+      // Conectar al WebSocket con el cultivoId
+      this.webSocketService.connect(this.cultivoId);
 
-    // Conectar al WebSocket
-    this.webSocketService.connect(this.cultivoId);
-
-    // Esperar a que el WebSocket esté abierto antes de enviar el mensaje
-    this.webSocketService.onOpen().subscribe(() => {
-      console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
-      this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
-    });
+      // Esperar a que el WebSocket esté abierto antes de enviar el mensaje
+      this.webSocketService.onOpen().subscribe(() => {
+        console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
+        this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
+      });
+    } else {
+      console.error('Error: cultivoId no está definido');
+    }
 
     // Escuchar mensajes del WebSocket
     this.webSocketService.getMessages().subscribe((data) => {
@@ -64,6 +70,9 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.coeficienteSugeridoActual = data.coeficiente_sugerido_actual;
         this.coeficienteAjusteReferencia = this.coeficienteSugeridoReferencia;
         this.coeficienteAjusteActual = this.coeficienteSugeridoActual;
+        // Mostrar los percentiles en el frontend
+        this.percentil80Referencia = data.percentil_80_referencia;
+        this.percentil80Actual = data.percentil_80_actual;
         this.nombreMapaReferencia = `Mapa Referencia (Acumulado)`;
         this.nombreMapaActual = `Mapa Actual ${data.current_pair_index + 2}`;
 
@@ -172,6 +181,31 @@ addNormalizedMapLayer(): void {
   // Limpiar todas las capas previas del mapa
   this.map.layers.removeAll();
 
+  //const mapas = [this.mapaReferencia, this.mapaActual];
+ // Combinar los datos de ambos mapas
+  const allFeatures = [...this.mapaReferencia.features, ...this.mapaActual.features];
+
+ // Obtener los valores de 'masa_rend_seco' y 'rendimiento_normalizado' de ambos mapas
+  const rendimientos = [
+    ...this.mapaReferencia.features.map((feature: any) => feature.properties.rendimiento_normalizado),
+    ...this.mapaActual.features.map((feature: any) => feature.properties.masa_rend_seco)
+  ];
+  // Ordenar los valores de 'masa_rend_seco' para calcular percentiles combinados
+  rendimientos.sort((a: number, b: number) => a - b);
+
+  const getPercentileValue = (percentile: number) => {
+    const index = Math.floor((percentile / 100) * rendimientos.length);
+    return rendimientos[index] || rendimientos[rendimientos.length - 1];
+  };
+
+  // Calcular percentiles basados en ambos mapas juntos
+  const p19 = getPercentileValue(19);
+  const p39 = getPercentileValue(39);
+  const p59 = getPercentileValue(59);
+  const p79 = getPercentileValue(79);
+  const p100 = getPercentileValue(100);
+
+  // Ahora iterar sobre cada mapa y asignar su estilo
   const mapas = [this.mapaReferencia, this.mapaActual];
 
   mapas.forEach((data, index) => {
@@ -180,34 +214,37 @@ addNormalizedMapLayer(): void {
     console.log('GeoJSON URL:', geoJsonUrl);
 
     // Obtener los valores de 'masa_rend_seco' de los datos
-    const rendimientos = data.features.map((feature: any) => feature.properties.masa_rend_seco);
+   // const rendimientos = data.features.map((feature: any) => feature.properties.masa_rend_seco);
 
     // Ordenar los valores de 'masa_rend_seco' para calcular percentiles
-    rendimientos.sort((a: number, b: number) => a - b);
+  //  rendimientos.sort((a: number, b: number) => a - b);
 
-    const getPercentileValue = (percentile: number) => {
-      const index = Math.floor((percentile / 100) * rendimientos.length);
-      return rendimientos[index] || rendimientos[rendimientos.length - 1]; // Ajuste para el 100%
-    };
+   // const getPercentileValue = (percentile: number) => {
+   //   const index = Math.floor((percentile / 100) * rendimientos.length);
+  //    return rendimientos[index] || rendimientos[rendimientos.length - 1]; 
+  //  };
 
     // Calcular percentiles
-    const p19 = getPercentileValue(19);
-    const p39 = getPercentileValue(39);
-    const p59 = getPercentileValue(59);
-    const p79 = getPercentileValue(79);
-    const p100 = getPercentileValue(100);
+   // const p19 = getPercentileValue(19);
+   // const p39 = getPercentileValue(39);
+   // const p59 = getPercentileValue(59);
+   // const p79 = getPercentileValue(79);
+   // const p100 = getPercentileValue(100);
+
+   const field = index === 0 ? 'rendimiento_normalizado' : 'masa_rend_seco'; // Mapa de referencia usa rendimiento_normalizado
+
 
     // Definir el ClassBreaksRenderer
     const renderer = new ClassBreaksRenderer({
-      field: 'masa_rend_seco',
+      field: field,
       classBreakInfos: [
         {
           minValue: rendimientos[0],  // Valor mínimo
           maxValue: p19,
           symbol: new SimpleMarkerSymbol({
-            style: 'circle',
+            style: index === 0 ? 'circle' : 'diamond',
             color: 'red',
-            size: '8px',
+            size: '16px',
             outline: { color: 'red', width: 0.5 }
           }),
           label: 'Bajo rendimiento'
@@ -216,9 +253,9 @@ addNormalizedMapLayer(): void {
           minValue: p19,
           maxValue: p39,
           symbol: new SimpleMarkerSymbol({
-            style: 'circle',
+            style: index === 0 ? 'circle' : 'diamond',
             color: 'orange',
-            size: '8px',
+            size: '16px',
             outline: { color: 'orange', width: 0.5 }
           }),
           label: '19% Percentil'
@@ -227,9 +264,9 @@ addNormalizedMapLayer(): void {
           minValue: p39,
           maxValue: p59,
           symbol: new SimpleMarkerSymbol({
-            style: 'circle',
+            style: index === 0 ? 'circle' : 'diamond',
             color: 'yellow',
-            size: '8px',
+            size: '16px',
             outline: { color: 'yellow', width: 0.5 }
           }),
           label: '39% Percentil'
@@ -238,9 +275,9 @@ addNormalizedMapLayer(): void {
           minValue: p59,
           maxValue: p79,
           symbol: new SimpleMarkerSymbol({
-            style: 'circle',
+            style: index === 0 ? 'circle' : 'diamond',
             color: 'lightgreen',
-            size: '8px',
+            size: '16px',
             outline: { color: 'lightgreen', width: 0.5 }
           }),
           label: '59% Percentil'
@@ -249,9 +286,9 @@ addNormalizedMapLayer(): void {
           minValue: p79,
           maxValue: p100,
           symbol: new SimpleMarkerSymbol({
-            style: 'circle',
+            style: index === 0 ? 'circle' : 'diamond',
             color: 'green',
-            size: '8px',
+            size: '16px',
             outline: { color: 'green', width: 0.5 }
           }),
           label: 'Alto rendimiento'
@@ -261,7 +298,7 @@ addNormalizedMapLayer(): void {
 
     const geoJsonLayer = new GeoJSONLayer({
       url: geoJsonUrl,
-      title: `Mapa ${index === 0 ? 'Referencia' : 'Actual'}`,
+      title: `Mapa ${index === 0 ? 'Referencia (Rendimiento Normalizado)' : 'Actual (Masa Rendimiento Seco)'}`,
       outFields: ['*'],
       renderer: renderer,
       popupTemplate: {
@@ -272,11 +309,11 @@ addNormalizedMapLayer(): void {
             fieldInfos: [
               { fieldName: 'anch_fja', label: 'Ancho de Faja' },
               { fieldName: 'humedad', label: 'Humedad (%)' },
-              { fieldName: 'masa_rend_seco', label: 'Masa de Rendimiento Seco (ton/ha)' },
+              { fieldName: field, label: index === 0 ? 'Rendimiento Normalizado (ton/ha)' : 'Masa Rendimiento Seco (ton/ha)' },
               { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
               { fieldName: 'fecha', label: 'Fecha' },
-              { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
-              { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
+            //  { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
+             // { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
             ]
           }
         ]

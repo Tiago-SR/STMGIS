@@ -14,5 +14,5 @@ class CultivoDataGeoSerializer(GeoFeatureModelSerializer):
         geo_field = 'punto_geografico'
         fields = (
             'id', 'nombre_archivo_csv', 'anch_fja', 'humedad', 'masa_rend_seco',
-            'velocidad', 'prod', 'fecha', 'cultivo_id'
+            'velocidad', 'prod', 'fecha', 'cultivo_id', 'rendimiento_normalizado', 'rendimiento_relativo', 'rendimiento_real'
         )

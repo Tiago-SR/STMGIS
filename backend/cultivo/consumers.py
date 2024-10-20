@@ -1,5 +1,7 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import async_to_sync, sync_to_async
+from channels.db import database_sync_to_async
+
 from django.db import transaction
 from django.core.serializers import serialize
 from cultivo.models import Cultivo, CultivoData
@@ -112,8 +114,9 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
 
             # Actualizar la base de datos para el mapa de referencia
             for index, row in self.df_acumulado.iterrows():
-                CultivoData.objects.filter(id=row['id']).update(rendimiento_normalizado=row['rendimiento_normalizado'])
-
+                sync_to_async(CultivoData.objects.filter(id=row['id']).update)(
+                                rendimiento_normalizado=row['rendimiento_normalizado']
+                            )
         # Ajustar el mapa actual
         archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
         df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
@@ -130,6 +133,47 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
 
         # Actualizar el DataFrame acumulado para incluir el mapa actual
         self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
+
+    # @database_sync_to_async
+    # @transaction.atomic
+    # async def aplicar_transaccion(self, coeficientes):
+    #     """Aplica los coeficientes a ambos mapas y actualiza el DataFrame acumulado"""
+    #     coeficiente_mapa_referencia = float(coeficientes.get('coeficiente_mapa_referencia', 1))
+    #     coeficiente_mapa_actual = float(coeficientes.get('coeficiente_mapa_actual', 1))
+
+    #     # Ajustar el mapa de referencia (acumulado)
+    #     if self.df_acumulado is not None:
+    #         self.df_acumulado['rendimiento_normalizado'] = self.df_acumulado['masa_rend_seco'] * coeficiente_mapa_referencia
+
+    #         # Actualizar la base de datos para el mapa de referencia
+    #         for index, row in self.df_acumulado.iterrows():
+    #             CultivoData.objects.filter(id=row['id']).update(
+    #                 rendimiento_normalizado=row['rendimiento_normalizado']
+    #             )
+
+    #     # Ajustar el mapa actual
+    #     archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
+    #     df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
+    #     df_mapa_actual['rendimiento_normalizado'] = df_mapa_actual['masa_rend_seco'] * coeficiente_mapa_actual
+
+    #     # Actualizar la base de datos para el mapa actual
+    #     for index, row in df_mapa_actual.iterrows():
+    #         CultivoData.objects.filter(id=row['id']).update(
+    #             rendimiento_normalizado=row['rendimiento_normalizado']
+    #         )
+
+    #     # Actualizar el DataFrame original
+    #     self.df.loc[df_mapa_actual.index, 'rendimiento_normalizado'] = df_mapa_actual['rendimiento_normalizado']
+    #     if self.df_acumulado is not None:
+    #         self.df.loc[self.df_acumulado.index, 'rendimiento_normalizado'] = self.df_acumulado['rendimiento_normalizado']
+
+    #     # Actualizar el DataFrame acumulado para incluir el mapa actual
+    #     self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
+
+
+
+
+
 
     @sync_to_async
     def calcular_rendimientos_finales(self):
@@ -202,7 +246,7 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         try:
             mapas_list = list(mapas_rendimiento.values(
                 'id', 'punto_geografico', 'anch_fja', 'humedad', 'masa_rend_seco',
-                'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo', 'nombre_archivo_csv'
+                'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo', 'rendimiento_normalizado', 'nombre_archivo_csv'
             ))
             df = pd.DataFrame(mapas_list)
             logger.info(f"DataFrame creado con {len(df)} filas.")
@@ -229,34 +273,100 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
             df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual]
 
-            # Calcular coeficientes sugeridos para ambos mapas
-            coeficiente_sugerido_referencia = self.calcular_coeficiente_sugerido(self.df_acumulado)
-            coeficiente_sugerido_actual = self.calcular_coeficiente_sugerido(df_mapa_actual)
+            if self.current_pair_index == 0:
+                # Para el primer par, tanto la referencia como el actual usan 'masa_rend_seco'
+                df_referencia = self.df_acumulado
+                campo_referencia = 'masa_rend_seco'
+            else:
+                # A partir del segundo par, la referencia usa 'rendimiento_normalizado'
+                df_referencia = self.df_acumulado
+                campo_referencia = 'rendimiento_normalizado'
+              # Calcular percentil 80 para el campo de referencia y el campo actual (siempre 'masa_rend_seco')
+            percentil_80_referencia = df_referencia[campo_referencia].quantile(0.8)
+            percentil_80_actual = df_mapa_actual['masa_rend_seco'].quantile(0.8)
 
-            # Obtener GeoJSON de los mapas
-            mapa_referencia_geojson = await self.serializar_geojson(self.df_acumulado)
-            mapa_actual_geojson = await self.serializar_geojson(df_mapa_actual)
+            # Calcular coeficiente sugerido comparando ambos mapas
+            coeficiente_sugerido = self.calcular_coeficiente_sugerido(self.df_acumulado, df_mapa_actual)
 
-            # Enviar los mapas y coeficientes sugeridos al cliente
-            await self.send(text_data=json.dumps({
-                'action': 'nuevos_mapas',
-                'mapa_referencia': mapa_referencia_geojson,
-                'mapa_actual': mapa_actual_geojson,
-                'coeficiente_sugerido_referencia': coeficiente_sugerido_referencia,
-                'coeficiente_sugerido_actual': coeficiente_sugerido_actual,
-                'current_pair_index': self.current_pair_index
-            }))
+            # Calcular la variación entre los percentiles 80 de ambos mapas
+            variacion_percentil = abs(coeficiente_sugerido - 1)  # Variación en porcentaje respecto a 1 (sin ajuste)
+
+            if variacion_percentil <= (self.variacion_admitida / 100):
+                # Si la variación es menor o igual al 5%, unir automáticamente los mapas
+                await self.aplicar_transaccion({
+                    'coeficiente_mapa_referencia': 1,  # Usamos coeficiente 1 para la referencia
+                    'coeficiente_mapa_actual': coeficiente_sugerido  # Ajustamos el mapa actual
+                })
+                self.current_pair_index += 1  # Avanzar al siguiente mapa
+                await self.enviar_nuevos_mapas()  # Llamamos de nuevo para procesar el siguiente par
+
+            else:
+                # Si la variación es mayor al 5%, se pide confirmación del usuario
+                mapa_referencia_geojson = await self.serializar_geojson(self.df_acumulado)
+                mapa_actual_geojson = await self.serializar_geojson(df_mapa_actual)
+
+                # Enviar los mapas y coeficiente sugerido al cliente para que confirme
+                await self.send(text_data=json.dumps({
+                    'action': 'nuevos_mapas',
+                    'mapa_referencia': mapa_referencia_geojson,
+                    'mapa_actual': mapa_actual_geojson,
+                    'coeficiente_sugerido_referencia': 1,  # Coeficiente de referencia se mantiene en 1
+                    'coeficiente_sugerido_actual': coeficiente_sugerido,  # Coeficiente sugerido para ajuste
+                    'percentil_80_referencia': percentil_80_referencia,
+                    'percentil_80_actual': percentil_80_actual,
+                    'current_pair_index': self.current_pair_index
+                }))
         else:
+            # Proceso completado
             await self.send(text_data=json.dumps({
                 'action': 'proceso_completado'
             }))
 
-    def calcular_coeficiente_sugerido(self, df_mapa):
-        # Implementa aquí la lógica para calcular el coeficiente sugerido para un mapa
-        # Por ejemplo, podrías usar la media o el percentil 80
-        percentil_80 = df_mapa['masa_rend_seco'].quantile(0.8)
-        coeficiente_sugerido = 1  # O la lógica que prefieras
+
+
+    #async def enviar_nuevos_mapas(self):
+        if self.current_pair_index < len(self.archivos_unicos) - 1:
+            archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
+            df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual]
+
+            # Calcular coeficiente sugerido comparando percentil 80 del mapa de referencia y del mapa actual
+            coeficiente_sugerido = self.calcular_coeficiente_sugerido(self.df_acumulado, df_mapa_actual)
+
+            # Si la variación es mayor que la admitida, mandamos el coeficiente al frontend
+            variacion_percentil = abs(1 - coeficiente_sugerido)
+
+            if variacion_percentil > self.variacion_admitida:
+                # Obtener GeoJSON de los mapas
+                mapa_referencia_geojson = await self.serializar_geojson(self.df_acumulado)
+                mapa_actual_geojson = await self.serializar_geojson(df_mapa_actual)
+
+                # Enviar los mapas y coeficientes sugeridos al cliente
+                await self.send(text_data=json.dumps({
+                    'action': 'nuevos_mapas',
+                    'mapa_referencia': mapa_referencia_geojson,
+                    'mapa_actual': mapa_actual_geojson,
+                    'coeficiente_sugerido_referencia': 1,  # El mapa de referencia no necesita ajuste
+                    'coeficiente_sugerido_actual': coeficiente_sugerido,
+                    'current_pair_index': self.current_pair_index
+                }))
+
+    def calcular_coeficiente_sugerido(self, df_mapa_referencia, df_mapa_actual):
+        """
+        Calcula el coeficiente sugerido comparando los percentiles 80 de ambos mapas.
+        Si el percentil del mapa actual es menor que el del mapa de referencia, el coeficiente será mayor a 1.
+        """
+        # Obtenemos el percentil 80 de ambos mapas
+        percentil_80_referencia = df_mapa_referencia['masa_rend_seco'].quantile(0.8)
+        percentil_80_actual = df_mapa_actual['masa_rend_seco'].quantile(0.8)
+        
+        # Asegurarse de que no hay división por cero
+        if percentil_80_actual > 0:
+            coeficiente_sugerido = percentil_80_referencia / percentil_80_actual
+        else:
+            coeficiente_sugerido = 1  # Devolvemos 1 si el percentil 80 del mapa actual es 0
+
         return coeficiente_sugerido
+
 
 
     async def serializar_geojson(self, df):

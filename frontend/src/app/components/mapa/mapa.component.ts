@@ -31,6 +31,8 @@ export class MapaComponent implements OnInit {
   p79: number = 0;
   p100: number = 0;
   mapLoaded: boolean = false; 
+  tipoRendimiento: string = 'rendimiento_relativo'; 
+
 
 
   constructor(private campoService: CampoService) { }
@@ -252,7 +254,7 @@ export class MapaComponent implements OnInit {
     fetch(cultivoDataUrl)
       .then(response => response.json())
       .then(data => {
-        const rendimientos = data.features.map((feature: any) => feature.properties.rendimiento_relativo);
+        const rendimientos = data.features.map((feature: any) => feature.properties[this.tipoRendimiento]);
   
         rendimientos.sort((a: number, b: number) => a - b);
   
@@ -284,7 +286,7 @@ export class MapaComponent implements OnInit {
             visualVariables: [
               {
                 type: 'color',
-                field: 'rendimiento_relativo',                
+                field: this.tipoRendimiento,                 
                 stops: [
                   { value: rendimientos[0], color: 'red' },
                   { value: this.p19, color: 'red' },
@@ -300,7 +302,7 @@ export class MapaComponent implements OnInit {
               } as esri.ColorVariableProperties,
               {
                 type: 'color',
-                field: 'rendimiento_relativo',
+                field: this.tipoRendimiento, 
                 target: 'outline', 
                 stops: [
                   { value: rendimientos[0], color: 'red' },
@@ -323,7 +325,7 @@ export class MapaComponent implements OnInit {
               {
                 type: 'fields',
                 fieldInfos: [
-                  { fieldName: 'rendimiento_relativo', label: 'rendimiento_relativo' }
+                  { fieldName: this.tipoRendimiento, label: this.tipoRendimiento }
                 ]
               }
             ]

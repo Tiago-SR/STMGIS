@@ -8,6 +8,16 @@
         {{ campo.nombre }}
       </option>
     </select>
+
+        <!-- Nuevo select para seleccionar el tipo de rendimiento -->
+    <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold mb-2 ml-4">Tipo de rendimiento:</label>
+    <select id="tipoRendimiento" [(ngModel)]="tipoRendimiento" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      <option value="rendimiento_relativo">Rendimiento Relativo</option>
+      <option value="rendimiento_real">Rendimiento Real</option>
+      <option value="masa_rend_seco">Masa de Rendimiento Seco</option>
+      <option value="rendimiento_normalizado">Rendimiento Normalizado</option>
+    </select>
+
     <button (click)="onCargarCsv()" [disabled]="!selectedUuid"
       class="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none">
       Cargar mapas de rendimiento

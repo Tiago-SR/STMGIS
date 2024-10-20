@@ -146,7 +146,7 @@ def cultivodata_geojson_view(request):
         "geojson",
         queryset,
         geometry_field="punto_geografico",
-        fields=["rendimiento_real", 'masa_rend_seco']
+        fields=["rendimiento_real", 'masa_rend_seco', 'rendimiento_relativo', 'rendimiento_normalizado']
     )
 
     geojson = json.loads(geojson_str)
