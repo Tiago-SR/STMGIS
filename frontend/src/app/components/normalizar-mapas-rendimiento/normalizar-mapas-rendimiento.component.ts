@@ -70,7 +70,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.coeficienteSugeridoActual = data.coeficiente_sugerido_actual;
         this.coeficienteAjusteReferencia = this.coeficienteSugeridoReferencia;
         this.coeficienteAjusteActual = this.coeficienteSugeridoActual;
-        // Mostrar los percentiles en el frontend
         this.percentil80Referencia = data.percentil_80_referencia;
         this.percentil80Actual = data.percentil_80_actual;
         this.nombreMapaReferencia = `Mapa Referencia (Acumulado)`;

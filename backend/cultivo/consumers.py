@@ -89,6 +89,13 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         # Ejecutar la actualización de coeficientes en una transacción
         await self.aplicar_transaccion(coeficientes)
 
+        # Actualizamos el DataFrame acumulado
+        archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
+        df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
+
+        # Actualizar el DataFrame acumulado
+        self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
+        
         self.current_pair_index += 1
 
         if self.current_pair_index < len(self.archivos_unicos) - 1:
@@ -297,6 +304,17 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
                     'coeficiente_mapa_referencia': 1,  # Usamos coeficiente 1 para la referencia
                     'coeficiente_mapa_actual': coeficiente_sugerido  # Ajustamos el mapa actual
                 })
+                # Actualizar el DataFrame acumulado automáticamente
+                self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
+###
+                # Actualizar la base de datos incluso si no hay interacción del usuario
+                for index, row in self.df_acumulado.iterrows():
+                    await sync_to_async(CultivoData.objects.filter(id=row['id']).update)(
+                        rendimiento_normalizado=row['rendimiento_normalizado']
+                    )
+                logger.info(f"Actualización completada para id: {row['id']}")
+    
+###
                 self.current_pair_index += 1  # Avanzar al siguiente mapa
                 await self.enviar_nuevos_mapas()  # Llamamos de nuevo para procesar el siguiente par
 
