@@ -47,6 +47,9 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         elif action == 'enviar_coeficientes':
             coeficientes = data.get('coeficientes')
             await self.procesar_coeficientes(coeficientes)
+        elif action == 'actualizar_coeficiente_ajuste':  # Nuevo caso para actualización en tiempo real
+            coeficiente = data.get('coeficiente')
+            await self.procesar_coeficiente_actualizado(coeficiente)
         elif action == 'cancelar_proceso':
             await self.cancelar_proceso()
 
@@ -107,6 +110,18 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
                 'action': 'proceso_completado'
             }))
 
+    async def procesar_coeficiente_actualizado(self, coeficiente):
+        # Actualizar el coeficiente de ajuste del mapa actual en la base de datos
+        archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
+        df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual]
+        df_mapa_actual['rendimiento_normalizado'] = df_mapa_actual['masa_rend_seco'] * coeficiente
+        for index, row in df_mapa_actual.iterrows():
+              await CultivoData.objects.filter(id=row['id']).update(  # <--- Aquí está la corrección
+                rendimiento_normalizado=row['rendimiento_normalizado']
+                )
+
+        # Enviar los mapas actualizados al cliente
+        await self.enviar_mapas_actualizados()
 
     @sync_to_async
     @transaction.atomic
