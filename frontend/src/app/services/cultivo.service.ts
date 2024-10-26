@@ -35,6 +35,7 @@ export class CultivoService {
     return this.http.get<Cultivo[]>(this.baseUrl, { params });
   }
 
+ 
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
@@ -49,11 +50,15 @@ export class CultivoService {
 
   resultadoNormalizacion(cultivoId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);
-  }
-  
+  } 
 
   // Método para confirmar la normalización después de la revisión
   confirmarNormalizacion(cultivoId: string, coeficienteAjuste: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${cultivoId}/confirmar-normalizacion`, { coeficienteAjuste });
+  }
+
+  calcularRendimientoAmbiente(cultivoId: string): Observable<Blob> {
+    const url = `http://api.proyecto.local/rendimientos/${cultivoId}/calcular-rendimiento/`;
+    return this.http.get(url, { responseType: 'blob' });
   }
 }

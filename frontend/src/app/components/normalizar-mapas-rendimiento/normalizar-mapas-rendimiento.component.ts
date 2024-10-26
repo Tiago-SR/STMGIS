@@ -88,6 +88,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       }
     });
   }
+  
 
   initMap(): void {
     this.map = new Map({

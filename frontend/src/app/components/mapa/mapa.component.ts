@@ -9,7 +9,8 @@ import { CampoService } from '../../services/campo.service';
 import { Campo } from '../../models/campo.model';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
-
+import { CultivoService } from '../../services/cultivo.service'; // Servicio de cultivo
+import * as blobUtil from 'blob-util';
 
 @Component({
   selector: 'app-mapa',
@@ -22,6 +23,8 @@ export class MapaComponent implements OnInit {
   geojsonLayer!: GeoJSONLayer;
   cultivoDataLayer!: GeoJSONLayer;
   campos: Campo[] = [];
+  cultivos: any[] = []; 
+  selectedCultivoId: string = '';
   selectedUuid: string = '';
   originalSymbol: esri.Symbol | null = null;
   highlightedGraphic: esri.Graphic | null = null;
@@ -35,7 +38,7 @@ export class MapaComponent implements OnInit {
 
 
 
-  constructor(private campoService: CampoService) { }
+  constructor(private campoService: CampoService, private cultivoService: CultivoService) { }
 
   ngOnInit(): void {
     this.map = new Map({
@@ -77,8 +80,7 @@ export class MapaComponent implements OnInit {
 
   onCampoSelected(uuid: string): void {
     this.selectedUuid = uuid;
-
-    this.selectedUuid = uuid;
+    this.loadCultivos(uuid);
 
     if (!uuid) {
       this.p19 = 0;
@@ -203,6 +205,40 @@ export class MapaComponent implements OnInit {
           console.log('No se encontraron entidades para el campo seleccionado o las geometrías son nulas.');
         }
       });
+    });
+  }
+
+  onCultivoSelected(cultivoId: string): void {
+    this.selectedCultivoId = cultivoId;
+  }
+
+  onCalcularRendimiento(): void {
+    if (!this.selectedCultivoId) {
+      return;
+    }
+
+  // Realizar la solicitud al backend para calcular el rendimiento y obtener el Excel
+  this.cultivoService.calcularRendimientoAmbiente(this.selectedCultivoId).subscribe({
+          next: (response: Blob) => {
+            // Crear una URL para el archivo Blob
+            const url = window.URL.createObjectURL(response);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'rendimiento_ambiente.xlsx'; // Nombre del archivo de Excel
+            a.click();
+            window.URL.revokeObjectURL(url); // Limpiar la URL creada para evitar fugas de memoria
+        },
+        error: (error) => console.error('Error al calcular el rendimiento por ambiente:', error)
+    });
+  }
+  
+
+  loadCultivos(campoId: string): void {
+    this.cultivoService.obtenerCultivos({ campo: campoId }).subscribe({
+      next: (response) => {
+        this.cultivos = response; // Asume que 'response' es un arreglo de cultivos
+      },
+      error: (error) => console.error('Error al cargar los cultivos:', error),
     });
   }
 
@@ -341,7 +377,6 @@ export class MapaComponent implements OnInit {
       });
   }
     
-
   highlightFeature(graphic: esri.Graphic) {
     if (this.highlightedGraphic && this.originalSymbol) {
       this.highlightedGraphic.symbol = this.originalSymbol;
