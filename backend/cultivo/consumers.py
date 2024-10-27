@@ -1,12 +1,11 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from asgiref.sync import async_to_sync, sync_to_async
-from channels.db import database_sync_to_async
-
+from asgiref.sync import sync_to_async
 from django.db import transaction
 from django.core.serializers import serialize
+from django.db.models import F, Value, QuerySet, Avg
+from django.db.models.functions import Cast
 from cultivo.models import Cultivo, CultivoData
 import json
-import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,48 +14,38 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.cultivo_id = self.scope['url_route']['kwargs']['cultivo_id']
         self.group_name = f"rendimiento_{self.cultivo_id}"
-
-        # Inicializar variables de estado
-        self.mapas = []
         self.current_pair_index = 0
+        self.acumulado_mapas_ids = []
+        self.coeficiente_actual = 1
+        self.normalized_pairs = []  # Track which pairs have been normalized
 
-        # Unirse al grupo de WebSocket
-        await self.channel_layer.group_add(
-            self.group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
         logger.info(f"WebSocket conectado para cultivo_id: {self.cultivo_id}")
 
     async def disconnect(self, close_code):
-        # Abandonar el grupo
-        await self.channel_layer.group_discard(
-            self.group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.group_name, self.channel_name)
         logger.info(f"WebSocket desconectado para cultivo_id: {self.cultivo_id}")
 
     async def receive(self, text_data):
-        logger.info(f"Mensaje recibido: {text_data}")
         data = json.loads(text_data)
         action = data.get('action')
-        logger.info(f"Acción recibida: {action}")
 
         if action == 'iniciar_proceso':
             await self.iniciar_proceso()
         elif action == 'enviar_coeficientes':
             coeficientes = data.get('coeficientes')
             await self.procesar_coeficientes(coeficientes)
-        elif action == 'actualizar_coeficiente_ajuste':  # Nuevo caso para actualización en tiempo real
+        elif action == 'actualizar_coeficiente_ajuste':
             coeficiente = data.get('coeficiente')
             await self.procesar_coeficiente_actualizado(coeficiente)
         elif action == 'cancelar_proceso':
             await self.cancelar_proceso()
 
-
     async def iniciar_proceso(self):
-        logger.info("Estoy en iniciar_proceso")
-        result = await self.obtener_mapas_cultivo(self.cultivo_id)
+        logger.info("Iniciando proceso de normalización")
+        
+        result = await self._get_mapas_cultivo()
         if result is None:
             await self.send(text_data=json.dumps({
                 'action': 'error',
@@ -64,387 +53,314 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             }))
             return
 
-        self.df, self.archivos_unicos = result
+        self.queryset_base, self.archivos_unicos = result
         self.current_pair_index = 0
-
-        # Inicializamos un DataFrame acumulado con el primer mapa
-        archivo_mapa1 = self.archivos_unicos[self.current_pair_index]
-        self.df_acumulado = self.df[self.df['nombre_archivo_csv'] == archivo_mapa1].copy()
-
-        # Enviar el primer par de mapas
-        await sync_to_async(self.transactional_enviar_nuevos_mapas)()
-
-    def transactional_enviar_nuevos_mapas(self):
-        with transaction.atomic():
-            # Llamar a la función asíncrona desde el contexto síncrono
-            async_to_sync(self.enviar_nuevos_mapas)()
-
-
-    async def procesar_coeficientes(self, coeficientes):
-        if self.current_pair_index >= len(self.archivos_unicos) - 1:
-            # Aquí llamamos a calcular_rendimientos_finales
-            await self.calcular_rendimientos_finales()
-            await self.send(text_data=json.dumps({
-                'action': 'proceso_completado'
-            }))
-            return
-
-        # Ejecutar la actualización de coeficientes en una transacción
-        await self.aplicar_transaccion(coeficientes)
-
-        # Actualizamos el DataFrame acumulado
-        archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
-        df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
-
-        # Actualizar el DataFrame acumulado
-        self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
+        self.normalized_pairs = []
         
-        self.current_pair_index += 1
+        # Enviar los dos primeros mapas
+        if len(self.archivos_unicos) >= 2:
+            archivo_mapa1 = self.archivos_unicos[0]
+            archivo_mapa2 = self.archivos_unicos[1]
+            
+            puntos_mapa1 = await self._get_puntos_por_archivo(archivo_mapa1)
+            puntos_mapa2 = await self._get_puntos_por_archivo(archivo_mapa2)
 
-        if self.current_pair_index < len(self.archivos_unicos) - 1:
-            await sync_to_async(self.transactional_enviar_nuevos_mapas)()
-        else:
-            # Aquí también llamamos a calcular_rendimientos_finales si es el último par
-            await self.calcular_rendimientos_finales()
+            mapa1_geojson = await self._serializar_geojson(puntos_mapa1)
+            mapa2_geojson = await self._serializar_geojson(puntos_mapa2)
+
+            # Calcular percentiles y coeficiente sugerido
+            puntos_mapa1_list = await self._queryset_to_list(puntos_mapa1)
+            puntos_mapa2_list = await self._queryset_to_list(puntos_mapa2)
+
+            # Calcular valores para el primer mapa
+            valores_mapa1 = [float(p.masa_rend_seco) for p in puntos_mapa1_list 
+                           if p.masa_rend_seco is not None]
+            
+            # Calcular valores para el segundo mapa
+            valores_mapa2 = [float(p.masa_rend_seco) for p in puntos_mapa2_list 
+                           if p.masa_rend_seco is not None]
+
+            # Calcular percentiles
+            percentil_80_mapa1 = self.calcular_percentil_80(valores_mapa1)
+            percentil_80_mapa2 = self.calcular_percentil_80(valores_mapa2)
+
+            # Calcular coeficiente sugerido
+            coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
+
+            logger.info(f"Percentil 80 mapa 1: {percentil_80_mapa1}")
+            logger.info(f"Percentil 80 mapa 2: {percentil_80_mapa2}")
+            logger.info(f"Coeficiente sugerido inicial: {coeficiente_sugerido}")
+
             await self.send(text_data=json.dumps({
-                'action': 'proceso_completado'
+                'action': 'nuevos_mapas',
+                'mapa_referencia': mapa1_geojson,
+                'mapa_actual': mapa2_geojson,
+                'coeficiente_sugerido_referencia': 1,
+                'coeficiente_sugerido_actual': coeficiente_sugerido,
+                'percentil_80_referencia': percentil_80_mapa1,
+                'percentil_80_actual': percentil_80_mapa2,
+                'current_pair_index': self.current_pair_index
+            }))
+        else:
+            await self.send(text_data=json.dumps({
+                'action': 'error',
+                'message': 'Se necesitan al menos dos mapas para iniciar el proceso.'
             }))
 
-    async def procesar_coeficiente_actualizado(self, coeficiente):
-        # Actualizar el coeficiente de ajuste del mapa actual en la base de datos
-        archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
-        df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual]
-        df_mapa_actual['rendimiento_normalizado'] = df_mapa_actual['masa_rend_seco'] * coeficiente
-        for index, row in df_mapa_actual.iterrows():
-              await CultivoData.objects.filter(id=row['id']).update(  # <--- Aquí está la corrección
-                rendimiento_normalizado=row['rendimiento_normalizado']
-                )
-
-        # Enviar los mapas actualizados al cliente
-        await self.enviar_mapas_actualizados()
-
     @sync_to_async
-    @transaction.atomic
-    def aplicar_transaccion(self, coeficientes):
-        """Aplica los coeficientes a ambos mapas y actualiza el DataFrame acumulado"""
-        coeficiente_mapa_referencia = float(coeficientes.get('coeficiente_mapa_referencia', 1))
-        coeficiente_mapa_actual = float(coeficientes.get('coeficiente_mapa_actual', 1))
+    def _get_mapas_cultivo(self):
+        try:
+            cultivo = Cultivo.objects.get(id=self.cultivo_id)
+            queryset_base = CultivoData.objects.filter(cultivo=cultivo)
+            
+            if not queryset_base.exists():
+                logger.warning(f"No hay mapas de rendimiento para el cultivo con id {self.cultivo_id}.")
+                return None
 
-        # Ajustar el mapa de referencia (acumulado)
-        if self.df_acumulado is not None:
-            self.df_acumulado['rendimiento_normalizado'] = self.df_acumulado['masa_rend_seco'] * coeficiente_mapa_referencia
-
-            # Actualizar la base de datos para el mapa de referencia
-            for index, row in self.df_acumulado.iterrows():
-                sync_to_async(CultivoData.objects.filter(id=row['id']).update)(
-                                rendimiento_normalizado=row['rendimiento_normalizado']
-                            )
-        # Ajustar el mapa actual
-        archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
-        df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
-        df_mapa_actual['rendimiento_normalizado'] = df_mapa_actual['masa_rend_seco'] * coeficiente_mapa_actual
-
-        # Actualizar la base de datos para el mapa actual
-        for index, row in df_mapa_actual.iterrows():
-            CultivoData.objects.filter(id=row['id']).update(rendimiento_normalizado=row['rendimiento_normalizado'])
-
-        # Actualizar el DataFrame original
-        self.df.loc[df_mapa_actual.index, 'rendimiento_normalizado'] = df_mapa_actual['rendimiento_normalizado']
-        if self.df_acumulado is not None:
-            self.df.loc[self.df_acumulado.index, 'rendimiento_normalizado'] = self.df_acumulado['rendimiento_normalizado']
-
-        # Actualizar el DataFrame acumulado para incluir el mapa actual
-        self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
-
-    # @database_sync_to_async
-    # @transaction.atomic
-    # async def aplicar_transaccion(self, coeficientes):
-    #     """Aplica los coeficientes a ambos mapas y actualiza el DataFrame acumulado"""
-    #     coeficiente_mapa_referencia = float(coeficientes.get('coeficiente_mapa_referencia', 1))
-    #     coeficiente_mapa_actual = float(coeficientes.get('coeficiente_mapa_actual', 1))
-
-    #     # Ajustar el mapa de referencia (acumulado)
-    #     if self.df_acumulado is not None:
-    #         self.df_acumulado['rendimiento_normalizado'] = self.df_acumulado['masa_rend_seco'] * coeficiente_mapa_referencia
-
-    #         # Actualizar la base de datos para el mapa de referencia
-    #         for index, row in self.df_acumulado.iterrows():
-    #             CultivoData.objects.filter(id=row['id']).update(
-    #                 rendimiento_normalizado=row['rendimiento_normalizado']
-    #             )
-
-    #     # Ajustar el mapa actual
-    #     archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
-    #     df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual].copy()
-    #     df_mapa_actual['rendimiento_normalizado'] = df_mapa_actual['masa_rend_seco'] * coeficiente_mapa_actual
-
-    #     # Actualizar la base de datos para el mapa actual
-    #     for index, row in df_mapa_actual.iterrows():
-    #         CultivoData.objects.filter(id=row['id']).update(
-    #             rendimiento_normalizado=row['rendimiento_normalizado']
-    #         )
-
-    #     # Actualizar el DataFrame original
-    #     self.df.loc[df_mapa_actual.index, 'rendimiento_normalizado'] = df_mapa_actual['rendimiento_normalizado']
-    #     if self.df_acumulado is not None:
-    #         self.df.loc[self.df_acumulado.index, 'rendimiento_normalizado'] = self.df_acumulado['rendimiento_normalizado']
-
-    #     # Actualizar el DataFrame acumulado para incluir el mapa actual
-    #     self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
-
-
-
-
-
-
-    @sync_to_async
-    def calcular_rendimientos_finales(self):
-        """Calcula rendimiento_relativo y rendimiento_real para todos los registros al finalizar el proceso"""
-        # Obtener el rendimiento promedio del cultivo
-        cultivo = Cultivo.objects.get(id=self.cultivo_id)
-        rinde_promedio_cultivo = cultivo.rinde_prom
-
-        # Calcular la media de rendimiento_normalizado
-        media_rendimiento_normalizado = self.df['rendimiento_normalizado'].mean()
-
-        if media_rendimiento_normalizado == 0 or pd.isna(media_rendimiento_normalizado):
-            media_rendimiento_normalizado = 1  # Evitar división por cero
-
-        # Calcular rendimiento_relativo y rendimiento_real
-        self.df['rendimiento_relativo'] = self.df['rendimiento_normalizado'] / media_rendimiento_normalizado
-        self.df['rendimiento_real'] = self.df['rendimiento_relativo'] * rinde_promedio_cultivo
-
-        # Actualizar la base de datos para todos los registros en lotes
-        updated_instances = []
-        for index, row in self.df.iterrows():
-            instance = CultivoData(
-                id=row['id'],
-                rendimiento_relativo=row['rendimiento_relativo'],
-                rendimiento_real=row['rendimiento_real']
+            archivos_unicos = list(
+                queryset_base.values_list('nombre_archivo_csv', flat=True)
+                .distinct()
+                .order_by('nombre_archivo_csv')
             )
-            updated_instances.append(instance)
+            
+            logger.info(f"Archivos únicos obtenidos: {len(archivos_unicos)}")
+            return queryset_base, archivos_unicos
 
-        # Procesar las actualizaciones en lotes más pequeños
-        batch_size = 1000  # Ajusta este valor según tus necesidades y recursos del servidor
-        total_instances = len(updated_instances)
-        logger.info(f"Actualizando {total_instances} registros en lotes de {batch_size}")
-
-        for i in range(0, total_instances, batch_size):
-            batch = updated_instances[i:i + batch_size]
-            with transaction.atomic():
-                CultivoData.objects.bulk_update(batch, ['rendimiento_relativo', 'rendimiento_real'])
-            logger.info(f"Lote {i // batch_size + 1} actualizado exitosamente.")
+        except Exception as e:
+            logger.error(f"Error al obtener archivos: {str(e)}")
+            return None
 
     @sync_to_async
-    def obtener_mapas_cultivo(self, cultivo_id):
-        logger.info(f"Obteniendo mapas de cultivo para el cultivo_id: {cultivo_id}")
-
+    def _get_puntos_por_archivo(self, archivo_nombre, coeficiente=None):
+        """Obtiene los puntos de un archivo específico"""
         try:
-            # Intentamos obtener el cultivo de la base de datos
-            cultivo = Cultivo.objects.get(id=cultivo_id)
-            logger.info(f"Cultivo obtenido: {cultivo}")
-        except Cultivo.DoesNotExist:
-            logger.error(f"El cultivo con id {cultivo_id} no existe.")
-            return None
-
-        # Obtener los mapas de rendimiento asociados al cultivo
-        especie = cultivo.especie
-        self.variacion_admitida = especie.variacion_admitida
-
-        logger.info(f"Variación admitida para la especie: {self.variacion_admitida}")
-        
-        try:
-            mapas_rendimiento = CultivoData.objects.filter(cultivo=cultivo).order_by('nombre_archivo_csv')
-            logger.info(f"Mapas de rendimiento obtenidos: {mapas_rendimiento.count()}")
+            query = CultivoData.objects.filter(
+                nombre_archivo_csv=archivo_nombre,
+                cultivo_id=self.cultivo_id,
+                masa_rend_seco__isnull=False  # Asegurar que tengan valor de rendimiento
+            )
+            
+            if coeficiente is not None:
+                query = query.annotate(
+                    rendimiento_normalizado_calc=F('masa_rend_seco') * Value(float(coeficiente))
+                )
+                
+            return query
+            
         except Exception as e:
-            logger.error(f"Error al obtener los mapas de rendimiento: {str(e)}")
-            return None
+            logger.error(f"Error obteniendo puntos por archivo: {str(e)}")
+            return CultivoData.objects.none()
 
-        if not mapas_rendimiento.exists():
-            logger.warning(f"No hay mapas de rendimiento para el cultivo con id {cultivo_id}.")
-            return None
-
-        # Convertimos los datos a DataFrame de pandas
+    @sync_to_async
+    def _get_puntos_normalizados(self):
+        """Obtiene los puntos ya normalizados para el acumulado"""
         try:
-            mapas_list = list(mapas_rendimiento.values(
-                'id', 'punto_geografico', 'anch_fja', 'humedad', 'masa_rend_seco',
-                'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo', 'rendimiento_normalizado', 'nombre_archivo_csv'
-            ))
-            df = pd.DataFrame(mapas_list)
-            logger.info(f"DataFrame creado con {len(df)} filas.")
+            return CultivoData.objects.filter(
+                cultivo_id=self.cultivo_id,
+                nombre_archivo_csv__in=self.normalized_pairs,
+                rendimiento_normalizado__isnull=False
+            )
         except Exception as e:
-            logger.error(f"Error al convertir los mapas de rendimiento a DataFrame: {str(e)}")
-            return None
+            logger.error(f"Error obteniendo puntos normalizados: {str(e)}")
+            return CultivoData.objects.none()
 
-        # Verificar si tenemos suficientes mapas para comparar
+    @sync_to_async
+    def _queryset_to_list(self, queryset):
+        return list(queryset)
+
+    def calcular_percentil_80(self, valores):
         try:
-            archivos_unicos = df['nombre_archivo_csv'].unique()
-            logger.info(f"Archivos únicos obtenidos: {len(archivos_unicos)}")
+            if not valores:
+                logger.warning("Lista de valores vacía para cálculo de percentil")
+                return 0
+                
+            # Filtrar valores nulos o no numéricos
+            valores_validos = [float(v) for v in valores if v is not None and str(v).strip()]
+            
+            if not valores_validos:
+                logger.warning("No hay valores válidos para calcular el percentil")
+                return 0
+                
+            valores_ordenados = sorted(valores_validos)
+            indice = int(len(valores_ordenados) * 0.8)
+            
+            # Asegurar que el índice sea válido
+            if indice >= len(valores_ordenados):
+                indice = len(valores_ordenados) - 1
+                
+            percentil = valores_ordenados[indice]
+            logger.info(f"Percentil 80 calculado: {percentil} de {len(valores_ordenados)} valores")
+            return percentil
+            
         except Exception as e:
-            logger.error(f"Error al obtener archivos únicos: {str(e)}")
-            return None
+            logger.error(f"Error calculando percentil 80: {str(e)}")
+            return 0
 
-        if len(archivos_unicos) < 2:
-            logger.warning(f"No hay suficientes archivos únicos para la comparación.")
-            return None
-
-        return df, archivos_unicos
-
-    async def enviar_nuevos_mapas(self):
-        if self.current_pair_index < len(self.archivos_unicos) - 1:
-            archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
-            df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual]
-
-            if self.current_pair_index == 0:
-                # Para el primer par, tanto la referencia como el actual usan 'masa_rend_seco'
-                df_referencia = self.df_acumulado
-                campo_referencia = 'masa_rend_seco'
-            else:
-                # A partir del segundo par, la referencia usa 'rendimiento_normalizado'
-                df_referencia = self.df_acumulado
-                campo_referencia = 'rendimiento_normalizado'
-              # Calcular percentil 80 para el campo de referencia y el campo actual (siempre 'masa_rend_seco')
-            percentil_80_referencia = df_referencia[campo_referencia].quantile(0.8)
-            percentil_80_actual = df_mapa_actual['masa_rend_seco'].quantile(0.8)
-
-            # Calcular coeficiente sugerido comparando ambos mapas
-            coeficiente_sugerido = self.calcular_coeficiente_sugerido(self.df_acumulado, df_mapa_actual)
-
-            # Calcular la variación entre los percentiles 80 de ambos mapas
-            variacion_percentil = abs(coeficiente_sugerido - 1)  # Variación en porcentaje respecto a 1 (sin ajuste)
-
-            if variacion_percentil <= (self.variacion_admitida / 100):
-                # Si la variación es menor o igual al 5%, unir automáticamente los mapas
-                await self.aplicar_transaccion({
-                    'coeficiente_mapa_referencia': 1,  # Usamos coeficiente 1 para la referencia
-                    'coeficiente_mapa_actual': coeficiente_sugerido  # Ajustamos el mapa actual
-                })
-                # Actualizar el DataFrame acumulado automáticamente
-                self.df_acumulado = pd.concat([self.df_acumulado, df_mapa_actual])
-###
-                # Actualizar la base de datos incluso si no hay interacción del usuario
-                for index, row in self.df_acumulado.iterrows():
-                    await sync_to_async(CultivoData.objects.filter(id=row['id']).update)(
-                        rendimiento_normalizado=row['rendimiento_normalizado']
-                    )
-                logger.info(f"Actualización completada para id: {row['id']}")
-    
-###
-                self.current_pair_index += 1  # Avanzar al siguiente mapa
-                await self.enviar_nuevos_mapas()  # Llamamos de nuevo para procesar el siguiente par
-
-            else:
-                # Si la variación es mayor al 5%, se pide confirmación del usuario
-                mapa_referencia_geojson = await self.serializar_geojson(self.df_acumulado)
-                mapa_actual_geojson = await self.serializar_geojson(df_mapa_actual)
-
-                # Enviar los mapas y coeficiente sugerido al cliente para que confirme
-                await self.send(text_data=json.dumps({
-                    'action': 'nuevos_mapas',
-                    'mapa_referencia': mapa_referencia_geojson,
-                    'mapa_actual': mapa_actual_geojson,
-                    'coeficiente_sugerido_referencia': 1,  # Coeficiente de referencia se mantiene en 1
-                    'coeficiente_sugerido_actual': coeficiente_sugerido,  # Coeficiente sugerido para ajuste
-                    'percentil_80_referencia': percentil_80_referencia,
-                    'percentil_80_actual': percentil_80_actual,
-                    'current_pair_index': self.current_pair_index
-                }))
-        else:
-            # Proceso completado
-            await self.send(text_data=json.dumps({
-                'action': 'proceso_completado'
-            }))
-
-
-
-    #async def enviar_nuevos_mapas(self):
-        if self.current_pair_index < len(self.archivos_unicos) - 1:
-            archivo_mapa_actual = self.archivos_unicos[self.current_pair_index + 1]
-            df_mapa_actual = self.df[self.df['nombre_archivo_csv'] == archivo_mapa_actual]
-
-            # Calcular coeficiente sugerido comparando percentil 80 del mapa de referencia y del mapa actual
-            coeficiente_sugerido = self.calcular_coeficiente_sugerido(self.df_acumulado, df_mapa_actual)
-
-            # Si la variación es mayor que la admitida, mandamos el coeficiente al frontend
-            variacion_percentil = abs(1 - coeficiente_sugerido)
-
-            if variacion_percentil > self.variacion_admitida:
-                # Obtener GeoJSON de los mapas
-                mapa_referencia_geojson = await self.serializar_geojson(self.df_acumulado)
-                mapa_actual_geojson = await self.serializar_geojson(df_mapa_actual)
-
-                # Enviar los mapas y coeficientes sugeridos al cliente
-                await self.send(text_data=json.dumps({
-                    'action': 'nuevos_mapas',
-                    'mapa_referencia': mapa_referencia_geojson,
-                    'mapa_actual': mapa_actual_geojson,
-                    'coeficiente_sugerido_referencia': 1,  # El mapa de referencia no necesita ajuste
-                    'coeficiente_sugerido_actual': coeficiente_sugerido,
-                    'current_pair_index': self.current_pair_index
-                }))
-
-    def calcular_coeficiente_sugerido(self, df_mapa_referencia, df_mapa_actual):
-        """
-        Calcula el coeficiente sugerido comparando los percentiles 80 de ambos mapas.
-        Si el percentil del mapa actual es menor que el del mapa de referencia, el coeficiente será mayor a 1.
-        """
-        # Obtenemos el percentil 80 de ambos mapas
-        percentil_80_referencia = df_mapa_referencia['masa_rend_seco'].quantile(0.8)
-        percentil_80_actual = df_mapa_actual['masa_rend_seco'].quantile(0.8)
-        
-        # Asegurarse de que no hay división por cero
-        if percentil_80_actual > 0:
-            coeficiente_sugerido = percentil_80_referencia / percentil_80_actual
-        else:
-            coeficiente_sugerido = 1  # Devolvemos 1 si el percentil 80 del mapa actual es 0
-
-        return coeficiente_sugerido
-
-
-
-    async def serializar_geojson(self, df):
-        mapa_ids = df['id'].tolist()
-        queryset_mapa = await sync_to_async(list)(CultivoData.objects.filter(id__in=mapa_ids))
-        geojson_mapa = await sync_to_async(serialize)(
+    @sync_to_async
+    def _serializar_geojson(self, queryset):
+        return json.loads(serialize(
             'geojson',
-            queryset_mapa,
+            queryset,
             geometry_field='punto_geografico',
             fields=[
-                'anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha',
-                'rendimiento_normalizado', 'rendimiento_relativo', 'rendimiento_real'
+                'anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 
+                'fecha', 'rendimiento_normalizado'
             ]
-        )
-        return json.loads(geojson_mapa)
+        ))
+
+    async def procesar_coeficientes(self, coeficientes):
+        # Aplicar coeficientes y normalizar los dos primeros mapas
+        if self.current_pair_index == 0:
+            await self._normalizar_primeros_mapas(coeficientes)
+            self.current_pair_index += 1
+            await self.enviar_siguiente_mapa()
+        else:
+            await self._normalizar_siguiente_mapa(coeficientes)
+            self.current_pair_index += 1
+            await self.enviar_siguiente_mapa()
 
     @sync_to_async
-    def obtener_dataframes_mapas(self, archivo_mapa1, archivo_mapa2):
-        df1 = self.df[self.df['nombre_archivo_csv'] == archivo_mapa1]
-        df2 = self.df[self.df['nombre_archivo_csv'] == archivo_mapa2]
-        return df1, df2
-
-    async def enviar_mapas_actualizados(self):
-        """Envía todos los mapas actualizados al cliente después de aplicar los coeficientes"""
-        mapas_actualizados = []
-
-        for archivo_mapa in self.archivos_unicos:
-            df_mapa = self.df[self.df['nombre_archivo_csv'] == archivo_mapa]
-            mapa_ids = df_mapa['id'].tolist()
-
-            # Obtener los registros actualizados
-            queryset_mapa = await sync_to_async(list)(CultivoData.objects.filter(id__in=mapa_ids))
-
-            # Serializar a GeoJSON
-            geojson_mapa = await sync_to_async(serialize)(
-                'geojson',
-                queryset_mapa,
-                geometry_field='punto_geografico',
-                fields=['anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 'fecha', 'rendimiento_real', 'rendimiento_relativo']
+    def _normalizar_primeros_mapas(self, coeficientes):
+        with transaction.atomic():
+            logger.info("Normalizando primeros mapas")
+            coef_mapa1 = float(coeficientes.get('coeficiente_mapa_referencia', 1))
+            coef_mapa2 = float(coeficientes.get('coeficiente_mapa_actual', 1))
+            
+            # Normalizar primer mapa
+            puntos_actualizados = CultivoData.objects.filter(
+                cultivo_id=self.cultivo_id,
+                nombre_archivo_csv=self.archivos_unicos[0]
+            ).update(
+                rendimiento_normalizado=F('masa_rend_seco') * coef_mapa1
             )
+            logger.info(f"Puntos actualizados mapa 1: {puntos_actualizados}")
+            
+            # Normalizar segundo mapa
+            puntos_actualizados = CultivoData.objects.filter(
+                cultivo_id=self.cultivo_id,
+                nombre_archivo_csv=self.archivos_unicos[1]
+            ).update(
+                rendimiento_normalizado=F('masa_rend_seco') * coef_mapa2
+            )
+            logger.info(f"Puntos actualizados mapa 2: {puntos_actualizados}")
+            
+            # Registrar los archivos normalizados
+            self.normalized_pairs = [self.archivos_unicos[0], self.archivos_unicos[1]]
+            logger.info(f"Archivos normalizados: {self.normalized_pairs}")
 
-            mapas_actualizados.append(json.loads(geojson_mapa))
+    @sync_to_async
+    def _normalizar_siguiente_mapa(self, coeficientes):
+        with transaction.atomic():
+            logger.info("Normalizando siguiente mapa")
+            coef_actual = float(coeficientes.get('coeficiente_mapa_actual', 1))
+            archivo_actual = self.archivos_unicos[self.current_pair_index + 1]
+            
+            # Normalizar el mapa actual
+            puntos_actualizados = CultivoData.objects.filter(
+                cultivo_id=self.cultivo_id,
+                nombre_archivo_csv=archivo_actual
+            ).update(
+                rendimiento_normalizado=F('masa_rend_seco') * coef_actual
+            )
+            logger.info(f"Puntos actualizados: {puntos_actualizados}")
+            
+            # Agregar a la lista de normalizados
+            self.normalized_pairs.append(archivo_actual)
+            logger.info(f"Archivos normalizados actualizados: {self.normalized_pairs}")
 
-        # Enviar los mapas actualizados al cliente
-        await self.send(text_data=json.dumps({
-            'action': 'mapas_actualizados',
-            'mapas': mapas_actualizados
-        }))
+    async def enviar_siguiente_mapa(self):
+            if self.current_pair_index >= len(self.archivos_unicos) - 1:
+                await self._calcular_rendimientos_finales()
+                await self.send(text_data=json.dumps({
+                    'action': 'proceso_completado',
+                    'message': 'Proceso de normalización y cálculo de rendimientos completado.'
+                    }))
+                return
+
+            # Obtener el acumulado (mapas ya normalizados)
+            puntos_acumulados = await self._get_puntos_normalizados()
+            
+            # Obtener el siguiente mapa (con masa_rend_seco)
+            archivo_siguiente = self.archivos_unicos[self.current_pair_index + 1]
+            puntos_siguiente = await self._get_puntos_por_archivo(archivo_siguiente)
+
+            # Calcular percentiles y coeficiente sugerido
+            puntos_acumulados_list = await self._queryset_to_list(puntos_acumulados)
+            puntos_siguiente_list = await self._queryset_to_list(puntos_siguiente)
+            
+            # Calcular valores de referencia usando rendimiento_normalizado
+            valores_referencia = []
+            for p in puntos_acumulados_list:
+                if p.rendimiento_normalizado is not None:
+                    valores_referencia.append(float(p.rendimiento_normalizado))
+            
+            # Calcular valores actuales usando masa_rend_seco
+            valores_actual = [float(p.masa_rend_seco) for p in puntos_siguiente_list 
+                            if p.masa_rend_seco is not None]
+
+            # Calcular percentiles
+            percentil_80_referencia = self.calcular_percentil_80(valores_referencia)
+            percentil_80_actual = self.calcular_percentil_80(valores_actual)
+            
+            # Calcular coeficiente sugerido
+            if percentil_80_actual > 0:
+                coeficiente_sugerido = percentil_80_referencia / percentil_80_actual
+            else:
+                coeficiente_sugerido = 1
+
+            logger.info(f"Enviando mapa acumulado con {len(valores_referencia)} puntos")
+            logger.info(f"Enviando mapa siguiente con {len(valores_actual)} puntos")
+            logger.info(f"Percentil 80 referencia: {percentil_80_referencia}")
+            logger.info(f"Percentil 80 actual: {percentil_80_actual}")
+            logger.info(f"Coeficiente sugerido: {coeficiente_sugerido}")
+
+            # Serializar y enviar
+            acumulado_geojson = await self._serializar_geojson(puntos_acumulados)
+            siguiente_geojson = await self._serializar_geojson(puntos_siguiente)
+
+            await self.send(text_data=json.dumps({
+                'action': 'nuevos_mapas',
+                'mapa_referencia': acumulado_geojson,
+                'mapa_actual': siguiente_geojson,
+                'coeficiente_sugerido_referencia': 1,
+                'coeficiente_sugerido_actual': coeficiente_sugerido,
+                'percentil_80_referencia': percentil_80_referencia,
+                'percentil_80_actual': percentil_80_actual,
+                'current_pair_index': self.current_pair_index
+            }))
+    @sync_to_async
+    def _calcular_rendimientos_finales(self):
+        """Calcula rendimiento_relativo y rendimiento_real para todos los registros normalizados"""
+        try:
+            logger.info("Iniciando cálculo de rendimientos finales")
+            
+            with transaction.atomic():
+                # Obtener el rendimiento promedio del cultivo
+                cultivo = Cultivo.objects.get(id=self.cultivo_id)
+                rinde_promedio_cultivo = cultivo.rinde_prom
+                logger.info(f"Rinde promedio del cultivo: {rinde_promedio_cultivo}")
+
+                # Obtener la media de rendimiento_normalizado de todos los puntos normalizados
+                puntos = CultivoData.objects.filter(
+                    cultivo_id=self.cultivo_id,
+                    rendimiento_normalizado__isnull=False
+                )
+                
+                media_rendimiento = puntos.aggregate(
+                    media=Avg('rendimiento_normalizado')
+                )['media'] or 1
+
+                logger.info(f"Media de rendimiento normalizado: {media_rendimiento}")
+
+                # Actualizar todos los puntos en un solo query
+                puntos_actualizados = puntos.update(
+                    rendimiento_relativo=F('rendimiento_normalizado') / Value(media_rendimiento),
+                    rendimiento_real=F('rendimiento_normalizado') / Value(media_rendimiento) * Value(rinde_promedio_cultivo)
+                )
+
+                logger.info(f"Puntos actualizados con rendimientos finales: {puntos_actualizados}")
+                return puntos_actualizados
+
+        except Exception as e:
+            logger.error(f"Error calculando rendimientos finales: {str(e)}")
+            raise
