@@ -70,14 +70,17 @@ export class NormalizarMapasComponent implements OnInit {
 
           // Forzar la detección de cambios
           this.router.navigate([`/normalizar-mapas-rendimiento/${this.cultivoForm.get('cultivo')?.value}`]);
+          this.cd.detectChanges();
         }
 
         if (data.action === 'proceso_completado') {
           this.toastr.success('La normalización de mapas de rendimiento ha sido completada.', 'Éxito');
           this.router.navigate([`/resultado-normalizacion/${this.cultivoForm.get('cultivo')?.value}`]);
+          this.cd.detectChanges();
         } else if (data.action === 'error') {
           this.toastr.error(data.message, 'Error');
           console.error('Error desde el backend:', data.message);
+          this.cd.detectChanges();
         }
       },
       error => {
@@ -111,7 +114,9 @@ export class NormalizarMapasComponent implements OnInit {
       this.cultivos = [];
       this.cultivosTodos = [];
     }
+    
     this.filtrarCultivos();
+    this.cd.detectChanges();
   }
 
   cargarCamposPorEmpresa(empresaId: number) {
@@ -260,9 +265,11 @@ export class NormalizarMapasComponent implements OnInit {
           this.toastr.success('La normalización de mapas de rendimiento ha sido completada.', 'Éxito');
           // Redirigir o actualizar la vista con los resultados de la normalización
           this.router.navigate([`/resultado-normalizacion/${cultivoId}`]);
+          this.cd.detectChanges();
         } else if (data.action === 'error') {
           this.toastr.error(data.message, 'Error');
           console.error('Error desde el backend:', data.message);
+          this.cd.detectChanges();
         }
       },
       error => {

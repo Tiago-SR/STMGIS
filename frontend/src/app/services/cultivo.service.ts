@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import Cultivo from '../models/cultivo.model';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -60,5 +60,12 @@ export class CultivoService {
   calcularRendimientoAmbiente(cultivoId: string): Observable<Blob> {
     const url = `http://api.proyecto.local/rendimientos/${cultivoId}/calcular-rendimiento/`;
     return this.http.get(url, { responseType: 'blob' });
+  }
+
+  descargarExcelRendimiento(cultivoId: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(`http://api.proyecto.local/rendimientos/${cultivoId}/exportar-excel/`, {
+      responseType: 'blob',
+      observe: 'response'
+    });
   }
 }

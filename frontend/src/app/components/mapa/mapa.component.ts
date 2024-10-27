@@ -11,6 +11,7 @@ import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import { CultivoService } from '../../services/cultivo.service'; // Servicio de cultivo
 import * as blobUtil from 'blob-util';
+import { HttpResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-mapa',
@@ -217,18 +218,48 @@ export class MapaComponent implements OnInit {
       return;
     }
 
-  // Realizar la solicitud al backend para calcular el rendimiento y obtener el Excel
-  this.cultivoService.calcularRendimientoAmbiente(this.selectedCultivoId).subscribe({
-          next: (response: Blob) => {
-            // Crear una URL para el archivo Blob
-            const url = window.URL.createObjectURL(response);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'rendimiento_ambiente.xlsx'; // Nombre del archivo de Excel
-            a.click();
-            window.URL.revokeObjectURL(url); // Limpiar la URL creada para evitar fugas de memoria
-        },
-        error: (error) => console.error('Error al calcular el rendimiento por ambiente:', error)
+    // Primero calculamos el rendimiento
+    this.cultivoService.calcularRendimientoAmbiente(this.selectedCultivoId).subscribe({
+      next: () => {
+        // Una vez calculado, procedemos a descargar el Excel
+        this.cultivoService.descargarExcelRendimiento(this.selectedCultivoId).subscribe({
+          next: (response: HttpResponse<Blob>) => {
+            // Obtener el nombre del archivo del header Content-Disposition
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'rendimiento_ambiente.xlsx';
+            
+            if (contentDisposition) {
+              const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+              if (matches != null && matches[1]) {
+                filename = matches[1].replace(/['"]/g, '');
+              }
+            }
+
+            // Crear blob y descargar
+            const blob = new Blob([response.body as Blob], { 
+              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            });
+            
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            
+            // Limpieza
+            window.URL.revokeObjectURL(url);
+            link.remove();
+          },
+          error: (error) => {
+            console.error('Error al descargar el archivo Excel:', error);
+            // Aquí puedes agregar manejo de errores según tu UI
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error al calcular el rendimiento:', error);
+        // Aquí puedes agregar manejo de errores según tu UI
+      }
     });
   }
   

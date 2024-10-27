@@ -35,6 +35,12 @@ export class WebSocketService {
 
     this.socket.onclose = (event) => {
       console.log('WebSocket cerrado:', event);
+        // Intentar reconectar si el cierre no fue intencionado
+      if (!event.wasClean) {
+        setTimeout(() => {
+          this.connect(this.cultivoId);
+        }, 5000); // Tiempo de espera para intentar reconectar
+      }
     };
   }
 
