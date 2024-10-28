@@ -17,6 +17,8 @@ import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer'; //
   styleUrls: ['./normalizar-mapas-rendimiento.component.scss']
 })
 export class NormalizarMapasRendimientoComponent implements OnInit {
+  private connectionStatus$ = this.webSocketService.getConnectionStatus();
+
   cultivo: any;
   mapaReferencia: any;
   mapaActual: any;
@@ -28,6 +30,15 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   coeficienteSugeridoActual: number = 1;
   percentil80Referencia: number = 0;
   percentil80Actual: number = 0;
+  medianaReferencia: number = 0;
+  medianaActual: number = 0;
+  coeficienteSugeridoMedianas: number = 0;
+  coeficienteSugeridoMedianaReferencia: number = 1;
+  puntosReferencia: number = 0;
+  puntosActual: number = 0;
+  diferenciaPorcentual: number = 0;
+  variacionAdmitida: number = 0;
+  modoManual: boolean = true;
   cultivoId!: string; 
   map!: Map;
   view!: MapView;
@@ -39,7 +50,13 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     private router: Router,
     private route: ActivatedRoute,
     private webSocketService: WebSocketService
-  ) {}
+  ) {
+    this.connectionStatus$.subscribe(isConnected => {
+      if (!isConnected) {
+        this.toastr.warning('Conexión perdida, intentando reconectar...');
+      }
+    });
+  }
 
   ngOnInit(): void {
     
@@ -72,10 +89,45 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.coeficienteAjusteActual = this.coeficienteSugeridoActual;
         this.percentil80Referencia = data.percentil_80_referencia;
         this.percentil80Actual = data.percentil_80_actual;
+        this.medianaReferencia = data.percentil_50_referencia; 
+        this.medianaActual = data.percentil_50_actual;  
+        this.coeficienteSugeridoMedianas = data.coeficiente_sugerido_median; 
+        this.coeficienteSugeridoMedianaReferencia = data.coeficiente_sugerido_median_referencia;
+        this.puntosReferencia = data.puntos_referencia;
+        this.puntosActual = data.puntos_actual; 
+        this.diferenciaPorcentual = data.diferencia_porcentual;
+        this.variacionAdmitida = data.variacion_admitida;
+        this.modoManual = data.modo_manual;
         this.nombreMapaReferencia = `Mapa Referencia (Acumulado)`;
         this.nombreMapaActual = `Mapa Actual ${data.current_pair_index + 2}`;
-        this.addNormalizedMapLayer();
+        this.addNormalizedMapLayer();  
         this.cd.detectChanges();
+
+      }else if (data.action === 'normalizacion_automatica') {
+        // Notificar la normalización automática
+        this.toastr.success(
+          `Se realizó la normalización automática ya que la diferencia (${this.diferenciaPorcentual.toFixed(1)}%) 
+            está dentro de la variación admitida (${this.variacionAdmitida}%)
+            Coeficiente aplicado: ${data.coeficiente_aplicado.toFixed(2)}`,
+          'Normalización Automática',
+          { 
+            timeOut: 5000,
+            progressBar: true,
+            closeButton: true,
+            enableHtml: true
+          }
+        );
+
+        this.coeficienteAjusteActual = data.coeficiente_aplicado;
+        this.cd.detectChanges();
+       
+      } else if (data.action === 'mapa_actualizado') {
+        this.mapaActual = data.mapa_actual;
+        if (data.puntos_actual) {
+          this.puntosActual = data.puntos_actual;
+        }
+        this.addNormalizedMapLayer();
+        this.cd.detectChanges();      
       } else if (data.action === 'proceso_completado') {
         this.toastr.info('Se han procesado todos los mapas', 'Proceso completo');
         this.router.navigate(['/resultado-normalizacion']); // Redirigir a la vista de resultados
@@ -230,7 +282,9 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     // const p79 = getPercentileValue(79);
     // const p100 = getPercentileValue(100);
 
-    const field = index === 0 ? 'rendimiento_normalizado' : 'masa_rend_seco'; // Mapa de referencia usa rendimiento_normalizado
+    const field = index === 0 ? 'rendimiento_normalizado' : 
+              (data.features[0].properties.hasOwnProperty('rendimiento_normalizado_calc') ? 
+               'masa_rend_seco' : 'masa_rend_seco');// Mapa de referencia usa rendimiento_normalizado
 
 
       // Definir el ClassBreaksRenderer
@@ -309,6 +363,18 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
                 { fieldName: 'anch_fja', label: 'Ancho de Faja' },
                 { fieldName: 'humedad', label: 'Humedad (%)' },
                 { fieldName: field, label: index === 0 ? 'Rendimiento Normalizado (ton/ha)' : 'Masa Rendimiento Seco (ton/ha)' },
+                  // Agregar el campo calculado para previsualización
+                  { 
+                    fieldName: field === 'masa_rend_seco' && 'masa_rend_seco_original' in data.features[0].properties ? 
+                              'masa_rend_seco_original' : field,
+                    label: index === 0 ? 'Rendimiento Normalizado (ton/ha)' : 'Masa Rendimiento Seco Original (ton/ha)'
+                  },
+
+                  { 
+                    fieldName: 'masa_rend_seco',
+                    label: 'Rendimiento Ajustado (ton/ha)',
+                    visible: field === 'masa_rend_seco' && 'masa_rend_seco_original' in data.features[0].properties
+                  },
                 { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
                 { fieldName: 'fecha', label: 'Fecha' },
               //  { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
@@ -356,7 +422,19 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       coeficiente: coeficiente
     });
   }
+  previsualizarMapa() {
+    if (this.coeficienteAjusteActual !== null && this.coeficienteAjusteActual !== undefined) {
+      this.webSocketService.sendMessage({
+        action: 'actualizar_coeficiente_ajuste',
+        coeficiente: Number(this.coeficienteAjusteActual)
+      });
+    }
+  
+  }
 
+  formatearCoeficiente() {
+    this.coeficienteAjusteActual = parseFloat(this.coeficienteAjusteActual.toPrecision(3));
+  }
   // Al destruir el componente, desconectar el WebSocket
   ngOnDestroy(): void {
     this.webSocketService.disconnect();

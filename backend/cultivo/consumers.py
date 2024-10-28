@@ -5,6 +5,7 @@ from django.core.serializers import serialize
 from django.db.models import F, Value, QuerySet, Avg
 from django.db.models.functions import Cast
 from cultivo.models import Cultivo, CultivoData
+from statistics import median, stdev, mean
 import json
 import logging
 
@@ -57,6 +58,9 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         self.current_pair_index = 0
         self.normalized_pairs = []
         
+        variacion_admitida = await self._get_variacion_admitida()
+        logger.info(f"Variación admitida para la especie: {variacion_admitida}%")
+        
         # Enviar los dos primeros mapas
         if len(self.archivos_unicos) >= 2:
             archivo_mapa1 = self.archivos_unicos[0]
@@ -84,22 +88,51 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             percentil_80_mapa1 = self.calcular_percentil_80(valores_mapa1)
             percentil_80_mapa2 = self.calcular_percentil_80(valores_mapa2)
 
+            percentil_50_mapa1 = self.calcular_mediana(valores_mapa1)
+            percentil_50_mapa2 = self.calcular_mediana(valores_mapa2)
+
+            # Calcular diferencia porcentual entre percentiles
+            diferencia_porcentual = abs((percentil_80_mapa2 - percentil_80_mapa1) / percentil_80_mapa1 * 100)
+            logger.info(f"Diferencia porcentual entre percentiles 80: {diferencia_porcentual}%")
+            
+            
+            # Si la diferencia está dentro de la variación admitida, normalizar automáticamente
+            if diferencia_porcentual <= variacion_admitida:
+                coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
+                logger.info(f"Diferencia dentro del umbral admitido. Normalizando automáticamente con coeficiente: {coeficiente_sugerido}")
+                await self._normalizar_automaticamente(coeficiente_sugerido)
+                return
+
+
             # Calcular coeficiente sugerido
             coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
+            coeficiente_sugerido_median = (percentil_50_mapa1 / percentil_50_mapa2) if percentil_50_mapa2 > 0 else 1
+
+            puntos_referencia = len(valores_mapa1)
+            puntos_actual = len(valores_mapa2)
 
             logger.info(f"Percentil 80 mapa 1: {percentil_80_mapa1}")
             logger.info(f"Percentil 80 mapa 2: {percentil_80_mapa2}")
             logger.info(f"Coeficiente sugerido inicial: {coeficiente_sugerido}")
+            logger.info(f"Coeficiente sugerido mediana: {coeficiente_sugerido_median}")
 
             await self.send(text_data=json.dumps({
                 'action': 'nuevos_mapas',
                 'mapa_referencia': mapa1_geojson,
-                'mapa_actual': mapa2_geojson,
+                'mapa_actual': mapa2_geojson,                
                 'coeficiente_sugerido_referencia': 1,
                 'coeficiente_sugerido_actual': coeficiente_sugerido,
+                'coeficiente_sugerido_median': coeficiente_sugerido_median,
                 'percentil_80_referencia': percentil_80_mapa1,
                 'percentil_80_actual': percentil_80_mapa2,
-                'current_pair_index': self.current_pair_index
+                'percentil_50_referencia': percentil_50_mapa1,
+                'percentil_50_actual': percentil_50_mapa2,
+                'puntos_referencia': puntos_referencia,  
+                'puntos_actual': puntos_actual, 
+                'diferencia_porcentual': diferencia_porcentual,
+                'variacion_admitida': variacion_admitida,
+                'current_pair_index': self.current_pair_index,
+                'modo_manual': True
             }))
         else:
             await self.send(text_data=json.dumps({
@@ -107,6 +140,19 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
                 'message': 'Se necesitan al menos dos mapas para iniciar el proceso.'
             }))
 
+    def calcular_mediana(self, valores):
+        """Calcula la mediana de una lista de valores"""
+        try:
+            if not valores:
+                return 0
+            valores_validos = [float(v) for v in valores if v is not None and str(v).strip()]
+            if not valores_validos:
+                return 0
+            return median(valores_validos)
+        except Exception as e:
+            logger.error(f"Error calculando mediana: {str(e)}")
+            return 0
+        
     @sync_to_async
     def _get_mapas_cultivo(self):
         try:
@@ -141,6 +187,7 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             )
             
             if coeficiente is not None:
+                # En lugar de modificar masa_rend_seco, creamos una anotación nueva
                 query = query.annotate(
                     rendimiento_normalizado_calc=F('masa_rend_seco') * Value(float(coeficiente))
                 )
@@ -198,15 +245,40 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def _serializar_geojson(self, queryset):
-        return json.loads(serialize(
-            'geojson',
-            queryset,
-            geometry_field='punto_geografico',
-            fields=[
-                'anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 
-                'fecha', 'rendimiento_normalizado'
-            ]
-        ))
+        """Serializa el queryset a GeoJSON"""
+        try:
+            # Primero obtenemos los datos base
+            base_geojson = json.loads(serialize(
+                'geojson',
+                queryset,
+                geometry_field='punto_geografico',
+                fields=[
+                    'anch_fja', 'humedad', 'masa_rend_seco', 'velocidad', 
+                    'fecha', 'rendimiento_normalizado'
+                ]
+            ))
+
+            # Si el queryset tiene una anotación rendimiento_normalizado_calc
+            if queryset.query.annotations.get('rendimiento_normalizado_calc'):
+                # Obtenemos los valores calculados
+                valores_calculados = list(queryset.values('id', 'rendimiento_normalizado_calc'))
+                valores_dict = {item['id']: item['rendimiento_normalizado_calc'] for item in valores_calculados}
+                
+                # Actualizamos cada feature con el valor calculado
+                for feature in base_geojson['features']:
+                    feature_id = feature['id']
+                    if feature_id in valores_dict:
+                        # Guardamos el valor original
+                        feature['properties']['masa_rend_seco_original'] = feature['properties']['masa_rend_seco']
+                        # Actualizamos con el valor calculado
+                        feature['properties']['masa_rend_seco'] = valores_dict[feature_id]
+
+            return base_geojson
+
+        except Exception as e:
+            logger.error(f"Error en serialización GeoJSON: {str(e)}")
+            raise
+
 
     async def procesar_coeficientes(self, coeficientes):
         # Aplicar coeficientes y normalizar los dos primeros mapas
@@ -269,67 +341,174 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             logger.info(f"Archivos normalizados actualizados: {self.normalized_pairs}")
 
     async def enviar_siguiente_mapa(self):
-            if self.current_pair_index >= len(self.archivos_unicos) - 1:
-                await self._calcular_rendimientos_finales()
-                await self.send(text_data=json.dumps({
-                    'action': 'proceso_completado',
-                    'message': 'Proceso de normalización y cálculo de rendimientos completado.'
-                    }))
-                return
-
-            # Obtener el acumulado (mapas ya normalizados)
-            puntos_acumulados = await self._get_puntos_normalizados()
-            
-            # Obtener el siguiente mapa (con masa_rend_seco)
-            archivo_siguiente = self.archivos_unicos[self.current_pair_index + 1]
-            puntos_siguiente = await self._get_puntos_por_archivo(archivo_siguiente)
-
-            # Calcular percentiles y coeficiente sugerido
-            puntos_acumulados_list = await self._queryset_to_list(puntos_acumulados)
-            puntos_siguiente_list = await self._queryset_to_list(puntos_siguiente)
-            
-            # Calcular valores de referencia usando rendimiento_normalizado
-            valores_referencia = []
-            for p in puntos_acumulados_list:
-                if p.rendimiento_normalizado is not None:
-                    valores_referencia.append(float(p.rendimiento_normalizado))
-            
-            # Calcular valores actuales usando masa_rend_seco
-            valores_actual = [float(p.masa_rend_seco) for p in puntos_siguiente_list 
-                            if p.masa_rend_seco is not None]
-
-            # Calcular percentiles
-            percentil_80_referencia = self.calcular_percentil_80(valores_referencia)
-            percentil_80_actual = self.calcular_percentil_80(valores_actual)
-            
-            # Calcular coeficiente sugerido
-            if percentil_80_actual > 0:
-                coeficiente_sugerido = percentil_80_referencia / percentil_80_actual
-            else:
-                coeficiente_sugerido = 1
-
-            logger.info(f"Enviando mapa acumulado con {len(valores_referencia)} puntos")
-            logger.info(f"Enviando mapa siguiente con {len(valores_actual)} puntos")
-            logger.info(f"Percentil 80 referencia: {percentil_80_referencia}")
-            logger.info(f"Percentil 80 actual: {percentil_80_actual}")
-            logger.info(f"Coeficiente sugerido: {coeficiente_sugerido}")
-
-            # Serializar y enviar
-            acumulado_geojson = await self._serializar_geojson(puntos_acumulados)
-            siguiente_geojson = await self._serializar_geojson(puntos_siguiente)
-
+        if self.current_pair_index >= len(self.archivos_unicos) - 1:
+            await self._calcular_rendimientos_finales()
             await self.send(text_data=json.dumps({
-                'action': 'nuevos_mapas',
-                'mapa_referencia': acumulado_geojson,
-                'mapa_actual': siguiente_geojson,
-                'coeficiente_sugerido_referencia': 1,
-                'coeficiente_sugerido_actual': coeficiente_sugerido,
-                'percentil_80_referencia': percentil_80_referencia,
-                'percentil_80_actual': percentil_80_actual,
-                'current_pair_index': self.current_pair_index
+                'action': 'proceso_completado',
+                'message': 'Proceso de normalización y cálculo de rendimientos completado.'
             }))
+            return
+
+        # Obtener la variación admitida de la especie
+        variacion_admitida = await self._get_variacion_admitida()
+        logger.info(f"Variación admitida para la especie: {variacion_admitida}%")
+
+        # Obtener el acumulado (mapas ya normalizados)
+        puntos_acumulados = await self._get_puntos_normalizados()
+        
+        # Obtener el siguiente mapa (con masa_rend_seco)
+        archivo_siguiente = self.archivos_unicos[self.current_pair_index + 1]
+        puntos_siguiente = await self._get_puntos_por_archivo(archivo_siguiente)
+
+        # Calcular percentiles y coeficiente sugerido
+        puntos_acumulados_list = await self._queryset_to_list(puntos_acumulados)
+        puntos_siguiente_list = await self._queryset_to_list(puntos_siguiente)
+        
+        # Calcular valores de referencia usando rendimiento_normalizado
+        valores_referencia = []
+        for p in puntos_acumulados_list:
+            if p.rendimiento_normalizado is not None:
+                valores_referencia.append(float(p.rendimiento_normalizado))
+        
+        # Calcular valores actuales usando masa_rend_seco
+        valores_actual = [float(p.masa_rend_seco) for p in puntos_siguiente_list 
+                        if p.masa_rend_seco is not None]
+
+        # Calcular percentiles y medianas
+        percentil_80_referencia = self.calcular_percentil_80(valores_referencia)
+        percentil_80_actual = self.calcular_percentil_80(valores_actual)
+        
+        percentil_50_referencia = self.calcular_mediana(valores_referencia)
+        percentil_50_actual = self.calcular_mediana(valores_actual)
+
+        # Calcular diferencia porcentual entre percentiles
+        diferencia_porcentual = abs((percentil_80_actual - percentil_80_referencia) / percentil_80_referencia * 100)
+        logger.info(f"Diferencia porcentual entre percentiles 80: {diferencia_porcentual}%")
+
+        puntos_referencia = len(valores_referencia)
+        puntos_actual = len(valores_actual)
+        
+        # Calcular coeficientes sugeridos
+        coeficiente_sugerido = (percentil_80_referencia / percentil_80_actual) if percentil_80_actual > 0 else 1
+        coeficiente_sugerido_median = (percentil_50_referencia / percentil_50_actual) if percentil_50_actual > 0 else 1
+
+        # Si la diferencia está dentro de la variación admitida, normalizar automáticamente
+        if diferencia_porcentual <= variacion_admitida:
+            logger.info(f"Diferencia dentro del umbral admitido. Normalizando automáticamente con coeficiente: {coeficiente_sugerido}")
+            await self._normalizar_automaticamente(coeficiente_sugerido)
+            return
+
+        # Si no está dentro del umbral, continuar con el proceso manual
+        logger.info(f"Enviando mapa acumulado con {len(valores_referencia)} puntos")
+        logger.info(f"Enviando mapa siguiente con {len(valores_actual)} puntos")
+        logger.info(f"Percentil 80 referencia: {percentil_80_referencia}")
+        logger.info(f"Percentil 80 actual: {percentil_80_actual}")
+        logger.info(f"Coeficiente sugerido: {coeficiente_sugerido}")
+        logger.info(f"Mediana referencia: {percentil_50_referencia}")
+        logger.info(f"Mediana actual: {percentil_50_actual}")
+        logger.info(f"Coeficiente sugerido P80: {coeficiente_sugerido}")
+        logger.info(f"Coeficiente sugerido mediana: {coeficiente_sugerido_median}")
+
+        # Serializar y enviar
+        acumulado_geojson = await self._serializar_geojson(puntos_acumulados)
+        siguiente_geojson = await self._serializar_geojson(puntos_siguiente)
+
+        await self.send(text_data=json.dumps({
+            'action': 'nuevos_mapas',
+            'mapa_referencia': acumulado_geojson,
+            'mapa_actual': siguiente_geojson,              
+            'coeficiente_sugerido_referencia': 1,
+            'coeficiente_sugerido_actual': coeficiente_sugerido,
+            'coeficiente_sugerido_median_referencia': 1,
+            'coeficiente_sugerido_median': coeficiente_sugerido_median,
+            'percentil_80_referencia': percentil_80_referencia,
+            'percentil_80_actual': percentil_80_actual,
+            'percentil_50_referencia': percentil_50_referencia,
+            'percentil_50_actual': percentil_50_actual,
+            'puntos_referencia': puntos_referencia,  
+            'puntos_actual': puntos_actual,
+            'diferencia_porcentual': diferencia_porcentual,
+            'variacion_admitida': variacion_admitida,
+            'current_pair_index': self.current_pair_index,
+            'modo_manual': True
+        }))
+    
+    async def procesar_coeficiente_actualizado(self, coeficiente):
+        """Procesa el coeficiente actualizado para previsualización"""
+        try:
+            logger.info(f"Previsualizando con coeficiente: {coeficiente}")
+
+            archivo_actual = None 
+            if self.current_pair_index == 0:
+                # Si estamos en el primer par, actualizar el segundo mapa
+                archivo_actual = self.archivos_unicos[1]
+                #puntos_mapa = await self._get_puntos_por_archivo(archivo_mapa2, coeficiente)
+            else:
+                # Si no, actualizar el siguiente mapa
+                archivo_actual = self.archivos_unicos[self.current_pair_index + 1]
+            
+            logger.info(f"Previsualizando archivo: {archivo_actual}")
+
+            puntos_mapa = await self._get_puntos_por_archivo(archivo_actual, float(coeficiente))
+            
+                # Calcular nuevos valores con el coeficiente aplicado
+            puntos_list = await self._queryset_to_list(puntos_mapa)
+            valores_actualizados = [
+                p.rendimiento_normalizado_calc 
+                for p in puntos_list 
+                if hasattr(p, 'rendimiento_normalizado_calc')
+            ]
+
+            percentil_80_actual = self.calcular_percentil_80(valores_actualizados)
+            mediana_actual = self.calcular_mediana(valores_actualizados)
+            # Serializar y enviar el mapa actualizado
+            mapa_actualizado_geojson = await self._serializar_geojson(puntos_mapa)
+            
+            await self.send(text_data=json.dumps({
+                'action': 'mapa_actualizado',
+                'mapa_actual': mapa_actualizado_geojson,
+                'coeficiente_ajustado': coeficiente,
+                'percentil_80_actual': percentil_80_actual,
+                'mediana_actual': mediana_actual
+            }))
+            
+            logger.info("Previsualización enviada")
+            
+        except Exception as e:
+            logger.error(f"Error en previsualización: {str(e)}")
+            await self.send(text_data=json.dumps({
+                'action': 'error',
+                'message': 'Error al previsualizar el mapa'
+            }))
+
+    @sync_to_async
+    def _get_variacion_admitida(self):
+        """Obtiene la variación admitida de la especie del cultivo"""
+        try:
+            cultivo = Cultivo.objects.get(id=self.cultivo_id)
+            return cultivo.especie.variacion_admitida
+        except Exception as e:
+            logger.error(f"Error al obtener variación admitida: {str(e)}")
+            return 5.0  # valor por defecto si hay error
+
+    async def _normalizar_automaticamente(self, coeficiente):
+        """Realiza la normalización automática usando el coeficiente calculado"""
+        await self.procesar_coeficientes({
+            'coeficiente_mapa_referencia': 1,
+            'coeficiente_mapa_actual': coeficiente
+        })
+        
+        # Notificar al frontend que se realizó una normalización automática
+        await self.send(text_data=json.dumps({
+            'action': 'normalizacion_automatica',
+            'message': f'Normalización automática realizada con coeficiente {coeficiente:.2f}',
+            'coeficiente_aplicado': coeficiente
+        }))
+
     @sync_to_async
     def _calcular_rendimientos_finales(self):
+
+    
         """Calcula rendimiento_relativo y rendimiento_real para todos los registros normalizados"""
         try:
             logger.info("Iniciando cálculo de rendimientos finales")
