@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import Cultivo from '../models/cultivo.model';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root'
@@ -35,25 +35,37 @@ export class CultivoService {
     return this.http.get<Cultivo[]>(this.baseUrl, { params });
   }
 
+ 
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
-  normalizarMapas(cultivoId: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-  }
+   normalizarMapas(cultivoId: string): Observable<any> {
+     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+   }
 
-  // Método para obtener los datos de normalización
-  obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-  }
+   // Método para obtener los datos de normalización
+   obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
+     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+   }
 
   resultadoNormalizacion(cultivoId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);
-  }
-  
+  } 
 
   // Método para confirmar la normalización después de la revisión
   confirmarNormalizacion(cultivoId: string, coeficienteAjuste: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${cultivoId}/confirmar-normalizacion`, { coeficienteAjuste });
+  }
+
+  calcularRendimientoAmbiente(cultivoId: string): Observable<Blob> {
+    const url = `http://api.proyecto.local/rendimientos/${cultivoId}/calcular-rendimiento/`;
+    return this.http.get(url, { responseType: 'blob' });
+  }
+
+  descargarExcelRendimiento(cultivoId: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(`http://api.proyecto.local/rendimientos/${cultivoId}/exportar-excel/`, {
+      responseType: 'blob',
+      observe: 'response'
+    });
   }
 }

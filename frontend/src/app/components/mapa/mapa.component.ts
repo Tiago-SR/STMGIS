@@ -9,7 +9,9 @@ import { CampoService } from '../../services/campo.service';
 import { Campo } from '../../models/campo.model';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
-
+import { CultivoService } from '../../services/cultivo.service'; // Servicio de cultivo
+import * as blobUtil from 'blob-util';
+import { HttpResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-mapa',
@@ -22,6 +24,8 @@ export class MapaComponent implements OnInit {
   geojsonLayer!: GeoJSONLayer;
   cultivoDataLayer!: GeoJSONLayer;
   campos: Campo[] = [];
+  cultivos: any[] = []; 
+  selectedCultivoId: string = '';
   selectedUuid: string = '';
   originalSymbol: esri.Symbol | null = null;
   highlightedGraphic: esri.Graphic | null = null;
@@ -31,9 +35,11 @@ export class MapaComponent implements OnInit {
   p79: number = 0;
   p100: number = 0;
   mapLoaded: boolean = false; 
+  tipoRendimiento: string = 'rendimiento_relativo'; 
 
 
-  constructor(private campoService: CampoService) { }
+
+  constructor(private campoService: CampoService, private cultivoService: CultivoService) { }
 
   ngOnInit(): void {
     this.map = new Map({
@@ -75,8 +81,7 @@ export class MapaComponent implements OnInit {
 
   onCampoSelected(uuid: string): void {
     this.selectedUuid = uuid;
-
-    this.selectedUuid = uuid;
+    this.loadCultivos(uuid);
 
     if (!uuid) {
       this.p19 = 0;
@@ -204,6 +209,70 @@ export class MapaComponent implements OnInit {
     });
   }
 
+  onCultivoSelected(cultivoId: string): void {
+    this.selectedCultivoId = cultivoId;
+  }
+
+  onCalcularRendimiento(): void {
+    if (!this.selectedCultivoId) {
+      return;
+    }
+
+    // Primero calculamos el rendimiento
+    this.cultivoService.calcularRendimientoAmbiente(this.selectedCultivoId).subscribe({
+      next: () => {
+        // Una vez calculado, procedemos a descargar el Excel
+        this.cultivoService.descargarExcelRendimiento(this.selectedCultivoId).subscribe({
+          next: (response: HttpResponse<Blob>) => {
+            // Obtener el nombre del archivo del header Content-Disposition
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = 'rendimiento_ambiente.xlsx';
+            
+            if (contentDisposition) {
+              const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+              if (matches != null && matches[1]) {
+                filename = matches[1].replace(/['"]/g, '');
+              }
+            }
+
+            // Crear blob y descargar
+            const blob = new Blob([response.body as Blob], { 
+              type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+            });
+            
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            
+            // Limpieza
+            window.URL.revokeObjectURL(url);
+            link.remove();
+          },
+          error: (error) => {
+            console.error('Error al descargar el archivo Excel:', error);
+            // Aquí puedes agregar manejo de errores según tu UI
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error al calcular el rendimiento:', error);
+        // Aquí puedes agregar manejo de errores según tu UI
+      }
+    });
+  }
+  
+
+  loadCultivos(campoId: string): void {
+    this.cultivoService.obtenerCultivos({ campo: campoId }).subscribe({
+      next: (response) => {
+        this.cultivos = response; // Asume que 'response' es un arreglo de cultivos
+      },
+      error: (error) => console.error('Error al cargar los cultivos:', error),
+    });
+  }
+
   displayFeatureInfo(event: any) {
     this.view.hitTest(event, { include: this.geojsonLayer }).then((response: esri.HitTestResult) => {
       const tooltipElement = document.getElementById('tooltip');
@@ -252,7 +321,7 @@ export class MapaComponent implements OnInit {
     fetch(cultivoDataUrl)
       .then(response => response.json())
       .then(data => {
-        const rendimientos = data.features.map((feature: any) => feature.properties.rendimiento_relativo);
+        const rendimientos = data.features.map((feature: any) => feature.properties[this.tipoRendimiento]);
   
         rendimientos.sort((a: number, b: number) => a - b);
   
@@ -284,7 +353,7 @@ export class MapaComponent implements OnInit {
             visualVariables: [
               {
                 type: 'color',
-                field: 'rendimiento_relativo',                
+                field: this.tipoRendimiento,                 
                 stops: [
                   { value: rendimientos[0], color: 'red' },
                   { value: this.p19, color: 'red' },
@@ -300,7 +369,7 @@ export class MapaComponent implements OnInit {
               } as esri.ColorVariableProperties,
               {
                 type: 'color',
-                field: 'rendimiento_relativo',
+                field: this.tipoRendimiento, 
                 target: 'outline', 
                 stops: [
                   { value: rendimientos[0], color: 'red' },
@@ -323,7 +392,7 @@ export class MapaComponent implements OnInit {
               {
                 type: 'fields',
                 fieldInfos: [
-                  { fieldName: 'rendimiento_relativo', label: 'rendimiento_relativo' }
+                  { fieldName: this.tipoRendimiento, label: this.tipoRendimiento }
                 ]
               }
             ]
@@ -339,7 +408,6 @@ export class MapaComponent implements OnInit {
       });
   }
     
-
   highlightFeature(graphic: esri.Graphic) {
     if (this.highlightedGraphic && this.originalSymbol) {
       this.highlightedGraphic.symbol = this.originalSymbol;

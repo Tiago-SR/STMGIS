@@ -33,6 +33,7 @@ from especie import views as especie_view
 from gestion import views as gestion_view
 from cultivo import views as cultivo_view
 from cultivo.views import CultivoViewSet
+from rendimiento_ambiente.views import RendimientoAmbienteView
 
 
 router = routers.DefaultRouter()
@@ -43,6 +44,9 @@ router.register(r'campos', campo_view.CampoViewSet, basename="Campos")
 router.register(r'especies', especie_view.EspecieViewSet, basename="Especies")
 router.register(r'gestiones', gestion_view.GestionViewSet, basename="Gestiones")
 router.register(r'cultivos', cultivo_view.CultivoViewSet, basename="Cultivos")
+router.register(r'rendimientos', RendimientoAmbienteView, basename="Rendimientos")
+
+
 
 urlpatterns = [
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
@@ -53,5 +57,9 @@ urlpatterns = [
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
     path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
+    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),
+    #path('api/cultivo/<int:cultivo_id>/rendimiento/', RendimientoAmbienteView.as_view(), name='cultivo-rendimiento')
+    path('rendimientos/<uuid:pk>/calcular-rendimiento/', RendimientoAmbienteView.as_view({'get': 'calcular_rendimiento'}), name='cultivo-rendimiento'),
+    path('rendimientos/<uuid:pk>/exportar-excel/', RendimientoAmbienteView.as_view({'get': 'exportar_excel'}), name='exportar-excel'),
     path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')
 ] +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

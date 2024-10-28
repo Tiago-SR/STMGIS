@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Empresa } from '../../models/empresa.model';
 import { Campo } from '../../models/campo.model';
@@ -11,191 +11,233 @@ import { EspecieService } from '../../services/especie.service';
 import { GestionService } from '../../services/gestion.service';
 import { ToastrService } from 'ngx-toastr';
 import { Router } from '@angular/router';
+import { WebSocketService } from '../../services/web-socket.service';
+import { Subscription } from 'rxjs';
 
 @Component({
-  selector: 'app-normalizar-mapas',
-  templateUrl: './normalizar-mapas.component.html',
-  styleUrls: ['./normalizar-mapas.component.scss']
+ selector: 'app-normalizar-mapas',
+ templateUrl: './normalizar-mapas.component.html',
+ styleUrls: ['./normalizar-mapas.component.scss']
 })
-export class NormalizarMapasComponent implements OnInit {
-  empresas: Empresa[] = [];
-  campos: Campo[] = [];
-  especies: Especie[] = [];
-  gestiones: any[] = [];
-  cultivos: Cultivo[] = [];
-  cultivosTodos: Cultivo[] = [];
+export class NormalizarMapasComponent implements OnInit, OnDestroy {
+ private websocketSubscription: Subscription | null = null;
 
-  empresaSeleccionadaId: number | null = null;
-  campoSeleccionadoId: number | null = null;
-  especieSeleccionadaId: string | null = null;
-  gestionSeleccionadaId: string | null = null;
+ empresas: Empresa[] = [];
+ campos: Campo[] = [];
+ especies: Especie[] = [];
+ gestiones: any[] = [];
+ cultivos: Cultivo[] = [];
+ cultivosTodos: Cultivo[] = [];
 
-  cultivoForm: FormGroup;
+ empresaSeleccionadaId: number | null = null;
+ campoSeleccionadoId: number | null = null;
+ especieSeleccionadaId: string | null = null;
+ gestionSeleccionadaId: string | null = null;
 
-  constructor(
-    private fb: FormBuilder,
-    private empresaService: EmpresaService,
-    private campoService: CampoService,
-    private cultivoService: CultivoService,
-    private especieService: EspecieService,
-    private gestionService: GestionService,
-    private cd: ChangeDetectorRef,
-    private toastr: ToastrService,
-    private router: Router,
-  ) {
-    this.cultivoForm = this.fb.group({
-      cultivo: [null, Validators.required]
-    });
-  }
+ cultivoForm: FormGroup;
 
-  ngOnInit(): void {
-    this.cargarEmpresas();
-    this.cargarEspecies();
-  }
+ mapaReferencia: any;  
+ mapaActual: any; 
 
-  cargarEmpresas() {
-    this.empresaService.getAllEmpresas().subscribe(
-      data => {
-        this.empresas = data;
-      },
-      error => {
-        console.error('Error al cargar las empresas', error);
-      }
-    );
-  }
+ constructor(
+   private fb: FormBuilder,
+   private empresaService: EmpresaService,
+   private campoService: CampoService,
+   private cultivoService: CultivoService,
+   private especieService: EspecieService,
+   private gestionService: GestionService,
+   private cd: ChangeDetectorRef,
+   private toastr: ToastrService,
+   private router: Router,
+   private webSocketService: WebSocketService
+ ) {
+   this.cultivoForm = this.fb.group({
+     cultivo: [null, Validators.required]
+   });
+ }
 
-  onEmpresaChange() {
-    if (this.empresaSeleccionadaId) {
-      this.cargarCamposPorEmpresa(this.empresaSeleccionadaId);
-      this.campoSeleccionadoId = null;
-      this.cultivos = [];
-      this.cultivosTodos = [];
-      this.especieSeleccionadaId = null;
-      this.gestionSeleccionadaId = null;
-    } else {
-      this.campos = [];
-      this.cultivos = [];
-      this.cultivosTodos = [];
-    }
-    this.filtrarCultivos();
-  }
+ ngOnInit(): void {
+   this.cargarEmpresas();
+   this.cargarEspecies();
+ }
 
-  cargarCamposPorEmpresa(empresaId: number) {
-    this.campoService.getCamposByEmpresa(empresaId.toString()).subscribe(
-      response => {
-        this.campos = response.data;
-        this.cd.detectChanges();
-      },
-      error => {
-        this.toastr.error('Error al cargar los campos', 'Error');
-        console.error('Error al cargar los campos', error);
-      }
-    );
-  }
+ ngOnDestroy(): void {
+   if (this.websocketSubscription) {
+     this.websocketSubscription.unsubscribe();
+   }
+   this.webSocketService.disconnect();
+ }
 
-  onCampoChange() {
-    this.especieSeleccionadaId = null;
-    this.gestionSeleccionadaId = null;
-    this.cargarGestiones();
-    this.filtrarCultivos();
-  }
+ cargarEmpresas() {
+   this.empresaService.getAllEmpresas().subscribe(
+     data => {
+       this.empresas = data;
+     },
+     error => {
+       console.error('Error al cargar las empresas', error);
+     }
+   );
+ }
 
-  cargarGestiones() {
-    if (this.campoSeleccionadoId) {
-      this.gestionService.getAllGestiones().subscribe(
-        gestiones => {
-          this.gestiones = gestiones;
-        },
-        error => {
-          console.error('Error al cargar las gestiones:', error);
-          this.toastr.error('Error al cargar las gestiones', 'Error');
-        }
-      );
-    } else {
-      this.gestiones = [];
-    }
-  }
+ onEmpresaChange() {
+   if (this.empresaSeleccionadaId) {
+     this.cargarCamposPorEmpresa(this.empresaSeleccionadaId);
+     this.campoSeleccionadoId = null;
+     this.cultivos = [];
+     this.cultivosTodos = [];
+     this.especieSeleccionadaId = null;
+     this.gestionSeleccionadaId = null;
+   } else {
+     this.campos = [];
+     this.cultivos = [];
+     this.cultivosTodos = [];
+   }
+   
+   this.filtrarCultivos();
+   this.cd.detectChanges();
+ }
 
-  cargarEspecies() {
-    this.especieService.obtenerEspecies().subscribe(
-      data => {
-        this.especies = data;
-      },
-      error => {
-        this.toastr.error('Error al cargar las especies', 'Error');
-        console.error('Error al cargar las especies', error);
-      }
-    );
-  }
+ cargarCamposPorEmpresa(empresaId: number) {
+   this.campoService.getCamposByEmpresa(empresaId.toString()).subscribe(
+     response => {
+       this.campos = response.data;
+       this.cd.detectChanges();
+     },
+     error => {
+       this.toastr.error('Error al cargar los campos', 'Error');
+       console.error('Error al cargar los campos', error);
+     }
+   );
+ }
 
-  onEspecieChange() {
-    this.gestionSeleccionadaId = null;
-    this.filtrarCultivos();
-  }
+ onCampoChange() {
+   this.especieSeleccionadaId = null;
+   this.gestionSeleccionadaId = null;
+   this.cargarGestiones();
+   this.filtrarCultivos();
+ }
 
-  onGestionChange() {
-    this.filtrarCultivos();
-  }
+ cargarGestiones() {
+   if (this.campoSeleccionadoId) {
+     this.gestionService.getAllGestiones().subscribe(
+       gestiones => {
+         this.gestiones = gestiones;
+       },
+       error => {
+         console.error('Error al cargar las gestiones:', error);
+         this.toastr.error('Error al cargar las gestiones', 'Error');
+       }
+     );
+   } else {
+     this.gestiones = [];
+   }
+ }
 
-  filtrarCultivos() {
-    const parametrosFiltro: any = {};
-    if (this.campoSeleccionadoId) {
-      parametrosFiltro['campo'] = this.campoSeleccionadoId;
-    }
-    if (this.gestionSeleccionadaId) {
-      parametrosFiltro['gestion'] = this.gestionSeleccionadaId;
-    }
-    if (this.especieSeleccionadaId) {
-      parametrosFiltro['especie'] = this.especieSeleccionadaId;
-    }
+ cargarEspecies() {
+   this.especieService.obtenerEspecies().subscribe(
+     data => {
+       this.especies = data;
+     },
+     error => {
+       this.toastr.error('Error al cargar las especies', 'Error');
+       console.error('Error al cargar las especies', error);
+     }
+   );
+ }
 
-    this.cultivoService.obtenerCultivos(parametrosFiltro).subscribe(
-      data => {
-        this.cultivosTodos = data;
-        this.aplicarFiltroEspecie();
-      },
-      error => {
-        this.toastr.error('Error al cargar los cultivos', 'Error');
-        console.error('Error al cargar los cultivos', error);
-      }
-    );
-  }
+ onEspecieChange() {
+   this.gestionSeleccionadaId = null;
+   this.filtrarCultivos();
+ }
 
-  aplicarFiltroEspecie() {
-    if (this.especieSeleccionadaId) {
-      this.cultivos = this.cultivosTodos.filter(cultivo => cultivo.especie === this.especieSeleccionadaId);
-    } else {
-      this.cultivos = [...this.cultivosTodos];
-    }
+ onGestionChange() {
+   this.filtrarCultivos();
+ }
 
-    if (this.cultivos.length === 0) {
-      this.cultivoForm.get('cultivo')?.setErrors({ noCultivos: true });
-    } else {
-      this.cultivoForm.get('cultivo')?.setErrors(null);
-    }
-  }
+ filtrarCultivos() {
+   const parametrosFiltro: any = {};
+   if (this.campoSeleccionadoId) {
+     parametrosFiltro['campo'] = this.campoSeleccionadoId;
+   }
+   if (this.gestionSeleccionadaId) {
+     parametrosFiltro['gestion'] = this.gestionSeleccionadaId;
+   }
+   if (this.especieSeleccionadaId) {
+     parametrosFiltro['especie'] = this.especieSeleccionadaId;
+   }
 
-  seleccionarCultivo() {
-    if (this.cultivoForm.invalid) {
-      this.toastr.warning('Por favor, selecciona un cultivo antes de continuar.', 'Formulario incompleto');
-      return;
-    }
+   this.cultivoService.obtenerCultivos(parametrosFiltro).subscribe(
+     data => {
+       this.cultivosTodos = data;
+       this.aplicarFiltroEspecie();
+     },
+     error => {
+       this.toastr.error('Error al cargar los cultivos', 'Error');
+       console.error('Error al cargar los cultivos', error);
+     }
+   );
+ }
 
-    const cultivoId = this.cultivoForm.get('cultivo')?.value;
+ aplicarFiltroEspecie() {
+   if (this.especieSeleccionadaId) {
+     this.cultivos = this.cultivosTodos.filter(cultivo => cultivo.especie === this.especieSeleccionadaId);
+   } else {
+     this.cultivos = [...this.cultivosTodos];
+   }
 
-    // Llamar al servicio para normalizar los mapas de rendimiento
-    this.cultivoService.normalizarMapas(cultivoId).subscribe(
-      response => {
-        console.log('Normalización completada:', response);
-        this.toastr.success('La normalización de mapas de rendimiento ha sido completada.', 'Éxito');
-        // Redirigir o actualizar la vista con los resultados de la normalización
-        this.router.navigate([`/resultado-normalizacion/${cultivoId}`]);
-        
-      },
-      error => {
-        this.toastr.error('Error al normalizar los mapas de rendimiento', 'Error');
-        console.error('Error al normalizar los mapas de rendimiento:', error);
-      }
-    );
-  }
+   if (this.cultivos.length === 0) {
+     this.cultivoForm.get('cultivo')?.setErrors({ noCultivos: true });
+   } else {
+     this.cultivoForm.get('cultivo')?.setErrors(null);
+   }
+ }
+
+ seleccionarCultivo() {
+   if (this.cultivoForm.invalid) {
+     this.toastr.warning('Por favor, selecciona un cultivo antes de continuar.', 'Formulario incompleto');
+     return;
+   }
+
+   const cultivoId = this.cultivoForm.get('cultivo')?.value;
+   console.log('Cultivo seleccionado:', cultivoId);
+
+   // Desconectar websocket existente si hay uno
+   this.webSocketService.disconnect();
+   if (this.websocketSubscription) {
+     this.websocketSubscription.unsubscribe();
+   }
+
+   // Conectar al WebSocket
+   this.webSocketService.connect(cultivoId);
+
+   // Una única suscripción a los mensajes
+   this.websocketSubscription = this.webSocketService.getMessages().subscribe(
+     (data) => {
+       console.log('Mensaje recibido del WebSocket:', data);
+
+       if (data.action === 'nuevos_mapas') {
+         // Navegar a la página de normalización cuando se reciban los primeros mapas
+         this.router.navigate(['/normalizar-mapas-rendimiento', cultivoId]);
+       } 
+       else if (data.action === 'proceso_completado') {
+         this.toastr.success('La normalización de mapas de rendimiento ha sido completada.', 'Éxito');
+         this.router.navigate([`/resultado-normalizacion/${cultivoId}`]);
+       } 
+       else if (data.action === 'error') {
+         this.toastr.error(data.message, 'Error');
+         console.error('Error desde el backend:', data.message);
+       }
+     },
+     error => {
+       console.error('Error al recibir mensajes del WebSocket:', error);
+       this.toastr.error('Error en la conexión WebSocket', 'Error');
+     }
+   );
+
+   // Iniciar el proceso cuando el WebSocket esté abierto
+   this.webSocketService.onOpen().subscribe(() => {
+     console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
+     this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
+   });
+ }
 }
