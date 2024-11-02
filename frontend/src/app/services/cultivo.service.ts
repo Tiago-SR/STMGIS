@@ -34,8 +34,7 @@ export class CultivoService {
     }
     return this.http.get<Cultivo[]>(this.baseUrl, { params });
   }
-
- 
+  
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
@@ -67,5 +66,10 @@ export class CultivoService {
       responseType: 'blob',
       observe: 'response'
     });
+  }
+
+  obtenerEstaNormalizado(cultivoId: string): Observable<{ all_normalized: boolean }> {
+    const url = `${this.baseUrl}${cultivoId}/is-normalized/`;
+    return this.http.get<{ all_normalized: boolean }>(url);
   }
 }

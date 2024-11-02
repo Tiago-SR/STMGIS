@@ -5,7 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import Map from '@arcgis/core/Map';
 import MapView from '@arcgis/core/views/MapView';
 import GeoJSONLayer from '@arcgis/core/layers/GeoJSONLayer';
-import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
+import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
+import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { WebSocketService } from '../../services/web-socket.service';
 import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer'; // Asegúrate de importar esta clase
@@ -19,6 +20,8 @@ import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer'; //
 export class NormalizarMapasRendimientoComponent implements OnInit {
   private connectionStatus$ = this.webSocketService.getConnectionStatus();
 
+  isLoading: boolean = true;
+  reseteable: boolean = false;
   cultivo: any;
   mapaReferencia: any;
   mapaActual: any;
@@ -39,7 +42,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   diferenciaPorcentual: number = 0;
   variacionAdmitida: number = 0;
   modoManual: boolean = true;
-  cultivoId!: string; 
+  cultivoId!: string;
   map!: Map;
   view!: MapView;
 
@@ -52,15 +55,15 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     private webSocketService: WebSocketService
   ) {
     this.connectionStatus$.subscribe(isConnected => {
-      if (!isConnected) {
-        this.toastr.warning('Conexión perdida, intentando reconectar...');
-      }
+      // if (!isConnected) {
+      //   this.toastr.warning('Conexión perdida, intentando reconectar...');
+      // }
     });
   }
 
   ngOnInit(): void {
-    
-    this.cultivoId = this.route.snapshot.params['cultivoId']; 
+
+    this.cultivoId = this.route.snapshot.params['cultivoId'];
     this.initMap();
     // Verifica si el cultivoId es válido antes de proceder
     if (this.cultivoId) {
@@ -78,39 +81,41 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
     // Escuchar mensajes del WebSocket
     this.webSocketService.getMessages().subscribe((data) => {
+      this.isLoading = false;
       console.log('Mensaje del WebSocket:', data);
 
       if (data.action === 'nuevos_mapas') {
+        this.isLoading = true;
         this.mapaReferencia = data.mapa_referencia;
         this.mapaActual = data.mapa_actual;
         this.coeficienteSugeridoReferencia = data.coeficiente_sugerido_referencia;
         this.coeficienteSugeridoActual = data.coeficiente_sugerido_actual;
-        this.coeficienteAjusteReferencia = this.coeficienteSugeridoReferencia;
-        this.coeficienteAjusteActual = this.coeficienteSugeridoActual;
+        this.coeficienteAjusteReferencia = parseFloat(data.coeficiente_sugerido_referencia.toFixed(3));
+        this.coeficienteAjusteActual = parseFloat(data.coeficiente_sugerido_actual.toFixed(3));
         this.percentil80Referencia = data.percentil_80_referencia;
         this.percentil80Actual = data.percentil_80_actual;
-        this.medianaReferencia = data.percentil_50_referencia; 
-        this.medianaActual = data.percentil_50_actual;  
-        this.coeficienteSugeridoMedianas = data.coeficiente_sugerido_median; 
+        this.medianaReferencia = data.percentil_50_referencia;
+        this.medianaActual = data.percentil_50_actual;
+        this.coeficienteSugeridoMedianas = data.coeficiente_sugerido_median;
         this.coeficienteSugeridoMedianaReferencia = data.coeficiente_sugerido_median_referencia;
         this.puntosReferencia = data.puntos_referencia;
-        this.puntosActual = data.puntos_actual; 
+        this.puntosActual = data.puntos_actual;
         this.diferenciaPorcentual = data.diferencia_porcentual;
         this.variacionAdmitida = data.variacion_admitida;
         this.modoManual = data.modo_manual;
         this.nombreMapaReferencia = `Mapa Referencia (Acumulado)`;
         this.nombreMapaActual = `Mapa Actual ${data.current_pair_index + 2}`;
-        this.addNormalizedMapLayer();  
+        this.addNormalizedMapLayer();
         this.cd.detectChanges();
+        this.limitarDecimales();
 
-      }else if (data.action === 'normalizacion_automatica') {
-        // Notificar la normalización automática
+      } else if (data.action === 'normalizacion_automatica') {
         this.toastr.success(
           `Se realizó la normalización automática ya que la diferencia (${this.diferenciaPorcentual.toFixed(1)}%) 
             está dentro de la variación admitida (${this.variacionAdmitida}%)
             Coeficiente aplicado: ${data.coeficiente_aplicado.toFixed(2)}`,
           'Normalización Automática',
-          { 
+          {
             timeOut: 5000,
             progressBar: true,
             closeButton: true,
@@ -120,27 +125,29 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
         this.coeficienteAjusteActual = data.coeficiente_aplicado;
         this.cd.detectChanges();
-       
+
       } else if (data.action === 'mapa_actualizado') {
         this.mapaActual = data.mapa_actual;
         if (data.puntos_actual) {
           this.puntosActual = data.puntos_actual;
         }
         this.addNormalizedMapLayer();
-        this.cd.detectChanges();      
+        this.cd.detectChanges();
       } else if (data.action === 'proceso_completado') {
+        this.isLoading = false;
         this.toastr.info('Se han procesado todos los mapas', 'Proceso completo');
-        this.router.navigate(['/resultado-normalizacion']); // Redirigir a la vista de resultados
+        this.router.navigate(['/resultado-normalizacion']);
       } else if (data.action === 'proceso_cancelado') {
         this.toastr.info('El proceso ha sido cancelado', 'Proceso cancelado');
-        this.router.navigate(['/ruta-inicial']); // Redirigir al usuario
+        this.router.navigate(['/ruta-inicial']);
       } else if (data.action === 'error') {
         this.toastr.error(data.message, 'Error');
+        this.isLoading = false;
         console.error('Error desde el backend:', data.message);
       }
     });
   }
-  
+
 
   initMap(): void {
     this.map = new Map({
@@ -153,75 +160,99 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       center: [-56.0698, -32.4122],
       zoom: 8
     });
-  }
-/*
-  addNormalizedMapLayer(): void {
-    if (!this.map) {
-      console.error('El mapa no está inicializado.');
-      return;
-    }
 
-    // Limpiar todas las capas previas del mapa
-    this.map.layers.removeAll();
-
-    const mapas = [this.mapaReferencia, this.mapaActual];
-
-    mapas.forEach((data, index) => {
-      const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
-      console.log('GeoJSON URL:', geoJsonUrl);
-      const geoJsonLayer = new GeoJSONLayer({
-        url: geoJsonUrl,
-        title: `Mapa ${index === 0 ? 'Referencia' : 'Actual'}`,
-        outFields: ['*'],
-        renderer: new SimpleRenderer({
-          symbol: new SimpleMarkerSymbol({
-            style: 'circle',
-            color: index === 0 ? 'blue' : 'red', // Diferenciar el color para cada mapa
-            size: '8px',
+    const tipoSueloRenderer = new UniqueValueRenderer({
+      field: 'IA',
+      uniqueValueInfos: [
+        {
+          value: 1,
+          symbol: new SimpleFillSymbol({
+            color: [255, 0, 0, 0.3],
             outline: {
-              color: 'black',
-              width: 0.5
+              color: [255, 0, 0],
+              width: 1
             }
-          })
-        }),
-        popupTemplate: {
-          title: `Mapa ${index === 0 ? 'Referencia' : 'Actual'}`,
-          content: [
-            {
-              type: 'fields',
-              fieldInfos: [
-                { fieldName: 'anch_fja', label: 'Ancho de Faja' },
-                { fieldName: 'humedad', label: 'Humedad (%)' },
-                { fieldName: 'masa_rend_seco', label: 'Masa de Rendimiento Seco (ton/ha)' },
-                { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
-                { fieldName: 'fecha', label: 'Fecha' },
-                { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
-                { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
-              ]
+          }),
+          label: 'IA 1'
+        },
+        {
+          value: 2,
+          symbol: new SimpleFillSymbol({
+            color: [255, 255, 0, 0.3],
+            outline: {
+              color: [255, 255, 0],
+              width: 1
             }
-          ]
+          }),
+          label: 'IA 2'
+        },
+        {
+          value: 3,
+          symbol: new SimpleFillSymbol({
+            color: [0, 255, 0, 0.3],
+            outline: {
+              color: [0, 255, 0],
+              width: 1
+            }
+          }),
+          label: 'IA 3'
         }
-      });
+      ],
+      defaultSymbol: new SimpleFillSymbol({
+        color: [128, 128, 128, 0.3],
+        outline: {
+          color: [128, 128, 128],
+          width: 1
+        }
+      }),
+      defaultLabel: 'Otro tipo de suelo'
+    });
 
-      this.map.add(geoJsonLayer);
-
-      geoJsonLayer.when(() => {
-        geoJsonLayer.queryExtent().then((response) => {
-          if (response.extent) {
-            this.view.goTo(response.extent.expand(1.2));
-          } else {
-            console.log(`No se encontraron entidades o las geometrías son nulas para el mapa ${index + 1}.`);
+    const geoJsonLayerIA = new GeoJSONLayer({
+      url: `http://api.proyecto.local/geojson/?cultivo_id=${this.cultivoId}`,
+      title: 'Zonas de Rendimiento',
+      outFields: ['*'],
+      popupTemplate: {
+        title: 'Ambiente: {ambiente}',
+        content: [
+          {
+            type: 'fields',
+            fieldInfos: [
+              { fieldName: 'name', label: 'Nombre' },
+              { fieldName: 'area', label: 'Área (ha)', format: { digitSeparator: true, places: 2 } },
+              { fieldName: 'ia', label: 'IA' },
+              { fieldName: 'lote', label: 'Lote' },
+              { fieldName: 'sist_prod', label: 'Sistema Productivo' },
+              { fieldName: 'zona', label: 'Zona' },
+              { fieldName: 'tipo_suelo', label: 'Tipo de Suelo' },
+              { fieldName: 'posicion', label: 'Posición' },
+              { fieldName: 'prof', label: 'Profundidad' },
+              { fieldName: 'restriccion', label: 'Restricción' },
+              { fieldName: 'ambiente', label: 'Ambiente' },
+              { fieldName: 'idA', label: 'ID A' }
+            ]
           }
-        }).catch((error) => {
-          console.error('Error al calcular el extent del GeoJSONLayer:', error);
-        });
+        ]
+      },
+      renderer: tipoSueloRenderer
+    });
+
+    this.map.add(geoJsonLayerIA);
+
+    geoJsonLayerIA.when(() => {
+      geoJsonLayerIA.queryExtent().then((response) => {
+        if (response.extent) {
+          this.view.goTo(response.extent.expand(1.2));
+        } else {
+          console.log('No se encontraron entidades para las zonas de rendimiento o las geometrías son nulas.');
+        }
       }).catch((error) => {
-        console.error('Error al cargar la capa GeoJSON:', error);
+        console.error('Error al calcular el extent del GeoJSONLayer:', error);
       });
+    }).catch((error) => {
+      console.error('Error al cargar la capa de zonas de rendimiento GeoJSON:', error);
     });
   }
-*/
 
   addNormalizedMapLayer(): void {
     if (!this.map) {
@@ -229,19 +260,17 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       return;
     }
 
-    // Limpiar todas las capas previas del mapa
-    this.map.layers.removeAll();
+    this.map.layers.forEach((layer) => {
+      if (layer.title !== 'Zonas de Rendimiento') {
+        this.map.layers.remove(layer);
+      }
+    });
 
-    //const mapas = [this.mapaReferencia, this.mapaActual];
-  // Combinar los datos de ambos mapas
     const allFeatures = [...this.mapaReferencia.features, ...this.mapaActual.features];
-
-  // Obtener los valores de 'masa_rend_seco' y 'rendimiento_normalizado' de ambos mapas
     const rendimientos = [
-      ...this.mapaReferencia.features.map((feature: any) => feature.properties.rendimiento_normalizado),
-      ...this.mapaActual.features.map((feature: any) => feature.properties.masa_rend_seco)
+      ...this.mapaReferencia.features.map((feature: any) => feature.properties.masa_rend_seco ?? feature.properties.rendimiento_normalizado),
+      ...this.mapaActual.features.map((feature: any) => feature.properties.masa_rend_seco ?? 0)
     ];
-    // Ordenar los valores de 'masa_rend_seco' para calcular percentiles combinados
     rendimientos.sort((a: number, b: number) => a - b);
 
     const getPercentileValue = (percentile: number) => {
@@ -249,14 +278,18 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       return rendimientos[index] || rendimientos[rendimientos.length - 1];
     };
 
-    // Calcular percentiles basados en ambos mapas juntos
     const p19 = getPercentileValue(19);
     const p39 = getPercentileValue(39);
     const p59 = getPercentileValue(59);
     const p79 = getPercentileValue(79);
     const p100 = getPercentileValue(100);
 
-    // Ahora iterar sobre cada mapa y asignar su estilo
+    console.log('percentil p19', p19);
+    console.log('percentil p39', p39);
+    console.log('percentil p59', p59);
+    console.log('percentil ', p79);
+    console.log('percentil ', p100);
+
     const mapas = [this.mapaReferencia, this.mapaActual];
 
     mapas.forEach((data, index) => {
@@ -264,30 +297,21 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
       console.log('GeoJSON URL:', geoJsonUrl);
 
-      // Obtener los valores de 'masa_rend_seco' de los datos
-    // const rendimientos = data.features.map((feature: any) => feature.properties.masa_rend_seco);
+      let field;
 
-      // Ordenar los valores de 'masa_rend_seco' para calcular percentiles
-    //  rendimientos.sort((a: number, b: number) => a - b);
+      if (index === 0 && data.features[0].properties.rendimiento_normalizado != 0) {
+        field = 'rendimiento_normalizado';
+      } else if (data.features[0].properties.hasOwnProperty('rendimiento_normalizado_calc')) {
+        field = 'masa_rend_seco';
+      } else {
+        field = 'masa_rend_seco';
+      }
 
-    // const getPercentileValue = (percentile: number) => {
-    //   const index = Math.floor((percentile / 100) * rendimientos.length);
-    //    return rendimientos[index] || rendimientos[rendimientos.length - 1]; 
-    //  };
-
-      // Calcular percentiles
-    // const p19 = getPercentileValue(19);
-    // const p39 = getPercentileValue(39);
-    // const p59 = getPercentileValue(59);
-    // const p79 = getPercentileValue(79);
-    // const p100 = getPercentileValue(100);
-
-    const field = index === 0 ? 'rendimiento_normalizado' : 
-              (data.features[0].properties.hasOwnProperty('rendimiento_normalizado_calc') ? 
-               'masa_rend_seco' : 'masa_rend_seco');// Mapa de referencia usa rendimiento_normalizado
+      console.log('mati debug field', field);
+      console.log('mati debug data.features[0]', data.features[0]);
+      console.log('mati debug data.features[0] masa rend seco', data.features[0].properties.masa_rend_seco);
 
 
-      // Definir el ClassBreaksRenderer
       const renderer = new ClassBreaksRenderer({
         field: field,
         classBreakInfos: [
@@ -298,7 +322,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
               style: index === 0 ? 'circle' : 'diamond',
               color: 'red',
               size: '16px',
-              outline: { color: 'red', width: 0.5 }
+              outline: { color: index === 0 ? 'red' : 'black', width: 0.5 }
             }),
             label: 'Bajo rendimiento'
           },
@@ -309,7 +333,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
               style: index === 0 ? 'circle' : 'diamond',
               color: 'orange',
               size: '16px',
-              outline: { color: 'orange', width: 0.5 }
+              outline: { color: index === 0 ? 'orange' : 'black', width: 0.5 }
             }),
             label: '19% Percentil'
           },
@@ -320,7 +344,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
               style: index === 0 ? 'circle' : 'diamond',
               color: 'yellow',
               size: '16px',
-              outline: { color: 'yellow', width: 0.5 }
+              outline: { color: index === 0 ? 'yellow' : 'black', width: 0.5 }
             }),
             label: '39% Percentil'
           },
@@ -331,7 +355,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
               style: index === 0 ? 'circle' : 'diamond',
               color: 'lightgreen',
               size: '16px',
-              outline: { color: 'lightgreen', width: 0.5 }
+              outline: { color: index === 0 ? 'lightgreen' : 'black', width: 0.5 }
             }),
             label: '59% Percentil'
           },
@@ -342,12 +366,13 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
               style: index === 0 ? 'circle' : 'diamond',
               color: 'green',
               size: '16px',
-              outline: { color: 'green', width: 0.5 }
+              outline: { color: index === 0 ? 'green' : 'black', width: 0.5 }
             }),
             label: 'Alto rendimiento'
           }
         ]
       });
+
 
       const geoJsonLayer = new GeoJSONLayer({
         url: geoJsonUrl,
@@ -363,22 +388,19 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
                 { fieldName: 'anch_fja', label: 'Ancho de Faja' },
                 { fieldName: 'humedad', label: 'Humedad (%)' },
                 { fieldName: field, label: index === 0 ? 'Rendimiento Normalizado (ton/ha)' : 'Masa Rendimiento Seco (ton/ha)' },
-                  // Agregar el campo calculado para previsualización
-                  { 
-                    fieldName: field === 'masa_rend_seco' && 'masa_rend_seco_original' in data.features[0].properties ? 
-                              'masa_rend_seco_original' : field,
-                    label: index === 0 ? 'Rendimiento Normalizado (ton/ha)' : 'Masa Rendimiento Seco Original (ton/ha)'
-                  },
+                {
+                  fieldName: field === 'masa_rend_seco' && 'masa_rend_seco_original' in data.features[0].properties ?
+                    'masa_rend_seco_original' : field,
+                  label: index === 0 ? 'Rendimiento Normalizado (ton/ha)' : 'Masa Rendimiento Seco Original (ton/ha)'
+                },
 
-                  { 
-                    fieldName: 'masa_rend_seco',
-                    label: 'Rendimiento Ajustado (ton/ha)',
-                    visible: field === 'masa_rend_seco' && 'masa_rend_seco_original' in data.features[0].properties
-                  },
+                {
+                  fieldName: 'masa_rend_seco',
+                  label: 'Rendimiento Ajustado (ton/ha)',
+                  visible: true
+                },
                 { fieldName: 'velocidad', label: 'Velocidad (km/h)' },
                 { fieldName: 'fecha', label: 'Fecha' },
-              //  { fieldName: 'rendimiento_real', label: 'Rendimiento Real' },
-              // { fieldName: 'rendimiento_relativo', label: 'Rendimiento Relativo' }
               ]
             }
           ]
@@ -386,6 +408,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       });
 
       this.map.add(geoJsonLayer);
+      this.isLoading = false;
 
       geoJsonLayer.when(() => {
         geoJsonLayer.queryExtent().then((response) => {
@@ -401,11 +424,11 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         console.error('Error al cargar la capa GeoJSON:', error);
       });
     });
-  }
+  }           
 
 
   confirmarNormalizacion() {
-    // Enviar los coeficientes al backend a través del WebSocket
+    this.isLoading = true;
     this.webSocketService.sendMessage({
       action: 'enviar_coeficientes',
       coeficientes: {
@@ -422,22 +445,30 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       coeficiente: coeficiente
     });
   }
+
   previsualizarMapa() {
     if (this.coeficienteAjusteActual !== null && this.coeficienteAjusteActual !== undefined) {
+      if(Number(this.coeficienteAjusteActual) !== 1){
+        this.reseteable = true;
+      }
+      this.isLoading = true;
       this.webSocketService.sendMessage({
         action: 'actualizar_coeficiente_ajuste',
         coeficiente: Number(this.coeficienteAjusteActual)
       });
     }
-  
+
+  }
+
+  limitarDecimales() {
+    this.coeficienteAjusteActual = parseFloat(this.coeficienteAjusteActual.toFixed(3));
   }
 
   formatearCoeficiente() {
     this.coeficienteAjusteActual = parseFloat(this.coeficienteAjusteActual.toPrecision(3));
   }
-  // Al destruir el componente, desconectar el WebSocket
+
   ngOnDestroy(): void {
     this.webSocketService.disconnect();
   }
-
 }

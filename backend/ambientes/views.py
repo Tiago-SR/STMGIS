@@ -33,6 +33,29 @@ def ambiente_geojson_view(request):
 
     return JsonResponse(geojson)
 
+def ambiente_geojson_por_cultivo_view(request):
+    cultivo_id = request.GET.get('cultivo_id', None)
+    
+    if cultivo_id:
+        cultivo = Cultivo.objects.filter(id=cultivo_id).first()
+        if cultivo:
+            campo_id = cultivo.campo_id
+            queryset = Ambiente.objects.filter(campo__id=campo_id)
+        else:
+            queryset = Ambiente.objects.none()
+    else:
+        queryset = Ambiente.objects.all()
+    geojson_str = serialize(
+        "geojson",
+        queryset,
+        geometry_field="ambiente_geom",
+        fields=["name", "area", "ia", "lote", "sist_prod", "zona", "tipo_suelo", "posicion", "prof", "restriccion", "ambiente", "idA", "is_active"]
+    )
+
+    geojson = json.loads(geojson_str)
+
+    return JsonResponse(geojson)
+
 def handle_uploaded_shapefile(shp, shx, dbf, request):
     try:
         with shapefile.Reader(shp=shp, shx=shx, dbf=dbf) as sf:
