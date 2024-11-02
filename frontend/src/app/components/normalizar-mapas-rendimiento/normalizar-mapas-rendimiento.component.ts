@@ -1,5 +1,4 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CultivoService } from '../../services/cultivo.service';
 import { ToastrService } from 'ngx-toastr';
 import { ActivatedRoute, Router } from '@angular/router';
 import Map from '@arcgis/core/Map';
@@ -10,6 +9,7 @@ import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { WebSocketService } from '../../services/web-socket.service';
 import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer'; // Asegúrate de importar esta clase
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils'; // Use named import
 
 
 @Component({
@@ -19,7 +19,7 @@ import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer'; //
 })
 export class NormalizarMapasRendimientoComponent implements OnInit {
   private connectionStatus$ = this.webSocketService.getConnectionStatus();
-
+  private isPopupEventListenerAdded = false;
   isLoading: boolean = true;
   reseteable: boolean = false;
   cultivo: any;
@@ -46,8 +46,10 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
   map!: Map;
   view!: MapView;
 
+  posicion1Value: number | null = null;
+  posicion2Value: number | null = null;
+
   constructor(
-    private cultivoService: CultivoService,
     private toastr: ToastrService,
     private cd: ChangeDetectorRef,
     private router: Router,
@@ -307,16 +309,11 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         field = 'masa_rend_seco';
       }
 
-      console.log('mati debug field', field);
-      console.log('mati debug data.features[0]', data.features[0]);
-      console.log('mati debug data.features[0] masa rend seco', data.features[0].properties.masa_rend_seco);
-
-
       const renderer = new ClassBreaksRenderer({
         field: field,
         classBreakInfos: [
           {
-            minValue: rendimientos[0],  // Valor mínimo
+            minValue: rendimientos[0],
             maxValue: p19,
             symbol: new SimpleMarkerSymbol({
               style: index === 0 ? 'circle' : 'diamond',
@@ -403,6 +400,14 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
                 { fieldName: 'fecha', label: 'Fecha' },
               ]
             }
+          ],
+          actions: [
+            {
+              id: index === 0 ? 'addToCalculation1' : 'addToCalculation2',
+              title: index === 0 ? 'Agregar a calculo en posicion 1' : 'Agregar a calculo en posicion 2',
+              image: "https://img.icons8.com/?size=100&id=1501&format=png&color=000000",
+              type: 'button'
+            }
           ]
         }
       });
@@ -424,11 +429,56 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         console.error('Error al cargar la capa GeoJSON:', error);
       });
     });
+
+    if (!this.isPopupEventListenerAdded) {
+      reactiveUtils.on(
+        () => this.view.popup,
+        'trigger-action',
+        (event: __esri.PopupTriggerActionEvent) => {
+          console.log('Popup trigger action event:', event);
+          if (event.action.id === 'addToCalculation1') {
+            this.addToCalculation1(event);
+            console.log('Triggered addToCalculation1');
+          } else if (event.action.id === 'addToCalculation2') {
+            this.addToCalculation2(event);
+            console.log('Triggered addToCalculation2');
+          }
+        }
+      );
+      this.isPopupEventListenerAdded = true;
+    }
+    
   }           
 
+  addToCalculation1(event: __esri.PopupTriggerActionEvent): void {
+    const attributes = this.view.popup.selectedFeature.attributes;
+    this.posicion1Value = attributes.rendimiento_normalizado;
+    this.cd.detectChanges();
+    this.toastr.success(`Valor ${this.posicion1Value} agregado a posición 1`);
+  }
+
+  addToCalculation2(event: __esri.PopupTriggerActionEvent): void {
+    const attributes = this.view.popup.selectedFeature.attributes;
+    this.posicion2Value = attributes.masa_rend_seco_original ?? attributes.masa_rend_seco;
+    this.cd.detectChanges();
+    this.toastr.success(`Valor ${this.posicion2Value} agregado a posición 2`);
+  }  
+
+  calcularCoeficiente(): void {
+    if (this.posicion2Value !== 0 && this.posicion2Value !== null && this.posicion1Value !== null) {
+      this.coeficienteAjusteActual = parseFloat((this.posicion1Value / this.posicion2Value).toPrecision(3));
+      this.cd.detectChanges();
+      this.toastr.success(`Coeficiente calculado: ${this.coeficienteAjusteActual}`);
+    } else {
+      this.toastr.error('No se puede dividir por cero o valores nulos.');
+    }
+  }
 
   confirmarNormalizacion() {
     this.isLoading = true;
+    this.reseteable = false;
+    this.posicion1Value = null;
+    this.posicion2Value = null;
     this.webSocketService.sendMessage({
       action: 'enviar_coeficientes',
       coeficientes: {
@@ -450,7 +500,10 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     if (this.coeficienteAjusteActual !== null && this.coeficienteAjusteActual !== undefined) {
       if(Number(this.coeficienteAjusteActual) !== 1){
         this.reseteable = true;
+      } else {
+        this.reseteable = false;
       }
+
       this.isLoading = true;
       this.webSocketService.sendMessage({
         action: 'actualizar_coeficiente_ajuste',

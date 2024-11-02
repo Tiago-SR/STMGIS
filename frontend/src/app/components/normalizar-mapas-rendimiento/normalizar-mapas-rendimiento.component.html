@@ -65,7 +65,7 @@
             Coeficiente de Ajuste (Actual):
           </label>
           <div class="flex gap-2 items-center">
-            <button *ngIf="coeficienteAjusteActual !== 1" 
+            <button *ngIf="coeficienteAjusteActual !== 1 && reseteable" 
                     (click)="coeficienteAjusteActual = 1; previsualizarMapa()" 
                     class="px-4 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
               Resetear
@@ -109,6 +109,27 @@
       </div>
     </div>
 
+    <div *ngIf="posicion1Value != null && posicion2Value != null" class="p-4 bg-white rounded shadow mt-4">
+      <h4 class="font-semibold text-md mb-2">Cálculo de Coeficiente</h4>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Valor Posición 1:</label>
+          <div class="w-full rounded-md border border-gray-300 shadow-sm bg-gray-100 p-2 sm:text-sm">
+            {{ posicion1Value }}
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-gray-700">Valor Posición 2:</label>
+          <div class="w-full rounded-md border border-gray-300 shadow-sm bg-gray-100 p-2 sm:text-sm">
+            {{ posicion2Value }}
+          </div>
+        </div>
+      </div>
+      <button (click)="calcularCoeficiente()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+        Calcular Coeficiente
+      </button>
+    </div>
+    
     <button (click)="confirmarNormalizacion()" 
             class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
       Confirmar Normalización
