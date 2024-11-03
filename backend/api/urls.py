@@ -26,7 +26,7 @@ from cultivo.views import cultivodata_geojson_view, sse_notify
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
-from ambientes.views import FileUploadView, ambiente_geojson_view
+from ambientes.views import FileUploadView, ambiente_geojson_view, ambiente_geojson_por_cultivo_view
 from ambientes import views as ambientes_view
 from campo.views import CampoViewSet
 from especie import views as especie_view
@@ -55,6 +55,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
+    path('geojson-por-cultivo/', ambiente_geojson_por_cultivo_view, name='ambiente_geojson_por_cultivo'),
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
     path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
     path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),

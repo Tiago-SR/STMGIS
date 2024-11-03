@@ -7,6 +7,7 @@ import { initFlowbite } from 'flowbite';
     <app-header></app-header>
 
     <router-outlet />
+    <app-confirmation-dialog></app-confirmation-dialog>
   `,
   styles: []
 })
