@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     'gestion.apps.GestionConfig',
     'cultivo.apps.CultivoConfig',
     'channels',
+    'rendimiento_ambiente.apps.RendimientoAmbienteConfig',
 
 ]
 

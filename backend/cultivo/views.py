@@ -23,14 +23,46 @@ import uuid
 from django.core.cache import cache
 from django.http import HttpResponse, Http404
 from .models import Cultivo, CultivoData
-
 from django.contrib.gis.geos import GEOSGeometry
-#from geojson import  FeatureCollection, Point
-#from geojson import Feature, FeatureCollection, Point
+
+#from geojson import Feature, FeatureCollection
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from rest_framework import generics
+from .models import Cultivo, CultivoData
+from .serializers import CultivoSerializer, CultivoDataGeoSerializer
+import json
+
+from django.http import StreamingHttpResponse
+import time
+from django.core.serializers import serialize
+from django.http import JsonResponse
+from django.db import transaction
+from django.contrib.gis.geos import Point
+import chardet
+from datetime import datetime
+import pandas as pd
+import io
+import threading
+import uuid
+from django.core.cache import cache
+from django.http import HttpResponse, Http404
+from .models import Cultivo, CultivoData
+from django.contrib.gis.geos import GEOSGeometry
 
 class CultivoViewSet(viewsets.ModelViewSet):
     queryset = Cultivo.objects.all().order_by('nombre')
     serializer_class = CultivoSerializer
+
+    @action(detail=True, methods=['get'], url_path='is-normalized')
+    def is_normalized(self, request, pk=None):
+        cultivo = self.get_object()
+        # Check if any CultivoData entries have rendimiento_normalizado equal to 0
+        has_unormalized_data = CultivoData.objects.filter(cultivo=cultivo, rendimiento_normalizado=0).exists()
+        all_normalized = not has_unormalized_data
+        return Response({'all_normalized': all_normalized})
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -146,7 +178,7 @@ def cultivodata_geojson_view(request):
         "geojson",
         queryset,
         geometry_field="punto_geografico",
-        fields=["rendimiento_relativo"]
+        fields=["rendimiento_real", 'masa_rend_seco', 'rendimiento_relativo', 'rendimiento_normalizado']
     )
 
     geojson = json.loads(geojson_str)

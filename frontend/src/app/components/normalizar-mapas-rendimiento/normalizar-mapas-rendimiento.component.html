@@ -1,35 +1,138 @@
 <div class="container mx-auto p-4">
-  <h2 class="text-xl font-semibold mb-6 text-center">Normalización de Mapas de Rendimiento</h2>
+  <h2 class="text-xl font-semibold mb-4 text-center">Normalización de Mapas de Rendimiento - {{ cultivo?.nombre }}</h2>
+  
+  <div id="viewDiv" style="height: 450px;" class="mb-4"></div>
 
-  <div id="viewDiv" style="height: 500px;" class="mb-6"></div>
-
-  <div *ngIf="mapaReferencia && mapaActual">
-    <h3 class="font-semibold text-md mb-4">Cultivo: {{ cultivo?.nombre }}</h3>
-
-    <div class="mb-4 p-4 bg-white rounded shadow">
-      <h4 class="font-semibold text-md mb-2">Mapa de Referencia: {{ nombreMapaReferencia || 'Sin nombre' }}</h4>
-
-      <label for="coeficienteAjusteReferencia" class="block text-sm font-medium text-gray-700">Coeficiente de Ajuste (Referencia):</label>
-      <input id="coeficienteAjusteReferencia" type="number" step="0.01" [(ngModel)]="coeficienteAjusteReferencia" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-
-      <p>Coeficiente sugerido: {{ coeficienteSugeridoReferencia | number: '1.2-2' }}</p>
-    </div>
-
-    <div class="mb-4 p-4 bg-white rounded shadow">
-      <h4 class="font-semibold text-md mb-2">Mapa Actual: {{ nombreMapaActual || 'Sin nombre' }}</h4>
-
-      <label for="coeficienteAjusteActual" class="block text-sm font-medium text-gray-700">Coeficiente de Ajuste (Actual):</label>
-      <input id="coeficienteAjusteActual" type="number" step="0.01" [(ngModel)]="coeficienteAjusteActual" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
-
-      <p>Coeficiente sugerido: {{ coeficienteSugeridoActual | number: '1.2-2' }}</p>
-    </div>
-
-    <button (click)="confirmarNormalizacion()" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
-      Confirmar Normalización
-    </button>
+  <div *ngIf="isLoading" class="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75 z-10">
+    <svg aria-hidden="true" class="inline w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-green-500" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+    </svg>
+    <span class="sr-only">Loading...</span>
   </div>
 
-  <div *ngIf="!mapaReferencia || !mapaActual" class="text-center text-red-500">
-    No hay más mapas disponibles para normalizar.
+  <div *ngIf="mapaReferencia && mapaActual">
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div class="p-4 bg-white rounded shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="font-semibold text-md flex items-center">
+            <span class="inline-block w-3 h-3 bg-black rounded-full mr-2"></span>
+            Mapa Referencia (Acumulado)
+          </h4>
+          <span class="text-sm text-gray-600">{{ puntosReferencia | number }} puntos</span>
+        </div>
+
+        <div class="flex justify-between items-center mb-4">
+          <label class="text-sm font-medium text-gray-700">Coeficiente de Ajuste (Referencia):</label>
+          <span class="font-medium">{{ coeficienteAjusteReferencia | number:'1.2-2' }}</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 py-3">
+          <div class="border rounded p-3">
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-600">Percentil 80:</span>
+              <span class="font-medium">{{ percentil80Referencia | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Coeficiente sugerido (P80):</span>
+              <span class="font-medium">{{ coeficienteSugeridoReferencia | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="border rounded p-3">
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-600">Mediana:</span>
+              <span class="font-medium">{{ medianaReferencia | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Coeficiente sugerido (Med):</span>
+              <span class="font-medium">{{ coeficienteSugeridoMedianaReferencia | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4 bg-white rounded shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="font-semibold text-md">
+            <span class="inline-block w-3 h-3 bg-black transform rotate-45 mr-2"></span>
+            {{ nombreMapaActual }}
+          </h4>
+          <span class="text-sm text-gray-600">{{ puntosActual | number }} puntos</span>
+        </div>
+
+        <div class="flex justify-between items-center gap-2 mb-4">
+          <label class="text-sm font-medium text-gray-700 whitespace-nowrap">
+            Coeficiente de Ajuste (Actual):
+          </label>
+          <div class="flex gap-2 items-center">
+            <button *ngIf="coeficienteAjusteActual !== 1 && reseteable" 
+                    (click)="coeficienteAjusteActual = 1; previsualizarMapa()" 
+                    class="px-4 py-1 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
+              Resetear
+            </button>
+            
+            <input type="number" 
+                   step="0.001" 
+                   [(ngModel)]="coeficienteAjusteActual" 
+                   (change)="limitarDecimales()" 
+                   class="w-32 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm" />
+            
+            <button (click)="previsualizarMapa()" 
+                    class="px-4 py-1 bg-green-300 text-gray-700 rounded hover:bg-green-600">
+              Previsualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="border rounded p-3">
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-600">Percentil 80:</span>
+              <span class="font-medium">{{ percentil80Actual | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Coeficiente sugerido (P80):</span>
+              <span class="font-medium">{{ coeficienteSugeridoActual | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="border rounded p-3">
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-600">Mediana:</span>
+              <span class="font-medium">{{ medianaActual | number:'1.2-2' }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-600">Coeficiente sugerido (Med):</span>
+              <span class="font-medium">{{ coeficienteSugeridoMedianas | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="posicion1Value != null && posicion2Value != null" class="p-4 bg-white rounded shadow mt-4">
+      <h4 class="font-semibold text-md mb-2">Cálculo de Coeficiente</h4>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <label class="text-sm font-medium text-gray-700">Valor Posición 1:</label>
+          <div class="w-full rounded-md border border-gray-300 shadow-sm bg-gray-100 p-2 sm:text-sm">
+            {{ posicion1Value }}
+          </div>
+        </div>
+        <div>
+          <label class="text-sm font-medium text-gray-700">Valor Posición 2:</label>
+          <div class="w-full rounded-md border border-gray-300 shadow-sm bg-gray-100 p-2 sm:text-sm">
+            {{ posicion2Value }}
+          </div>
+        </div>
+      </div>
+      <button (click)="calcularCoeficiente()" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+        Calcular Coeficiente
+      </button>
+    </div>
+    
+    <button (click)="confirmarNormalizacion()" 
+            class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+      Confirmar Normalización
+    </button>
   </div>
 </div>

@@ -5,6 +5,8 @@ from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.auth import AuthMiddlewareStack
 from django.urls import path
 
+
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'api.settings')
 
 django.setup()  # Initialize Django
