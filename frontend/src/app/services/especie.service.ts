@@ -7,6 +7,7 @@ import { Especie } from '../models/especie.model';
   providedIn: 'root'
 })
 export class EspecieService {
+ 
   private baseUrl = 'http://api.proyecto.local/especies/';
 
   constructor(private http: HttpClient) {}
@@ -14,6 +15,8 @@ export class EspecieService {
   crearEspecie(especie: Especie): Observable<Especie> {
     return this.http.post<Especie>(this.baseUrl, especie);
   }
+
+
 
   obtenerEspecies(): Observable<Especie[]> {
     return this.http.get<Especie[]>(this.baseUrl);

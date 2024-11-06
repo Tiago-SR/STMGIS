@@ -22,7 +22,7 @@ from django.conf import  settings
 from django.conf.urls.static import  static
 from .jwt_personalizado import CustomTokenObtainPairView
 
-from cultivo.views import cultivodata_geojson_view, sse_notify
+from cultivo import views as cultivo_view
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
@@ -31,9 +31,10 @@ from ambientes import views as ambientes_view
 from campo.views import CampoViewSet
 from especie import views as especie_view
 from gestion import views as gestion_view
-from cultivo import views as cultivo_view
 from cultivo.views import CultivoViewSet
 from rendimiento_ambiente.views import RendimientoAmbienteView
+from ambientes.views import download_shapefile_ambiente
+
 
 
 router = routers.DefaultRouter()
@@ -57,10 +58,22 @@ urlpatterns = [
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
     path('geojson-por-cultivo/', ambiente_geojson_por_cultivo_view, name='ambiente_geojson_por_cultivo'),
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
-    path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
-    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),
+    path('cultivodata-geojson/', cultivo_view.cultivodata_geojson_view, name='cultivodata-geojson'),
+    path('sse-notify/<str:upload_id>/', cultivo_view.sse_notify, name='sse_notify'),
     #path('api/cultivo/<int:cultivo_id>/rendimiento/', RendimientoAmbienteView.as_view(), name='cultivo-rendimiento')
     path('rendimientos/<uuid:pk>/calcular-rendimiento/', RendimientoAmbienteView.as_view({'get': 'calcular_rendimiento'}), name='cultivo-rendimiento'),
     path('rendimientos/<uuid:pk>/exportar-excel/', RendimientoAmbienteView.as_view({'get': 'exportar_excel'}), name='exportar-excel'),
-    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')
+    path('sse-notify/<str:upload_id>/', cultivo_view.sse_notify, name='sse_notify'),
+    path('cultivodata-geojson-por-cultivo/', cultivo_view.cultivodata_geojson_por_cultivo_view, name='cultivodata_geojson_por_cultivo'),
+    path('download-ambiente-shapefile/<uuid:campo_id>/', ambientes_view.download_shapefile_ambiente, name='download_ambiente_shapefile'),
+    path('download-cultivo-data-shapefile/<uuid:cultivo_id>/', cultivo_view.download_shapefile_cultivo_data, name='download_cultivo_data_shapefile'),
+    path('rendimiento-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.rendimiento_ambiente_geojson_view, name='rendimiento_ambiente_geojson'),
+    path('extraccion-p-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_p_ambiente_geojson_view, name='extraccion-p-ambiente-geojson'),
+    path('extraccion-k-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_k_ambiente_geojson_view, name='extraccion-k-ambiente-geojson'),
+
+
+
+
+
+
 ] +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

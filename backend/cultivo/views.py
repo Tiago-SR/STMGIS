@@ -24,7 +24,6 @@ from django.core.cache import cache
 from django.http import HttpResponse, Http404
 from .models import Cultivo, CultivoData
 from django.contrib.gis.geos import GEOSGeometry
-
 #from geojson import Feature, FeatureCollection
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -34,7 +33,9 @@ from rest_framework import generics
 from .models import Cultivo, CultivoData
 from .serializers import CultivoSerializer, CultivoDataGeoSerializer
 import json
-
+from django.core.files.temp import NamedTemporaryFile
+import shapefile
+import zipfile
 from django.http import StreamingHttpResponse
 import time
 from django.core.serializers import serialize
@@ -49,8 +50,13 @@ import threading
 import uuid
 from django.core.cache import cache
 from django.http import HttpResponse, Http404
-from .models import Cultivo, CultivoData
 from django.contrib.gis.geos import GEOSGeometry
+from rendimiento_ambiente.models import RendimientoAmbiente
+from ambientes.models import Ambiente
+from django.db.models import F, OuterRef, Subquery
+
+
+
 
 class CultivoViewSet(viewsets.ModelViewSet):
     queryset = Cultivo.objects.all().order_by('nombre')
@@ -185,6 +191,24 @@ def cultivodata_geojson_view(request):
 
     return JsonResponse(geojson)
 
+def cultivodata_geojson_por_cultivo_view(request):
+    cultivo_id = request.GET.get('cultivo_id', None)
+    if cultivo_id:
+        queryset = CultivoData.objects.filter(cultivo__id=cultivo_id)
+    else:
+        return JsonResponse({"error": "Se requiere el parámetro cultivo_id"}, status=400)
+
+    geojson_str = serialize(
+        "geojson",
+        queryset,
+        geometry_field="punto_geografico",
+        fields=["rendimiento_real", 'masa_rend_seco', 'rendimiento_relativo', 'rendimiento_normalizado']
+    )
+
+    geojson = json.loads(geojson_str)
+    return JsonResponse(geojson)
+
+
 def detect_file_encoding(file_path):
     with open(file_path, 'rb') as f:
         result = chardet.detect(f.read())
@@ -309,6 +333,58 @@ def save_csv_to_database(file_content, cultivo, file_name):
     except Exception as e:
         raise e
 
+def download_shapefile_cultivo_data(request, cultivo_id):
+    try:
+        cultivo_data = CultivoData.objects.filter(cultivo_id=cultivo_id)
+        if not cultivo_data.exists():
+            raise Http404("No se encontraron datos para el cultivo especificado.")
+    except CultivoData.DoesNotExist:
+        raise Http404("Cultivo no encontrado.")
+
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                # Crear el shapefile con el autoBalance activado
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POINT) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    
+                    # Definir los campos
+                    shp_writer.field("ArchivoCsv", "C", size=255)
+                    shp_writer.field("AnchFja", "F", decimal=2)
+                    shp_writer.field("Humedad", "F", decimal=2)
+                    shp_writer.field("MasaRndSec", "F", decimal=2)
+                    shp_writer.field("Velocidad", "F", decimal=2)
+                    shp_writer.field("Fecha", "D")
+                    shp_writer.field("RendReal", "F", decimal=2)
+                    shp_writer.field("RendNorm", "F", decimal=2)
+                    shp_writer.field("RendRel", "F", decimal=2)
+
+                    # Agregar los puntos y sus atributos
+                    for punto in cultivo_data:
+                        shp_writer.point(punto.punto_geografico.x, punto.punto_geografico.y)
+                        shp_writer.record(
+                            ArchivoCsv=punto.nombre_archivo_csv,
+                            AnchFja=punto.anch_fja or 0,
+                            Humedad=punto.humedad or 0,
+                            MasaRndSec=punto.masa_rend_seco or 0,
+                            Velocidad=punto.velocidad or 0,
+                            Fecha=punto.fecha,
+                            RendReal=punto.rendimiento_real or 0,
+                            RendNorm=punto.rendimiento_normalizado or 0,
+                            RendRel=punto.rendimiento_relativo or 0
+                        )
+
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                zip_file.write(shp_file.name, "cultivo_data.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), "cultivo_data.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), "cultivo_data.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="cultivo_data_{cultivo_id}.zip"'
+        return response
+
+    
 def sse_notify(request, upload_id):
     def event_stream():
         status = cache.get(f'upload_status_{upload_id}')
@@ -330,3 +406,261 @@ def sse_notify(request, upload_id):
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
     return response
+
+def rendimiento_ambiente_geojson_view(request, cultivo_id):
+    try:
+        print(f"Procesando cultivo_id: {cultivo_id}")
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        print(f"Cultivo encontrado: {cultivo.nombre}")
+
+        # Primero, obtener los rendimientos por ambiente
+        rendimientos = RendimientoAmbiente.objects.filter(
+            cultivo=cultivo
+        ).select_related('ambiente')
+        
+        print(f"Rendimientos encontrados: {rendimientos.count()}")
+
+        # Crear el GeoJSON manualmente
+        features = []
+        rendimientos_valores = []
+
+        for rendimiento in rendimientos:
+            if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom and rendimiento.rendimiento_real_promedio:
+                # Guardar el valor para calcular percentiles
+                rendimientos_valores.append(float(rendimiento.rendimiento_real_promedio))
+                
+                feature = {
+                    'type': 'Feature',
+                    'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
+                    'properties': {
+                        'idA': rendimiento.ambiente.idA,
+                        'name': rendimiento.ambiente.name or '',
+                        'ambiente': rendimiento.ambiente.ambiente or '',
+                        'area': float(rendimiento.ambiente.area) if rendimiento.ambiente.area else 0,
+                        'rendimiento_real': float(rendimiento.rendimiento_real_promedio)
+                    }
+                }
+                features.append(feature)
+
+        print(f"Features creadas: {len(features)}")
+        print(f"Rendimientos valores: {rendimientos_valores}")
+
+        # Calcular percentiles
+        if rendimientos_valores:
+            rendimientos_valores.sort()
+            n = len(rendimientos_valores)
+            percentiles = {
+                'p20': rendimientos_valores[int(n * 0.2)],
+                'p40': rendimientos_valores[int(n * 0.4)],
+                'p60': rendimientos_valores[int(n * 0.6)],
+                'p80': rendimientos_valores[int(n * 0.8)],
+                'max': rendimientos_valores[-1]
+            }
+        else:
+            percentiles = {
+                'p20': 0,
+                'p40': 0,
+                'p60': 0,
+                'p80': 0,
+                'max': 0
+            }
+
+        print(f"Percentiles calculados: {percentiles}")
+
+        # Crear la respuesta GeoJSON
+        geojson = {
+            'type': 'FeatureCollection',
+            'features': features,
+            'percentiles': percentiles
+        }
+
+        return JsonResponse(geojson, safe=False)
+
+    except Exception as e:
+        print(f"Error en rendimiento_ambiente_geojson_view: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {'error': f'Error al obtener datos: {str(e)}'},
+            status=500
+        )
+
+def extraccion_p_ambiente_geojson_view(request, cultivo_id):
+    try:
+        print(f"Procesando cultivo_id: {cultivo_id}")
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        especie = cultivo.especie
+        print(f"Cultivo encontrado: {cultivo.nombre}")
+        print(f"Especie: {especie.nombre}")
+        
+        # Primero, obtener los rendimientos por ambiente
+        rendimientos = RendimientoAmbiente.objects.filter(
+            cultivo=cultivo
+        ).select_related('ambiente')
+        
+        print(f"Rendimientos encontrados: {rendimientos.count()}")
+
+        # Crear el GeoJSON manualmente
+        features = []
+        rendimientos_valores = []
+
+        for rendimiento in rendimientos:
+            if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom and rendimiento.rendimiento_real_promedio:
+                # Calcular la extracción de P
+                if 'Fosforo' in especie.nutrientes:
+                    extraccion_p = rendimiento.rendimiento_real_promedio * especie.nutrientes.get("Fosforo", 0)
+                else:
+                    extraccion_p = 0
+                    print(f"No se encontró el valor de 'Fósforo' para la especie '{especie.nombre}'")
+                
+                # Guardar el valor para calcular percentiles
+                rendimientos_valores.append(extraccion_p)
+                
+                feature = {
+                    'type': 'Feature',
+                    'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
+                    'properties': {
+                        'idA': rendimiento.ambiente.idA,
+                        'name': rendimiento.ambiente.name or '',
+                        'ambiente': rendimiento.ambiente.ambiente or '',
+                        'area': float(rendimiento.ambiente.area) if rendimiento.ambiente.area else 0,
+                        'extraccion_p': extraccion_p
+                    }
+                }
+                features.append(feature)
+
+        print(f"Features creadas: {len(features)}")
+        print(f"Valores de extracción de P: {rendimientos_valores}")
+
+        # Calcular percentiles
+        if rendimientos_valores:
+            rendimientos_valores.sort()
+            n = len(rendimientos_valores)
+            percentiles = {
+                'p20': rendimientos_valores[int(n * 0.2)],
+                'p40': rendimientos_valores[int(n * 0.4)],
+                'p60': rendimientos_valores[int(n * 0.6)],
+                'p80': rendimientos_valores[int(n * 0.8)],
+                'max': rendimientos_valores[-1]
+            }
+        else:
+            percentiles = {
+                'p20': 0,
+                'p40': 0,
+                'p60': 0,
+                'p80': 0,
+                'max': 0
+            }
+
+        print(f"Percentiles calculados: {percentiles}")
+
+        # Crear la respuesta GeoJSON
+        geojson = {
+            'type': 'FeatureCollection',
+            'features': features,
+            'percentiles': percentiles,
+            'especie': {
+                'nombre': especie.nombre,
+                'nutrientes': especie.nutrientes
+            }
+        }
+
+        return JsonResponse(geojson, safe=False)
+
+    except Exception as e:
+        print(f"Error en extraccion_p_ambiente_geojson_view: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {'error': f'Error al obtener datos: {str(e)}'},
+            status=500
+        )
+
+def extraccion_k_ambiente_geojson_view(request, cultivo_id):
+    try:
+        print(f"Procesando cultivo_id: {cultivo_id}")
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        especie = cultivo.especie
+        print(f"Cultivo encontrado: {cultivo.nombre}")
+        print(f"Especie: {especie.nombre}")
+        
+        # Primero, obtener los rendimientos por ambiente
+        rendimientos = RendimientoAmbiente.objects.filter(
+            cultivo=cultivo
+        ).select_related('ambiente')
+        
+        print(f"Rendimientos encontrados: {rendimientos.count()}")
+
+        # Crear el GeoJSON manualmente
+        features = []
+        rendimientos_valores = []
+
+        for rendimiento in rendimientos:
+            if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom and rendimiento.rendimiento_real_promedio:
+                # Calcular la extracción de P
+                if 'Potasio' in especie.nutrientes:
+                    extraccion_k = rendimiento.rendimiento_real_promedio * especie.nutrientes.get("Potasio", 0)
+                else:
+                    extraccion_k = 0
+                    print(f"No se encontró el valor de 'Potasio' para la especie '{especie.nombre}'")
+                
+                # Guardar el valor para calcular percentiles
+                rendimientos_valores.append(extraccion_k)
+                
+                feature = {
+                    'type': 'Feature',
+                    'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
+                    'properties': {
+                        'idA': rendimiento.ambiente.idA,
+                        'name': rendimiento.ambiente.name or '',
+                        'ambiente': rendimiento.ambiente.ambiente or '',
+                        'area': float(rendimiento.ambiente.area) if rendimiento.ambiente.area else 0,
+                        'extraccion_k': extraccion_k
+                    }
+                }
+                features.append(feature)
+
+        print(f"Features creadas: {len(features)}")
+        print(f"Valores de extracción de P: {rendimientos_valores}")
+
+        # Calcular percentiles
+        if rendimientos_valores:
+            rendimientos_valores.sort()
+            n = len(rendimientos_valores)
+            percentiles = {
+                'p20': rendimientos_valores[int(n * 0.2)],
+                'p40': rendimientos_valores[int(n * 0.4)],
+                'p60': rendimientos_valores[int(n * 0.6)],
+                'p80': rendimientos_valores[int(n * 0.8)],
+                'max': rendimientos_valores[-1]
+            }
+        else:
+            percentiles = {
+                'p20': 0,
+                'p40': 0,
+                'p60': 0,
+                'p80': 0,
+                'max': 0
+            }
+
+        # Crear la respuesta GeoJSON
+        geojson = {
+            'type': 'FeatureCollection',
+            'features': features,
+            'percentiles': percentiles,
+            'especie': {
+                'nombre': especie.nombre,
+                'nutrientes': especie.nutrientes
+            }
+        }
+
+        return JsonResponse(geojson, safe=False)
+
+    except Exception as e:
+        print(f"Error en extraccion_p_ambiente_geojson_view: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {'error': f'Error al obtener datos: {str(e)}'},
+            status=500
+        )

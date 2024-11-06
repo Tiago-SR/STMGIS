@@ -13,7 +13,9 @@ from .serializers import RendimientoAmbienteSerializer
 from cultivo.models import Cultivo, CultivoData
 from .models import RendimientoAmbiente
 from ambientes.models import  Ambiente
-import openpyxl
+import xlsxwriter
+
+
 
 
 class RendimientoAmbienteView(viewsets.ModelViewSet):
