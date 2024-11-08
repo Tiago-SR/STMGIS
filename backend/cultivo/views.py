@@ -208,7 +208,6 @@ def cultivodata_geojson_por_cultivo_view(request):
     geojson = json.loads(geojson_str)
     return JsonResponse(geojson)
 
-
 def detect_file_encoding(file_path):
     with open(file_path, 'rb') as f:
         result = chardet.detect(f.read())
@@ -383,8 +382,60 @@ def download_shapefile_cultivo_data(request, cultivo_id):
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="cultivo_data_{cultivo_id}.zip"'
         return response
+ 
+def download_rendimiento_ambiente_shapefile(request, cultivo_id):
+    try:
+        cultivo = Cultivo.objects.get(id=cultivo_id)
+        rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
+        if not rendimiento_ambiente.exists():
+            raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
+    except Cultivo.DoesNotExist:
+        raise Http404("Cultivo no encontrado.")
 
-    
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    
+                    # Definir campos del shapefile
+                    shp_writer.field("idA", "C", size=50)
+                    shp_writer.field("name", "C", size=255)
+                    shp_writer.field("ambiente", "C", size=255)
+                    shp_writer.field("area", "F", decimal=2)
+                    shp_writer.field("RendReal", "F", decimal=2)
+
+                    # Añadir los multipolígonos y sus atributos
+                    for rendimiento in rendimiento_ambiente:
+                        if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
+                            geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
+                            if geom['type'] == 'MultiPolygon':
+                                for polygon in geom['coordinates']:
+                                    shp_writer.poly(polygon)
+                            else:
+                                shp_writer.poly(geom['coordinates'])
+                            
+                            shp_writer.record(
+                                idA=rendimiento.ambiente.idA,
+                                name=rendimiento.ambiente.name or '',
+                                ambiente=rendimiento.ambiente.ambiente or '',
+                                area=rendimiento.ambiente.area or 0,
+                                RendReal=rendimiento.rendimiento_real_promedio or 0
+                            )
+
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                cultivo_nombre = cultivo.nombre.replace(" ", "_")
+                zip_file.write(shp_file.name, f"{cultivo_nombre}_rendimiento_ambiente.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"{cultivo_nombre}_rendimiento_ambiente.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"{cultivo_nombre}_rendimiento_ambiente.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        # El nombre del archivo de descarga incluirá el nombre del cultivo
+        nombre_archivo = cultivo.nombre.replace(" ", "_")
+        response['Content-Disposition'] = f'attachment; filename="rendimiento_ambiente_{nombre_archivo}.zip"'
+        return response
+
 def sse_notify(request, upload_id):
     def event_stream():
         status = cache.get(f'upload_status_{upload_id}')

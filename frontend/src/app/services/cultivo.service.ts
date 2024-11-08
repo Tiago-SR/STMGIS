@@ -76,4 +76,15 @@ export class CultivoService {
     const url = `${this.baseUrl}${cultivoId}/is-normalized/`;
     return this.http.get<{ all_normalized: boolean }>(url);
   }
+  
+  descargarShapefileRendimientoAmbiente(cultivoId: string, nombreCultivo: string): void {
+    const url = `http://api.proyecto.local/download-rendimiento-ambiente-shapefile/${cultivoId}`;
+    
+    // Crear un enlace temporal para descargar el archivo con el nombre del cultivo
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${nombreCultivo.replace(/ /g, '_')}_rendimiento_ambiente.zip`;
+    link.click();
+  }
+
 }

@@ -403,6 +403,14 @@ export class CultivoVerComponent implements OnInit {
     window.open(url, '_blank');
   }
 
+  descargarShapefileRendimientoAmbiente() {
+    if (this.cultivo && this.cultivo.nombre) {
+      this.cultivoService.descargarShapefileRendimientoAmbiente(this.idCultivo, this.cultivo.nombre);
+    } else {
+      console.error('Cultivo o nombre del cultivo no disponible');
+    }
+  }
+
   toggleLayerMapaRendimiento(): void {
     if (this.cultivoDataLayerMapaRendimiento) {
       this.cultivoDataLayerMapaRendimiento.visible = this.mapaRendimientoChecked.value ?? false;
@@ -427,7 +435,6 @@ export class CultivoVerComponent implements OnInit {
   toggleLayerAjusteMBA(): void {
     console.log('toggleLayerAjusteMBA');
   }
-
   cargarRendimientoAmbiente(): void {
     if (!this.idCultivo) {
         console.log('No hay ID de cultivo');

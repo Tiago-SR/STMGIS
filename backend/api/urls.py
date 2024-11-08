@@ -70,6 +70,7 @@ urlpatterns = [
     path('rendimiento-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.rendimiento_ambiente_geojson_view, name='rendimiento_ambiente_geojson'),
     path('extraccion-p-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_p_ambiente_geojson_view, name='extraccion-p-ambiente-geojson'),
     path('extraccion-k-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_k_ambiente_geojson_view, name='extraccion-k-ambiente-geojson'),
+    path('download-rendimiento-ambiente-shapefile/<uuid:cultivo_id>/', cultivo_view.download_rendimiento_ambiente_shapefile, name='download_rendimiento_ambiente_shapefile'),
 
 
 
