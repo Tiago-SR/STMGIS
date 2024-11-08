@@ -1,4 +1,3 @@
-# Create your views here.
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from campo.models import Campo
@@ -17,52 +16,54 @@ import shapefile
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from api.const import ADMIN, RESPONSABLE
+import logging
 
-
+logger = logging.getLogger(__name__)
 
 class CampoViewSet(viewsets.ModelViewSet):
-    queryset = Campo.objects.all()
     serializer_class = CampoSerializer
-    parser_classes = (MultiPartParser, FormParser, JSONParser)  # Permite JSON y multipart
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'responsable') and user.user_type == RESPONSABLE:
+            empresas_asignadas = user.responsable.empresas.all()
+            queryset = Campo.objects.filter(empresa__in=empresas_asignadas, is_active=True)
+        else:
+            queryset = Campo.objects.filter(is_active=True)
+
+        empresa_id = self.request.query_params.get('empresa')
+        if empresa_id:
+            queryset = queryset.filter(empresa_id=empresa_id)
+
+        return queryset
+
     def list(self, request): 
         user = request.user     
-        
-        if user.is_superuser or user.user_type == ADMIN:
-
-            campos = Campo.objects.all()
-        else :
+        if hasattr(user, 'responsable') and user.user_type == RESPONSABLE:
+            empresas_asignadas = user.responsable.empresas.all()
+            logger.debug(f"Empresas asignadas para el usuario '{user.username}': {[empresa.id for empresa in empresas_asignadas]}")
+            
+            if empresas_asignadas.exists():
+                campos = Campo.objects.filter(empresa__in=empresas_asignadas, is_active=True)
+            else:
+                campos = Campo.objects.none()
+                logger.warning(f"Usuario '{user.username}' no tiene empresas asignadas.")
+        else:
             campos = Campo.objects.filter(is_active=True)
-        empresa_id = request.query_params.get('empresa')  # Obtiene el parámetro de la consulta
+            logger.info(f"Usuario '{user.username}' es admin o regular, devolviendo todos los campos activos.")
 
+        empresa_id = request.query_params.get('empresa')
         if empresa_id:
             campos = campos.filter(empresa_id=empresa_id)
+            logger.debug(f"Filtrando campos por empresa_id={empresa_id} para el usuario '{user.username}'.")
 
         if campos.exists():
             serializer = CampoSerializer(campos, many=True)
             return Response({'data': serializer.data, 'success': True}, status=status.HTTP_200_OK)
         else:
-            return Response({'message': 'No hay campos disponibles.'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'data': [], 'success': True}, status=status.HTTP_200_OK)
 
-
-
-    """ 
-       if empresa_id:
-            print("Empresa ID recibido:", empresa_id)
-            try:
-                campos = Campo.objects.filter(empresa_id=empresa_id, is_active=True)
-                if campos.exists():
-                    serializer = CampoSerializer(campos, many=True)                    
-                    return Response({'data': serializer.data, 'success': True}), status.HTTP_200_OK
-                else:
-                    return Response({'message': 'No hay campos para esta empresa.'}, status=status.HTTP_404_NOT_FOUND)
-            except Exception as e:
-                return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            campos = Campo.objects.filter(is_active=True)
-            serializer = CampoSerializer(campos, many=True)
-            return Response({'data': serializer.data, 'success': True}, status=status.HTTP_200_OK)
-    """
     def create(self, request, *args, **kwargs):
             with transaction.atomic():
                 serializer = self.get_serializer(data=request.data)
@@ -86,8 +87,8 @@ class CampoViewSet(viewsets.ModelViewSet):
     def handle_uploaded_shapefile(self, shp, shx, dbf, campo):
         try:
             with shapefile.Reader(shp=shp, shx=shx, dbf=dbf) as sf:
-                fields = sf.fields[1:]  # Omite el primer campo, que usualmente es un campo de borrado
-                field_names = [field[0] for field in fields]  # Obtiene los nombres de los campos
+                fields = sf.fields[1:]
+                field_names = [field[0] for field in fields]
 
                 for shapeRecord in sf.shapeRecords():
                     geom = shapeRecord.shape.__geo_interface__
@@ -149,4 +150,3 @@ class CampoViewSet(viewsets.ModelViewSet):
                 return Response({'message': 'El campo ya está desactivado'}, status=status.HTTP_400_BAD_REQUEST)
         except Campo.DoesNotExist:
             return Response({'error': 'Campo no encontrado'}, status=status.HTTP_404_NOT_FOUND)
-

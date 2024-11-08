@@ -1,6 +1,9 @@
-<div class="border border-black rounded-md p-2 flex flex-col">
-    <p class="text-xl font-bold">{{user.first_name}} {{user.last_name}}</p>
-    <p class="text-lg">{{user.email}}</p>
-    <p>{{ user.descripcion ? user.descripcion : '--No tiene descripcion--' }}</p>
-    <a [routerLink]="[user.id]" class="mt-2 text-white bg-gray-800 text-center hover:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 me-2 mb-2 dark:bg-gray-800 dark:hover:bg-gray-700 dark:focus:ring-gray-700 dark:border-gray-700">Ver</a>
+<div class="w-full max-w-[400px] p-6 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 flex flex-col mx-auto">
+    <p class="text-2xl font-bold text-gray-900 dark:text-white truncate">{{ user.first_name }} {{ user.last_name }}</p>
+    <p class="text-lg font-normal text-gray-700 dark:text-gray-400 truncate">{{ user.email }}</p>
+    <p class="font-normal text-gray-700 dark:text-gray-400 break-words">{{ user.descripcion ? user.descripcion : '--No tiene descripción--' }}</p>
+    <a [routerLink]="[user.id]" 
+       class="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-700">
+      Gestionar
+    </a>
 </div>

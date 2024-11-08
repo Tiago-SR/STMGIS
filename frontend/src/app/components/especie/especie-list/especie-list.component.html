@@ -1,9 +1,9 @@
 <div class="ml-2 mr-2 w-full">
   <div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold">Lista de Cultivos</h1>
-    <button *ngIf="!cargando && cultivos.length !== 0" (click)="abrirModalCreacion()"
+    <h1 class="text-2xl font-bold">Lista de Especies</h1>
+    <button *ngIf="!cargando && especies.length !== 0" (click)="abrirModalCreacion()"
             class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-2">
-      Nuevo Cultivo
+      Nueva Especie
     </button>
   </div>
 
@@ -11,27 +11,27 @@
     <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
   </div>
 
-  <div *ngIf="!cargando && cultivos.length === 0" class="text-center py-10">
-    <h2 class="text-3xl font-bold mb-4">No hay cultivos aún</h2>
-    <p class="text-gray-600 mb-6">Agrega tu primer cultivo para comenzar.</p>
+  <div *ngIf="!cargando && especies.length === 0" class="text-center py-10">
+    <h2 class="text-3xl font-bold mb-4">No hay especies aún</h2>
+    <p class="text-gray-600 mb-6">Agrega tu primera especie para comenzar.</p>
     <button (click)="abrirModalCreacion()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-      Crear Cultivo
+      Crear Especie
     </button>
   </div>
 
-  <div *ngIf="!cargando && cultivos.length > 0" class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-    <app-cultivo-card *ngFor="let cultivo of cultivos"
-      [cultivo]="cultivo"
-      (editarCultivo)="formComponent.abrirModal($event)"
-      (cultivoEliminado)="abrirModal($event)">
-    </app-cultivo-card>
+  <div *ngIf="!cargando && especies.length > 0" class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <app-especie-card *ngFor="let especie of especies"
+      [especie]="especie"
+      (editarEspecie)="formComponent.abrirModal($event)"
+      (especieEliminada)="abrirModal($event)">
+    </app-especie-card>
   </div>
 
   <div *ngIf="mostrarModal" class="fixed inset-0 z-[100] flex items-center justify-center">
     <div class="fixed inset-0 bg-gray-800 bg-opacity-50" (click)="cerrarModal()" tabindex="0"></div>
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative z-[200]">
       <h2 class="text-xl font-bold text-gray-900 mb-4" style="word-break: break-word;">
-        ¿Deseas eliminar el cultivo "{{ cultivoSeleccionado?.nombre }}"?
+        ¿Deseas eliminar la especie "{{ especieSeleccionada?.nombre }}"?
       </h2>
       <p class="mb-6">Esta acción no se puede deshacer.</p>
       <div class="flex justify-end">
@@ -41,5 +41,5 @@
     </div>
   </div>
 
-  <app-cultivo-form #formComponent (cultivoActualizado)="actualizarCultivo($event)"></app-cultivo-form>
+  <app-especie-form #formComponent (especieActualizada)="actualizarEspecie($event)"></app-especie-form>
 </div>

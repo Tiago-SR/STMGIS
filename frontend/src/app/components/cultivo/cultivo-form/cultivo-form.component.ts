@@ -66,7 +66,8 @@ export class CultivoFormComponent {
 
   cargarCampos(): void {
     const empresaId = this.cultivoForm.value.empresa;
-    if (!empresaId) return    
+    if (!empresaId) return;
+    
     this.campoService.getCamposByEmpresa(empresaId).subscribe({
       next: (campos) => {
         this.campos = campos.data;
@@ -78,6 +79,7 @@ export class CultivoFormComponent {
       }
     });
   }
+  
 
   cargarGestiones(): void {
     this.gestionService.getAllGestiones().subscribe({

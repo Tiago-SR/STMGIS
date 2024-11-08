@@ -11,3 +11,6 @@
     transform: rotate(360deg);
   }
 }
+:host {
+  @apply flex min-w-full flex-1
+}

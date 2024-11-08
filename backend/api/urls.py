@@ -59,7 +59,6 @@ urlpatterns = [
     path('campos/activate/<uuid:pk>/', CampoViewSet.as_view({'post': 'activate'}), name='campo-activate'),
     path('cultivodata-geojson/', cultivodata_geojson_view, name='cultivodata-geojson'),
     path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),
-    #path('api/cultivo/<int:cultivo_id>/rendimiento/', RendimientoAmbienteView.as_view(), name='cultivo-rendimiento')
     path('rendimientos/<uuid:pk>/calcular-rendimiento/', RendimientoAmbienteView.as_view({'get': 'calcular_rendimiento'}), name='cultivo-rendimiento'),
     path('rendimientos/<uuid:pk>/exportar-excel/', RendimientoAmbienteView.as_view({'get': 'exportar_excel'}), name='exportar-excel'),
     path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')

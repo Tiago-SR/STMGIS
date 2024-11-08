@@ -10,6 +10,7 @@ import { CultivoService } from '../../services/cultivo.service';
 import { EspecieService } from '../../services/especie.service';
 import { ToastrService } from 'ngx-toastr';
 import { UploadService } from '../../services/upload.service';
+import { PaginatedResponse } from '../../models/paginated-response.model';
 
 @Component({
   selector: 'app-subir-csv',

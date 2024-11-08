@@ -1,7 +1,7 @@
 import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { AbstractControl, FormBuilder, FormGroup, ValidationErrors, Validators } from '@angular/forms';
-import { Especie } from '../../models/especie.model';
-import { EspecieService } from '../../services/especie.service';
+import { Especie } from '../../../models/especie.model';
+import { EspecieService } from '../../../services/especie.service';
 import { ToastrService } from 'ngx-toastr';
 
 @Component({
