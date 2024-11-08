@@ -1,4 +1,3 @@
-#from geojson import Feature, FeatureCollection
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -24,8 +23,6 @@ from django.core.cache import cache
 from django.http import HttpResponse, Http404
 from .models import Cultivo, CultivoData
 from django.contrib.gis.geos import GEOSGeometry
-
-#from geojson import Feature, FeatureCollection
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -65,13 +62,21 @@ class CultivoViewSet(viewsets.ModelViewSet):
         return Response({'all_normalized': all_normalized})
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Cultivo.objects.all().order_by('nombre')
+        user = self.request.user
+
+        # Filtrado para usuarios de tipo Responsable
+        if hasattr(user, 'responsable'):
+            empresas_asignadas = user.responsable.empresas.all()
+            # Filtrar los cultivos pertenecientes a los campos de las empresas asignadas
+            queryset = queryset.filter(campo__empresa__in=empresas_asignadas)
+
+        # Filtro adicional por campo y especie si están presentes en los parámetros de la consulta
         campo = self.request.query_params.get('campo')
         especie = self.request.query_params.get('especie')
 
         if campo:
             queryset = queryset.filter(campo_id=campo)
-
         if especie:
             queryset = queryset.filter(especie_id=especie)
 

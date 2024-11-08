@@ -1,7 +1,7 @@
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
-import { EspecieService } from '../../services/especie.service';
-import { Especie } from '../../models/especie.model';
+import { EspecieService } from '../../../services/especie.service';
+import { Especie } from '../../../models/especie.model';
 import { EspecieFormComponent } from '../especie-form/especie-form.component';
 
 @Component({

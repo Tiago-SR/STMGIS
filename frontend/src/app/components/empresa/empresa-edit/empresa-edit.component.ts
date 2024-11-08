@@ -10,7 +10,7 @@ import { Empresa } from '../../../models/empresa.model';
   styleUrls: ['./empresa-edit.component.scss']
 })
 export class EmpresaEditComponent implements OnInit {
-  empresa: Empresa = new Empresa();  // Asegúrate de que este modelo tiene el formato adecuado
+  empresa: Empresa = new Empresa();
 
   constructor(
     private empresaService: EmpresaService,
@@ -19,7 +19,6 @@ export class EmpresaEditComponent implements OnInit {
   ) {}
 
   ngOnInit() {
-    // Captura el ID desde la URL
     const id = this.route.snapshot.params['id'];
     if (id) {
       this.loadEmpresa(id);
@@ -35,10 +34,14 @@ export class EmpresaEditComponent implements OnInit {
 
   onSubmit(form: NgForm) {
     if (form.valid) {
+      if (this.empresa.rut && this.empresa.rut.length > 12) {
+        console.error('El RUT no puede tener más de 12 dígitos');
+        return;
+      }
       this.empresaService.updateEmpresa(this.empresa.id!, this.empresa).subscribe({
         next: (res) => {
           console.log('Empresa actualizada:', res);
-          this.router.navigate(['/empresas']);  // Ajusta la ruta según necesidad
+          this.router.navigate(['/empresas']);
         },
         error: (err) => console.error('Error al actualizar empresa:', err)
       });

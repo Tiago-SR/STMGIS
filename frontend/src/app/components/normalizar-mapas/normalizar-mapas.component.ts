@@ -14,6 +14,7 @@ import { Router } from '@angular/router';
 import { WebSocketService } from '../../services/web-socket.service';
 import { Subscription } from 'rxjs';
 import { ConfirmationService } from '../../services/confirmation.service';
+import { PaginatedResponse } from '../../models/paginated-response.model';
 
 @Component({
   selector: 'app-normalizar-mapas',

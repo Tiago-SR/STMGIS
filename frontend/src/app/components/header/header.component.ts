@@ -3,6 +3,7 @@ import { AuthService } from '../../services/auth.service';
 import { ToastrService } from 'ngx-toastr';
 import { UploadService } from '../../services/upload.service';
 import { initFlowbite } from 'flowbite';
+import { UserType } from '../../enums/user-type';
 
 @Component({
   selector: 'app-header',
@@ -16,7 +17,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   public isLogged: boolean = false;
   eventSource: EventSource | undefined;
   uploadId: string | null = null;
-
+  userType: UserType | null = UserType.RESPONSABLE;
+  UserType = UserType;
   constructor(
     private authService: AuthService,
     private toastr: ToastrService,
@@ -26,6 +28,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
   toggleMenu(): void {
     this.menuOpen = !this.menuOpen;
   }
+
+ 
+  
 
   ngOnInit() {
     this.authService.checkAndRenewToken();
@@ -42,7 +47,7 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.initSSE(uploadId);
       }
     });
-
+    this.userType = this.authService.getUserType()
     initFlowbite();
   }
 

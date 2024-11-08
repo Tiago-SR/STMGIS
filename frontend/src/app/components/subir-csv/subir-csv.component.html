@@ -37,7 +37,7 @@
           <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">{{ cultivo.nombre }}</option>
         </select>
         <div *ngIf="csvForm.get('cultivo')?.hasError('noCultivos') && csvForm.get('cultivo')?.touched" class="text-red-500 text-sm">
-          No hay cultivos disponibles para esta especie.
+          No hay cultivos disponibles para estos filtros.
         </div>
       </div>      
     
