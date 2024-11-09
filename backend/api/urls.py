@@ -22,7 +22,7 @@ from django.conf import  settings
 from django.conf.urls.static import  static
 from .jwt_personalizado import CustomTokenObtainPairView
 
-from cultivo.views import cultivodata_geojson_view, sse_notify
+from cultivo.views import cultivodata_geojson_view, sse_notify, CultivoListView
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
@@ -52,7 +52,6 @@ urlpatterns = [
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('admin/', admin.site.urls),
-    path('', include(router.urls)),
     path('upload-shapefile/', FileUploadView.as_view(), name='upload-shapefile'),
     path('geojson/', ambiente_geojson_view, name='ambiente_geojson'),
     path('geojson-por-cultivo/', ambiente_geojson_por_cultivo_view, name='ambiente_geojson_por_cultivo'),
@@ -61,5 +60,7 @@ urlpatterns = [
     path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),
     path('rendimientos/<uuid:pk>/calcular-rendimiento/', RendimientoAmbienteView.as_view({'get': 'calcular_rendimiento'}), name='cultivo-rendimiento'),
     path('rendimientos/<uuid:pk>/exportar-excel/', RendimientoAmbienteView.as_view({'get': 'exportar_excel'}), name='exportar-excel'),
-    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify')
+    path('sse-notify/<str:upload_id>/', sse_notify, name='sse_notify'),
+    path('cultivos/list/', CultivoListView.as_view(), name='cultivo-list'),
+    path('', include(router.urls)),
 ] +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

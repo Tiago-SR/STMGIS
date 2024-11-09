@@ -2,29 +2,87 @@
   <div class="flex justify-between items-center mb-4">
     <h1 class="text-2xl font-bold">Lista de Cultivos</h1>
     <button *ngIf="!cargando && cultivos.length !== 0" (click)="abrirModalCreacion()"
-            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-2">
+      class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-2">
       Nuevo Cultivo
     </button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+    <div>
+      <label for="empresa" class="block text-sm font-medium text-gray-700">Empresa</label>
+      <select id="empresa" [(ngModel)]="selectedEmpresa" (change)="onFiltroChangeEmpresa()"
+        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+        <option value="">Todas</option>
+        <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="especie" class="block text-sm font-medium text-gray-700">Especie</label>
+      <select id="especie" [(ngModel)]="selectedEspecie" (change)="onFiltroChange()"
+        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+        <option value="">Todas</option>
+        <option *ngFor="let especie of especies" [value]="especie.id">{{ especie.nombre }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="campo" class="block text-sm font-medium text-gray-700">Campo</label>
+      <select id="campo" [(ngModel)]="selectedCampo" (change)="onFiltroChange()"
+        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+        <option value="">Todos</option>
+        <option *ngFor="let campo of campos" [value]="campo.id">{{ campo.nombre }}</option>
+      </select>
+    </div>
+    <div>
+      <label for="gestion" class="block text-sm font-medium text-gray-700">Gestión</label>
+      <select id="gestion" [(ngModel)]="selectedGestion" (change)="onFiltroChange()"
+        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+        <option value="">Todas</option>
+        <option *ngFor="let gestion of gestiones" [value]="gestion.id">{{ gestion.name }}</option>
+      </select>
+    </div>
+    <div *ngIf="resetearForm">
+      <label class="block text-sm font-medium text-gray-700">Resetear</label>
+      <button (click)="resetearFiltros()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+        Resetear Filtros
+      </button>
+    </div>
   </div>
 
   <div *ngIf="cargando" class="flex justify-center items-center py-10">
     <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12"></div>
   </div>
 
-  <div *ngIf="!cargando && cultivos.length === 0" class="text-center py-10">
+  <div *ngIf="!cargando && cultivos.length === 0 && resetearForm === false" class="text-center py-10">
     <h2 class="text-3xl font-bold mb-4">No hay cultivos aún</h2>
     <p class="text-gray-600 mb-6">Agrega tu primer cultivo para comenzar.</p>
-    <button (click)="abrirModalCreacion()" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+    <button (click)="abrirModalCreacion()"
+      class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
       Crear Cultivo
     </button>
   </div>
 
-  <div *ngIf="!cargando && cultivos.length > 0" class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <div *ngIf="!cargando && cultivos.length === 0 && resetearForm === true" class="text-center py-10">
+    <h2 class="text-3xl font-bold mb-4">No hay cultivos que coincidan con los filtros seleccionados</h2>
+  </div>
+
+  <div *ngIf="!cargando && cultivos.length > 0"
+    class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     <app-cultivo-card *ngFor="let cultivo of cultivos"
-      [cultivo]="cultivo"
-      (editarCultivo)="formComponent.abrirModal($event)"
-      (cultivoEliminado)="abrirModal($event)">
+      [cultivo]="cultivo" (editarCultivo)="formComponent.abrirModal($event)" (cultivoEliminado)="abrirModal($event)">
     </app-cultivo-card>
+  </div>
+
+  <div *ngIf="!cargando && totalItems > pageSize" class="flex justify-center mt-4">
+    <button (click)="previousPage()" [disabled]="currentPage === 1"
+      class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l">
+      Anterior
+    </button>
+    <span class="mx-2 text-gray-700">Página {{ currentPage }} de {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages"
+      class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r">
+      Siguiente
+    </button>
   </div>
 
   <div *ngIf="mostrarModal" class="fixed inset-0 z-[100] flex items-center justify-center">
@@ -35,8 +93,10 @@
       </h2>
       <p class="mb-6">Esta acción no se puede deshacer.</p>
       <div class="flex justify-end">
-        <button (click)="cerrarModal()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2">Cancelar</button>
-        <button (click)="confirmarEliminar()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Eliminar</button>
+        <button (click)="cerrarModal()"
+          class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded mr-2">Cancelar</button>
+        <button (click)="confirmarEliminar()"
+          class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">Eliminar</button>
       </div>
     </div>
   </div>

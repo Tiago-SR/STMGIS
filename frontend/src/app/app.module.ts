@@ -37,6 +37,7 @@ import { NormalizarMapasComponent } from './components/normalizar-mapas/normaliz
 import { NormalizarMapasRendimientoComponent } from './components/normalizar-mapas-rendimiento/normalizar-mapas-rendimiento.component';
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationService } from './services/confirmation.service';
+import { NgxPaginationModule } from 'ngx-pagination';
 
 @NgModule({
   declarations: [
@@ -77,6 +78,7 @@ import { ConfirmationService } from './services/confirmation.service';
     ReactiveFormsModule,
     CommonModule,
     BrowserAnimationsModule,
+    NgxPaginationModule,
     ToastrModule.forRoot({
       timeOut: 3000,
       positionClass: 'toast-bottom-right',

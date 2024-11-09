@@ -43,10 +43,6 @@ export class CampoService {
         return this.http.put<any>(`${this.apiUrl}${id}/`, campo);
     }
 
-    // deleteCampo(id: number): Observable<any> {
-    //     return this.http.patch(`http://api.proyecto.local/campos/${id}/`, { is_active: false });
-
-    // }
     deleteCampo(id: number): Observable<any> {
         return this.http.patch(`${this.apiUrl}${id}/deactivate/`, {}).pipe(
             catchError(error => {

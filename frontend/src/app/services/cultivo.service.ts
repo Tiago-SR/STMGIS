@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import Cultivo from '../models/cultivo.model';
 import { HttpClient, HttpParams, HttpResponse } from '@angular/common/http';
+import { PaginatedResponse } from '../models/paginated-response.model';
 
 @Injectable({
   providedIn: 'root'
@@ -10,6 +11,19 @@ export class CultivoService {
   private baseUrl = 'http://api.proyecto.local/cultivos/';
 
   constructor(private http: HttpClient) { }
+
+  obtenerCultivosPaginados(parametrosFiltro?: any): Observable<PaginatedResponse<Cultivo>> {
+    let params = new HttpParams();
+    if (parametrosFiltro) {
+        Object.keys(parametrosFiltro).forEach(key => {
+            if (parametrosFiltro[key] !== null && parametrosFiltro[key] !== undefined) {
+                const paramKey = key === 'empresa' ? 'campo__empresa' : key;
+                params = params.append(paramKey, parametrosFiltro[key]);
+            }
+        });
+    }
+    return this.http.get<PaginatedResponse<Cultivo>>(this.baseUrl + 'list/', { params });
+}
 
   eliminarCultivo(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}${id}`);
