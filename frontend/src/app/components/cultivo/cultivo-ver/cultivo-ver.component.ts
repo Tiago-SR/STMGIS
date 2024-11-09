@@ -16,6 +16,7 @@ import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
 import { FormControl } from '@angular/forms';
 import { Especie } from '../../../models/especie.model';
 import { EspecieService } from '../../../services/especie.service';
+import { HttpResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-cultivo-ver',
@@ -962,6 +963,56 @@ export class CultivoVerComponent implements OnInit {
   descargarShapefileExtraccionN() {
     this.cultivoService.descargarShapefileExtraccionN(this.idCultivo);
   }
+  calcularYDescargarExcel(): void {
+    const cultivoId = this.cultivo?.id;
+
+    if (!cultivoId) {
+        console.error('No hay un cultivo seleccionado');
+        return;
+    }
+
+    // Primero calculamos el rendimiento
+    this.cultivoService.calcularRendimientoAmbiente(cultivoId).subscribe({
+        next: () => {
+            // Una vez calculado, procedemos a descargar el Excel
+            this.cultivoService.descargarExcelRendimiento(cultivoId).subscribe({
+                next: (response: HttpResponse<Blob>) => {
+                    // Obtener el nombre del archivo del header Content-Disposition
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'rendimiento_ambiente.xlsx';
+                    
+                    if (contentDisposition) {
+                        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+                        if (matches != null && matches[1]) {
+                            filename = matches[1].replace(/['"]/g, '');
+                        }
+                    }
+
+                    // Crear blob y descargar
+                    const blob = new Blob([response.body as Blob], { 
+                        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                    });
+                    
+                    const url = window.URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.click();
+                    
+                    // Limpieza
+                    window.URL.revokeObjectURL(url);
+                    link.remove();
+                },
+                error: (error) => {
+                    console.error('Error al descargar el archivo Excel:', error);
+                }
+            });
+        },
+        error: (error) => {
+            console.error('Error al calcular el rendimiento:', error);
+        }
+    });
+}
 //Mostrar y ocultar
   toggleLayerMapaRendimiento(): void {
     if (this.cultivoDataLayerMapaRendimiento) {
