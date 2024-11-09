@@ -335,11 +335,13 @@ def save_csv_to_database(file_content, cultivo, file_name):
 def download_shapefile_cultivo_data(request, cultivo_id):
     try:
         cultivo_data = CultivoData.objects.filter(cultivo_id=cultivo_id)
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
         if not cultivo_data.exists():
             raise Http404("No se encontraron datos para el cultivo especificado.")
     except CultivoData.DoesNotExist:
         raise Http404("Cultivo no encontrado.")
 
+    
     with NamedTemporaryFile(suffix='.zip') as temp_zip:
         with zipfile.ZipFile(temp_zip, 'w') as zip_file:
             with NamedTemporaryFile(suffix='.shp') as shp_file:
@@ -374,13 +376,16 @@ def download_shapefile_cultivo_data(request, cultivo_id):
                         )
 
                 # Agregar los archivos SHP, DBF y SHX al ZIP
-                zip_file.write(shp_file.name, "cultivo_data.shp")
-                zip_file.write(shp_file.name.replace('.shp', '.dbf'), "cultivo_data.dbf")
-                zip_file.write(shp_file.name.replace('.shp', '.shx'), "cultivo_data.shx")
+                cultivo_nombre = cultivo.nombre.replace(" ", "_")
+
+                zip_file.write(shp_file.name, f"Mapa_Rendimiento_{cultivo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Mapa_Rendimiento_{cultivo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Mapa_Rendimiento_{cultivo_nombre}.shx")
+
 
         temp_zip.seek(0)
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
-        response['Content-Disposition'] = f'attachment; filename="cultivo_data_{cultivo_id}.zip"'
+        response['Content-Disposition'] = f'attachment; filename="Mapa_Rendimiento_{cultivo_nombre}.zip"'
         return response
  
 def download_rendimiento_ambiente_shapefile(request, cultivo_id):
@@ -425,16 +430,208 @@ def download_rendimiento_ambiente_shapefile(request, cultivo_id):
 
                 # Agregar los archivos SHP, DBF y SHX al ZIP
                 cultivo_nombre = cultivo.nombre.replace(" ", "_")
-                zip_file.write(shp_file.name, f"{cultivo_nombre}_rendimiento_ambiente.shp")
-                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"{cultivo_nombre}_rendimiento_ambiente.dbf")
-                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"{cultivo_nombre}_rendimiento_ambiente.shx")
+                zip_file.write(shp_file.name, f"Rendimiento_Ambiente_{cultivo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Rendimiento_Ambiente_{cultivo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Rendimiento_Ambiente_{cultivo_nombre}.shx")
 
         temp_zip.seek(0)
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
         # El nombre del archivo de descarga incluirá el nombre del cultivo
         nombre_archivo = cultivo.nombre.replace(" ", "_")
-        response['Content-Disposition'] = f'attachment; filename="rendimiento_ambiente_{nombre_archivo}.zip"'
+        response['Content-Disposition'] = f'attachment; filename="Rendimiento_Ambiente_{cultivo_nombre}.zip"'
         return response
+
+def download_extraccion_p_ambiente_shapefile(request, cultivo_id):
+    try:
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        especie = cultivo.especie
+        rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
+        
+        if not rendimiento_ambiente.exists():
+            raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
+        
+        # Validar que la especie tenga el valor de fósforo en nutrientes
+        if 'Fosforo' not in especie.nutrientes:
+            raise Http404("La especie del cultivo no tiene definido el valor de fósforo en nutrientes.")
+        
+        fosforo_valor = especie.nutrientes.get("Fosforo", 0)
+
+    except Cultivo.DoesNotExist:
+        raise Http404("Cultivo no encontrado.")
+
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    
+                    # Definir campos del shapefile
+                    shp_writer.field("idA", "C", size=50)
+                    shp_writer.field("name", "C", size=255)
+                    shp_writer.field("ambiente", "C", size=255)
+                    shp_writer.field("area", "F", decimal=2)
+                    shp_writer.field("ExtraccionP", "F", decimal=2)
+
+                    # Añadir los multipolígonos y sus atributos
+                    for rendimiento in rendimiento_ambiente:
+                        if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
+                            geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
+                            extraccion_p = rendimiento.rendimiento_real_promedio * fosforo_valor
+                            
+                            # Añadir geometría (soporta MultiPolygon)
+                            if geom['type'] == 'MultiPolygon':
+                                for polygon in geom['coordinates']:
+                                    shp_writer.poly(polygon)
+                            else:
+                                shp_writer.poly(geom['coordinates'])
+                            
+                            # Añadir los datos al registro
+                            shp_writer.record(
+                                idA=rendimiento.ambiente.idA,
+                                name=rendimiento.ambiente.name or '',
+                                ambiente=rendimiento.ambiente.ambiente or '',
+                                area=rendimiento.ambiente.area or 0,
+                                ExtraccionP=extraccion_p or 0
+                            )
+
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                cultivo_nombre = cultivo.nombre.replace(" ", "_")
+                zip_file.write(shp_file.name, f"Extraccion_P_{cultivo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Extraccion_P_{cultivo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Extraccion_P_{cultivo_nombre}.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="Extraccion_P_{cultivo_nombre}.zip"'
+        return response
+    
+def download_extraccion_k_ambiente_shapefile(request, cultivo_id):
+    try:
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        especie = cultivo.especie
+        rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
+        
+        if not rendimiento_ambiente.exists():
+            raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
+        
+        # Validar que la especie tenga el valor de fósforo en nutrientes
+        if 'Potasio' not in especie.nutrientes:
+            raise Http404("La especie del cultivo no tiene definido el valor de potasio en nutrientes.")
+        
+        potasio_valor = especie.nutrientes.get("Potasio", 0)
+
+    except Cultivo.DoesNotExist:
+        raise Http404("Cultivo no encontrado.")
+
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    
+                    # Definir campos del shapefile
+                    shp_writer.field("idA", "C", size=50)
+                    shp_writer.field("name", "C", size=255)
+                    shp_writer.field("ambiente", "C", size=255)
+                    shp_writer.field("area", "F", decimal=2)
+                    shp_writer.field("ExtraccionK", "F", decimal=2)
+
+                    # Añadir los multipolígonos y sus atributos
+                    for rendimiento in rendimiento_ambiente:
+                        if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
+                            geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
+                            extraccion_k = rendimiento.rendimiento_real_promedio * potasio_valor
+                            
+                            # Añadir geometría (soporta MultiPolygon)
+                            if geom['type'] == 'MultiPolygon':
+                                for polygon in geom['coordinates']:
+                                    shp_writer.poly(polygon)
+                            else:
+                                shp_writer.poly(geom['coordinates'])
+                            
+                            # Añadir los datos al registro
+                            shp_writer.record(
+                                idA=rendimiento.ambiente.idA,
+                                name=rendimiento.ambiente.name or '',
+                                ambiente=rendimiento.ambiente.ambiente or '',
+                                area=rendimiento.ambiente.area or 0,
+                                ExtraccionK=extraccion_k or 0
+                            )
+
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                cultivo_nombre = cultivo.nombre.replace(" ", "_")
+                zip_file.write(shp_file.name, f"Extraccion_K_{cultivo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Extraccion_K_{cultivo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Extraccion_K_{cultivo_nombre}.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="Extraccion_K_{cultivo_nombre}.zip"'
+        return response
+
+def download_extraccion_n_ambiente_shapefile(request, cultivo_id):
+    try:
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        especie = cultivo.especie
+        rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
+        
+        if not rendimiento_ambiente.exists():
+            raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
+        
+        # Validar que la especie tenga el valor de Nitrógeno en nutrientes
+        if 'Nitrogeno' not in especie.nutrientes:
+            raise Http404("La especie del cultivo no tiene definido el valor de nitrógeno en nutrientes.")
+        
+        nitrogeno_valor = especie.nutrientes.get("Nitrogeno", 0)
+
+    except Cultivo.DoesNotExist:
+        raise Http404("Cultivo no encontrado.")
+
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    
+                    # Definir campos del shapefile
+                    shp_writer.field("idA", "C", size=50)
+                    shp_writer.field("name", "C", size=255)
+                    shp_writer.field("ambiente", "C", size=255)
+                    shp_writer.field("area", "F", decimal=2)
+                    shp_writer.field("ExtraccionN", "F", decimal=2)
+
+                    # Añadir los multipolígonos y sus atributos
+                    for rendimiento in rendimiento_ambiente:
+                        if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
+                            geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
+                            extraccion_n = rendimiento.rendimiento_real_promedio * nitrogeno_valor
+                            
+                            # Añadir geometría (soporta MultiPolygon)
+                            if geom['type'] == 'MultiPolygon':
+                                for polygon in geom['coordinates']:
+                                    shp_writer.poly(polygon)
+                            else:
+                                shp_writer.poly(geom['coordinates'])
+                            
+                            # Añadir los datos al registro
+                            shp_writer.record(
+                                idA=rendimiento.ambiente.idA,
+                                name=rendimiento.ambiente.name or '',
+                                ambiente=rendimiento.ambiente.ambiente or '',
+                                area=rendimiento.ambiente.area or 0,
+                                ExtraccionN=extraccion_n or 0
+                            )
+
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                cultivo_nombre = cultivo.nombre.replace(" ", "_")
+                zip_file.write(shp_file.name, f"Extraccion_N_{cultivo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Extraccion_N_{cultivo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Extraccion_N_{cultivo_nombre}.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="Extraccion_N_{cultivo_nombre}.zip"'
+        return response  
 
 def sse_notify(request, upload_id):
     def event_stream():
@@ -488,7 +685,7 @@ def rendimiento_ambiente_geojson_view(request, cultivo_id):
                         'name': rendimiento.ambiente.name or '',
                         'ambiente': rendimiento.ambiente.ambiente or '',
                         'area': float(rendimiento.ambiente.area) if rendimiento.ambiente.area else 0,
-                        'rendimiento_real': float(rendimiento.rendimiento_real_promedio)
+                        'rendimiento_real': float(rendimiento.rendimiento_real_promedio),
                     }
                 }
                 features.append(feature)
@@ -529,6 +726,65 @@ def rendimiento_ambiente_geojson_view(request, cultivo_id):
 
     except Exception as e:
         print(f"Error en rendimiento_ambiente_geojson_view: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {'error': f'Error al obtener datos: {str(e)}'},
+            status=500
+        )
+
+def coeficiente_variacion_geojson_view(request, cultivo_id):
+    try:
+        # Obtener el cultivo especificado
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        
+        # Obtener todos los registros de RendimientoAmbiente asociados con este cultivo
+        rendimientos = RendimientoAmbiente.objects.filter(
+            cultivo=cultivo
+        ).select_related('ambiente')
+        
+        # Crear una lista de características (features) para el GeoJSON
+        features = []
+        coeficientes_variacion = []
+
+        for rendimiento in rendimientos:
+            if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
+                # Agregar el coeficiente de variación a la lista para su clasificación
+                coef_variacion_real = rendimiento.coef_variacion_real * 100 if rendimiento.coef_variacion_real else 0
+                coeficientes_variacion.append(coef_variacion_real)
+
+                # Crear la característica (feature) con las propiedades requeridas
+                feature = {
+                    'type': 'Feature',
+                    'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
+                    'properties': {
+                        'idA': rendimiento.ambiente.idA,
+                        'name': rendimiento.ambiente.name or '',
+                        'ambiente': rendimiento.ambiente.ambiente or '',
+                        'area': float(rendimiento.ambiente.area) if rendimiento.ambiente.area else 0,
+                        'coeficiente_variacion_real': coef_variacion_real,  # Convertido a porcentaje
+                        'coeficiente_variacion_relativo': float(rendimiento.coef_variacion_relativo) * 100 if rendimiento.coef_variacion_relativo else 0  # Convertido a porcentaje
+                    }
+                }
+                features.append(feature)
+
+        # Definir las clases de percentiles como rangos fijos
+        clases_percentiles = {
+            'bajo': 20,    # 0-20%
+            'medio': 40,   # 21-40%
+            'alto': 100    # Más de 40%
+        }
+
+        # Crear la respuesta en formato GeoJSON
+        geojson = {
+            'type': 'FeatureCollection',
+            'features': features,
+            'clases_percentiles': clases_percentiles
+        }
+
+        return JsonResponse(geojson, safe=False)
+
+    except Exception as e:
         import traceback
         traceback.print_exc()
         return JsonResponse(
@@ -628,6 +884,7 @@ def extraccion_p_ambiente_geojson_view(request, cultivo_id):
         )
 
 def extraccion_k_ambiente_geojson_view(request, cultivo_id):
+
     try:
         print(f"Procesando cultivo_id: {cultivo_id}")
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
@@ -709,6 +966,95 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
 
     except Exception as e:
         print(f"Error en extraccion_p_ambiente_geojson_view: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse(
+            {'error': f'Error al obtener datos: {str(e)}'},
+            status=500
+        )
+    
+def extraccion_n_ambiente_geojson_view(request, cultivo_id):
+    try:
+        print(f"Procesando cultivo_id: {cultivo_id}")
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        especie = cultivo.especie
+        print(f"Cultivo encontrado: {cultivo.nombre}")
+        print(f"Especie: {especie.nombre}")
+        
+        # Obtener los rendimientos por ambiente
+        rendimientos = RendimientoAmbiente.objects.filter(
+            cultivo=cultivo
+        ).select_related('ambiente')
+        
+        print(f"Rendimientos encontrados: {rendimientos.count()}")
+
+        # Crear el GeoJSON manualmente
+        features = []
+        rendimientos_valores = []
+
+        for rendimiento in rendimientos:
+            if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom and rendimiento.rendimiento_real_promedio:
+                # Calcular la extracción de Nitrógeno
+                if 'Nitrogeno' in especie.nutrientes:
+                    extraccion_n = rendimiento.rendimiento_real_promedio * especie.nutrientes.get("Nitrogeno", 0)
+                else:
+                    extraccion_n = 0
+                    print(f"No se encontró el valor de 'Nitrógeno' para la especie '{especie.nombre}'")
+                
+                # Guardar el valor para calcular percentiles
+                rendimientos_valores.append(extraccion_n)
+                
+                feature = {
+                    'type': 'Feature',
+                    'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
+                    'properties': {
+                        'idA': rendimiento.ambiente.idA,
+                        'name': rendimiento.ambiente.name or '',
+                        'ambiente': rendimiento.ambiente.ambiente or '',
+                        'area': float(rendimiento.ambiente.area) if rendimiento.ambiente.area else 0,
+                        'extraccion_n': extraccion_n
+                    }
+                }
+                features.append(feature)
+
+        print(f"Features creadas: {len(features)}")
+        print(f"Valores de extracción de N: {rendimientos_valores}")
+
+        # Calcular percentiles
+        if rendimientos_valores:
+            rendimientos_valores.sort()
+            n = len(rendimientos_valores)
+            percentiles = {
+                'p20': rendimientos_valores[int(n * 0.2)],
+                'p40': rendimientos_valores[int(n * 0.4)],
+                'p60': rendimientos_valores[int(n * 0.6)],
+                'p80': rendimientos_valores[int(n * 0.8)],
+                'max': rendimientos_valores[-1]
+            }
+        else:
+            percentiles = {
+                'p20': 0,
+                'p40': 0,
+                'p60': 0,
+                'p80': 0,
+                'max': 0
+            }
+
+        # Crear la respuesta GeoJSON
+        geojson = {
+            'type': 'FeatureCollection',
+            'features': features,
+            'percentiles': percentiles,
+            'especie': {
+                'nombre': especie.nombre,
+                'nutrientes': especie.nutrientes
+            }
+        }
+
+        return JsonResponse(geojson, safe=False)
+
+    except Exception as e:
+        print(f"Error en extraccion_n_ambiente_geojson_view: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse(

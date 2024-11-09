@@ -26,7 +26,6 @@ export class CultivoService {
   obtenerCultivo(id: string): Observable<Cultivo> {
     return this.http.get<Cultivo>(`${this.baseUrl}${id}`);
   }
-
   obtenerCultivos(parametrosFiltro?: any): Observable<Cultivo[]> {
     let params = new HttpParams();
     if (parametrosFiltro) {
@@ -37,29 +36,24 @@ export class CultivoService {
       });
     }
     return this.http.get<Cultivo[]>(this.baseUrl, { params });
-  }
-  
+  }  
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
-   normalizarMapas(cultivoId: string): Observable<any> {
+  normalizarMapas(cultivoId: string): Observable<any> {
      return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-   }
-
+  }
    // Método para obtener los datos de normalización
-   obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
+  obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
      return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-   }
-
+  }
   resultadoNormalizacion(cultivoId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);
   } 
-
   // Método para confirmar la normalización después de la revisión
   confirmarNormalizacion(cultivoId: string, coeficienteAjuste: number): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}/${cultivoId}/confirmar-normalizacion`, { coeficienteAjuste });
   }
-
   calcularRendimientoAmbiente(cultivoId: string): Observable<Blob> {
     const url = `http://api.proyecto.local/rendimientos/${cultivoId}/calcular-rendimiento/`;
     return this.http.get(url, { responseType: 'blob' });
@@ -76,7 +70,7 @@ export class CultivoService {
     const url = `${this.baseUrl}${cultivoId}/is-normalized/`;
     return this.http.get<{ all_normalized: boolean }>(url);
   }
-  
+
   descargarShapefileRendimientoAmbiente(cultivoId: string, nombreCultivo: string): void {
     const url = `http://api.proyecto.local/download-rendimiento-ambiente-shapefile/${cultivoId}`;
     
@@ -87,4 +81,27 @@ export class CultivoService {
     link.click();
   }
 
+  descargarShapefilePorCultivo(idCampo: string): void {
+    const url = `http://api.proyecto.local/download-ambiente-shapefile/${idCampo}`;
+    window.open(url, '_blank');
+  }
+
+  descargarShapefilePorCultivoData(idCultivo: string): void {
+    const url = `http://api.proyecto.local/download-cultivo-data-shapefile/${idCultivo}`;
+    window.open(url, '_blank');
+  }
+
+  descargarShapefileExtraccionP(idCultivo: string): void {
+    const url = `http://api.proyecto.local/download-extraccion-p-shapefile/${idCultivo}`;
+    window.open(url, '_blank');
+  }
+
+  descargarShapefileExtraccionK(idCultivo: string): void {
+    const url = `http://api.proyecto.local/download-extraccion-k-shapefile/${idCultivo}`;
+    window.open(url, '_blank');
+  }
+  descargarShapefileExtraccionN(idCultivo: string): void {
+    const url = `http://api.proyecto.local/download-extraccion-n-shapefile/${idCultivo}`;
+    window.open(url, '_blank');
+  }
 }

@@ -46,11 +46,14 @@ export class CultivoVerComponent implements OnInit {
   showPercentileTable = false;
   extraccionPChecked = new FormControl(false);
   extraccionKChecked = new FormControl(false);
+  extraccionNChecked = new FormControl(false);
 
   extraccionP: number = 0;
   extraccionK: number = 0;
   geojsonLayerExtraccionP: GeoJSONLayer | undefined;
   geojsonLayerExtraccionK: GeoJSONLayer | undefined;
+  geojsonLayerCoeficienteVariacion: GeoJSONLayer | undefined;
+  geojsonLayerExtraccionN: GeoJSONLayer | undefined;
 
 
   // Percentiles
@@ -127,7 +130,7 @@ export class CultivoVerComponent implements OnInit {
       center: [-56.0698, -32.4122], 
       zoom: 8
     });
-  }  
+  } 
 
   highlightFeature(graphic: esri.Graphic) {
     if (this.highlightedGraphic && this.originalSymbol) {
@@ -153,7 +156,6 @@ export class CultivoVerComponent implements OnInit {
       this.originalSymbol = null;
     }
   }
-
   cargarCampo(): void {
     const uuid = this.idCampo
     if (!uuid) {
@@ -276,7 +278,18 @@ export class CultivoVerComponent implements OnInit {
       });
     });
   }
+  changeLayer(layer: string): void {
+    if (layer === 'ambientes') {
+      this.map.remove(this.cultivoDataLayerMapaRendimiento);
+      this.map.add(this.geojsonLayer);
+    } else {
+      this.map.remove(this.geojsonLayer);
+      this.map.add(this.cultivoDataLayerMapaRendimiento);
+    }
 
+  } 
+
+//cargar mapas a vista
   cargarMapaRendimiento(): void {
     if (!this.idCampo) {
       return;
@@ -381,60 +394,6 @@ export class CultivoVerComponent implements OnInit {
         console.error('Error al cargar los datos del GeoJSON:', error);
       });
   }
-
-  changeLayer(layer: string): void {
-    if (layer === 'ambientes') {
-      this.map.remove(this.cultivoDataLayerMapaRendimiento);
-      this.map.add(this.geojsonLayer);
-    } else {
-      this.map.remove(this.geojsonLayer);
-      this.map.add(this.cultivoDataLayerMapaRendimiento);
-    }
-
-  }
-
-  descargarShapefilePorCultivo() {
-    const url = `http://api.proyecto.local/download-ambiente-shapefile/${this.idCampo}`;
-    window.open(url, '_blank');
-  }
-
-  descargarShapefilePorCultivoData() {
-    const url = `http://api.proyecto.local/download-cultivo-data-shapefile/${this.idCultivo}`;
-    window.open(url, '_blank');
-  }
-
-  descargarShapefileRendimientoAmbiente() {
-    if (this.cultivo && this.cultivo.nombre) {
-      this.cultivoService.descargarShapefileRendimientoAmbiente(this.idCultivo, this.cultivo.nombre);
-    } else {
-      console.error('Cultivo o nombre del cultivo no disponible');
-    }
-  }
-
-  toggleLayerMapaRendimiento(): void {
-    if (this.cultivoDataLayerMapaRendimiento) {
-      this.cultivoDataLayerMapaRendimiento.visible = this.mapaRendimientoChecked.value ?? false;
-      this.showPercentileTable = this.mapaRendimientoChecked.value ?? false;
-
-    }
-  }
-
-  toggleLayerMBA(): void {
-    if (this.geojsonLayerMBA) {
-      this.geojsonLayerMBA.visible = this.mbaChecked.value ?? false;
-    }
-  }
-
-  toggleLayerRendimientoAmbiente(): void {
-    if (this.cultivoDataLayerMapaRendimiento) {
-      this.cultivoDataLayerMapaRendimiento.visible = this.mapaRendimientoChecked.value ?? false;
-  
-    
-    }
-  }
-  toggleLayerAjusteMBA(): void {
-    console.log('toggleLayerAjusteMBA');
-  }
   cargarRendimientoAmbiente(): void {
     if (!this.idCultivo) {
         console.log('No hay ID de cultivo');
@@ -491,7 +450,7 @@ export class CultivoVerComponent implements OnInit {
                         }
                     }),
                     visualVariables: [{
-                        type: 'color' as const,
+                        type: 'color',
                         field: 'rendimiento_real',
                         stops: [
                           { value: 0, color: [255, 0, 0, 0.7] },               // Rojo para valores bajos
@@ -653,27 +612,6 @@ export class CultivoVerComponent implements OnInit {
         this.toast.error('Error al cargar la extracción de P por ambiente');
       });
   }
-  toggleLayerRendimientoMBA(): void {
-    console.log('Toggle rendimiento MBA:', this.rendimientoAmbienteChecked.value);
-    
-    // Si la capa no existe, intentamos cargarla primero
-    if (!this.geojsonLayerRendimientoAmbiente) {
-        console.log('Capa no inicializada, cargando...');
-        this.cargarRendimientoAmbiente();
-        return;
-    }
-
-    // Si la capa existe, cambiamos su visibilidad
-    this.geojsonLayerRendimientoAmbiente.visible = this.rendimientoAmbienteChecked.value ?? false;
-    console.log('Capa visible:', this.geojsonLayerRendimientoAmbiente.visible);
-  }
-  toggleLayerExtraccionP(): void {
-    if (this.geojsonLayerExtraccionP) {
-      this.geojsonLayerExtraccionP.visible = this.extraccionPChecked.value ?? false;
-    } else {
-      this.cargarExtraccionAmbienteP();
-    }
-  }
   cargarExtraccionAmbienteK(): void {
     if (!this.idCultivo) {
       console.log('No hay ID de cultivo');
@@ -779,12 +717,314 @@ export class CultivoVerComponent implements OnInit {
         console.error('Error al cargar la capa de extracción de K:', error);
         this.toast.error('Error al cargar la extracción de K por ambiente');
       });
-  }   
+  } 
+  cargarExtraccionAmbienteN(): void {
+    if (!this.idCultivo) {
+      console.log('No hay ID de cultivo');
+      return;
+    }
+  
+    console.log('Cargando extracción de N por ambiente para cultivo:', this.idCultivo);
+    const url = `http://api.proyecto.local/extraccion-n-ambiente-geojson/${this.idCultivo}`;
+  
+    // Si ya existe una capa, la removemos
+    if (this.geojsonLayerExtraccionN) {
+      console.log('Removiendo capa existente de extracción de N');
+      this.map.remove(this.geojsonLayerExtraccionN);
+    }
+  
+    fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Datos recibidos de extracción de N:', data);
+  
+        if (!data.features || data.features.length === 0) {
+          console.warn('No hay features en los datos de extracción de N');
+          this.toast.warning('No hay datos de extracción de N por ambiente disponibles');
+          return;
+        }
+  
+        // Crear el GeoJSON
+        const blob = new Blob([JSON.stringify(data)], {
+          type: 'application/json'
+        });
+        const blobUrl = URL.createObjectURL(blob);
+  
+        this.geojsonLayerExtraccionN = new GeoJSONLayer({
+          url: blobUrl,
+          title: 'Extracción de N por Ambiente',
+          outFields: ['*'],
+          geometryType: "polygon",
+          spatialReference: { wkid: 4326 },
+          renderer: new SimpleRenderer({
+            symbol: new SimpleFillSymbol({
+              style: 'solid',
+              color: [255, 255, 255, 0.4],
+              outline: {
+                color: [0, 0, 0, 1],
+                width: 1
+              }
+            }),
+            visualVariables: [{
+              type: 'color',
+              field: 'extraccion_n',  // Usar extraccion_n aquí
+              stops: [
+                { value: 0, color: [255, 255, 255, 0.7] },     // Blanco para valores bajos
+                { value: data.percentiles.p40, color: [200, 255, 200, 0.7] },  // Verde claro
+                { value: data.percentiles.p60, color: [100, 255, 100, 0.7] },  // Verde medio
+                { value: data.percentiles.p80, color: [0, 255, 0, 0.7] }       // Verde intenso para valores altos
+              ]
+            } as esri.ColorVariableProperties]
+          }),
+          labelingInfo: [{
+            symbol: {
+              type: "text",
+              color: "black",
+              haloColor: "white",
+              haloSize: "2px",
+              font: {
+                size: 12,
+                family: "Arial",
+                weight: "bold"
+              }
+            },
+            labelPlacement: "center-center",
+            labelExpressionInfo: {
+              expression: "Round($feature.extraccion_n, 2) + ' kg de N/ha'"  // Usar extraccion_n aquí
+            }
+          }]
+        });
+  
+        console.log('Capa de extracción de N creada, agregando al mapa...');
+        this.map.add(this.geojsonLayerExtraccionN);
+  
+        // Establecer la visibilidad según el estado del checkbox
+        this.geojsonLayerExtraccionN.visible = this.extraccionNChecked.value ?? false;
+        console.log('Visibilidad de la capa de extracción de N:', this.geojsonLayerExtraccionN.visible);
+  
+        // Zoom a la capa cuando esté lista
+        this.geojsonLayerExtraccionN.when(() => {
+          console.log('Capa de extracción de N cargada completamente');
+        });
+  
+        // Limpiar el URL del Blob después de un tiempo
+        setTimeout(() => {
+          URL.revokeObjectURL(blobUrl);
+          console.log('Blob URL de extracción de N liberada');
+        }, 5000);
+      })
+      .catch(error => {
+        console.error('Error al cargar la capa de extracción de N:', error);
+        this.toast.error('Error al cargar la extracción de N por ambiente');
+      });
+  }  
+  cargarCoeficienteVariacionAmbiente(): void {
+    if (!this.idCultivo) {
+        console.log('No hay ID de cultivo');
+        return;
+    }
+  
+    console.log('Cargando coeficiente de variación para cultivo:', this.idCultivo);
+    const url = `http://api.proyecto.local/coeficiente_variacion_geojson/${this.idCultivo}`;
+    
+    // Remover la capa existente si ya está cargada
+    if (this.geojsonLayerCoeficienteVariacion) {
+        console.log('Removiendo capa existente');
+        this.map.remove(this.geojsonLayerCoeficienteVariacion);
+    }
+  
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Datos recibidos:', data);
+  
+            if (!data.features || data.features.length === 0) {
+                console.warn('No hay features en los datos');
+                this.toast.warning('No hay datos de coeficiente de variación por ambiente disponibles');
+                return;
+            }
+  
+            // Crear un Blob con los datos
+            const blob = new Blob([JSON.stringify(data)], {
+                type: 'application/json'
+            });
+  
+            const blobUrl = URL.createObjectURL(blob);
+  
+            // Crear la capa
+            this.geojsonLayerCoeficienteVariacion = new GeoJSONLayer({
+                url: blobUrl,
+                title: 'Coeficiente de Variación por Ambiente',
+                outFields: ['*'],
+                geometryType: "polygon",
+                spatialReference: { wkid: 4326 },
+                renderer: new SimpleRenderer({
+                    symbol: new SimpleFillSymbol({
+                        style: 'solid',
+                        color: [255, 255, 255, 0.4],
+                        outline: {
+                            color: [0, 0, 0, 1],
+                            width: 1
+                        }
+                    }),
+
+                    visualVariables: [{
+                      type: 'color',
+                      field: 'coeficiente_variacion_real',
+                      stops: [
+                        { value: 0, color: [0, 128, 0, 0.7] },      // Verde oscuro para 0-10%
+                        { value: 10, color: [0, 128, 0, 0.7] },
+                        { value: 10.01, color: [144, 238, 144, 0.7] }, // Verde claro para 10-20%
+                        { value: 20, color: [144, 238, 144, 0.7] },
+                        { value: 20.01, color: [255, 255, 0, 0.7] },   // Amarillo para 20-30%
+                        { value: 30, color: [255, 255, 0, 0.7] },
+                        { value: 30.01, color: [255, 165, 0, 0.7] },   // Anaranjado para 30-40%
+                        { value: 40, color: [255, 165, 0, 0.7] },
+                        { value: 40.01, color: [255, 0, 0, 0.7] }      // Rojo para valores superiores a 40%
+                      ]
+                    } as esri.ColorVariableProperties]
+                  }),
+              
+                labelingInfo: [{
+                    symbol: {
+                        type: "text",
+                        color: "black",
+                        haloColor: "white",
+                        haloSize: "2px",
+                        font: {
+                            size: 12,
+                            family: "Arial",
+                            weight: "bold"
+                        }
+                    },
+                    labelPlacement: "center-center",
+                    labelExpressionInfo: {
+                        expression: "Round($feature.coeficiente_variacion_real, 2) + ' %'"
+                    }
+                }],
+            });
+  
+            this.map.add(this.geojsonLayerCoeficienteVariacion);
+  
+            this.geojsonLayerCoeficienteVariacion.visible = true;
+            console.log('Capa de coeficiente de variación agregada al mapa');
+  
+            this.geojsonLayerCoeficienteVariacion.when(() => {
+                if (this.geojsonLayerCoeficienteVariacion && this.geojsonLayerCoeficienteVariacion.fullExtent) {
+                    this.view.goTo(this.geojsonLayerCoeficienteVariacion.fullExtent);
+                }
+            });
+  
+            setTimeout(() => {
+                URL.revokeObjectURL(blobUrl);
+                console.log('Blob URL liberada');
+            }, 5000);
+        })
+        .catch(error => {
+            console.error('Error al cargar la capa de coeficiente de variación:', error);
+            this.toast.error('Error al cargar el coeficiente de variación por ambiente');
+        });
+  }
+//Descargar archivos
+  descargarShapefileRendimientoAmbiente() {
+    if (this.cultivo && this.cultivo.nombre) {
+      this.cultivoService.descargarShapefileRendimientoAmbiente(this.idCultivo, this.cultivo.nombre);
+    } else {
+      console.error('Cultivo o nombre del cultivo no disponible');
+    }
+  }
+  descargarShapefilePorCultivo() {
+    if (this.idCampo) { 
+      this.cultivoService.descargarShapefilePorCultivo(this.idCampo);
+    } else {
+      console.error('ID de campo no disponible');
+    }
+  }
+  descargarShapefilePorCultivoData() {
+    this.cultivoService.descargarShapefilePorCultivoData(this.idCultivo);
+  }
+  descargarShapefileExtraccionP() {
+    this.cultivoService.descargarShapefileExtraccionP(this.idCultivo);
+  }
+  descargarShapefileExtraccionK() {
+    this.cultivoService.descargarShapefileExtraccionK(this.idCultivo);
+  }
+  descargarShapefileExtraccionN() {
+    this.cultivoService.descargarShapefileExtraccionN(this.idCultivo);
+  }
+//Mostrar y ocultar
+  toggleLayerMapaRendimiento(): void {
+    if (this.cultivoDataLayerMapaRendimiento) {
+      this.cultivoDataLayerMapaRendimiento.visible = this.mapaRendimientoChecked.value ?? false;
+      this.showPercentileTable = this.mapaRendimientoChecked.value ?? false;
+
+    }
+  }
+  toggleLayerMBA(): void {
+    if (this.geojsonLayerMBA) {
+      this.geojsonLayerMBA.visible = this.mbaChecked.value ?? false;
+    }
+  }
+  toggleLayerRendimientoAmbiente(): void {
+    if (this.cultivoDataLayerMapaRendimiento) {
+      this.cultivoDataLayerMapaRendimiento.visible = this.mapaRendimientoChecked.value ?? false;
+  
+    
+    }
+  }
+  toggleLayerAjusteMBA(): void {
+    console.log('toggleLayerAjusteMBA');
+  }
+  toggleLayerRendimientoMBA(): void {
+    console.log('Toggle rendimiento MBA:', this.rendimientoAmbienteChecked.value);
+    
+    // Si la capa no existe, intentamos cargarla primero
+    if (!this.geojsonLayerRendimientoAmbiente) {
+        console.log('Capa no inicializada, cargando...');
+        this.cargarRendimientoAmbiente();
+        return;
+    }
+
+    // Si la capa existe, cambiamos su visibilidad
+    this.geojsonLayerRendimientoAmbiente.visible = this.rendimientoAmbienteChecked.value ?? false;
+    console.log('Capa visible:', this.geojsonLayerRendimientoAmbiente.visible);
+  }
+  toggleLayerCoeficienteVariacion(): void {
+    if (this.geojsonLayerCoeficienteVariacion) {
+      this.geojsonLayerCoeficienteVariacion.visible = this.ajusteMBAChecked.value ?? false;
+    } else {
+      this.cargarCoeficienteVariacionAmbiente();
+    }
+  }
+  toggleLayerExtraccionP(): void {
+    if (this.geojsonLayerExtraccionP) {
+      this.geojsonLayerExtraccionP.visible = this.extraccionPChecked.value ?? false;
+    } else {
+      this.cargarExtraccionAmbienteP();
+    }
+  }  
   toggleLayerExtraccionK(): void {
     if (this.geojsonLayerExtraccionK) {
       this.geojsonLayerExtraccionK.visible = this.extraccionKChecked.value ?? false;
     } else {
       this.cargarExtraccionAmbienteK();
+    }
+  }
+  toggleLayerExtraccionN(): void {
+    if (this.geojsonLayerExtraccionN) {
+      this.geojsonLayerExtraccionN.visible = this.extraccionNChecked.value ?? false;
+    } else {
+      this.cargarExtraccionAmbienteN();
     }
   }
 }

@@ -70,11 +70,11 @@ urlpatterns = [
     path('rendimiento-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.rendimiento_ambiente_geojson_view, name='rendimiento_ambiente_geojson'),
     path('extraccion-p-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_p_ambiente_geojson_view, name='extraccion-p-ambiente-geojson'),
     path('extraccion-k-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_k_ambiente_geojson_view, name='extraccion-k-ambiente-geojson'),
+    path('extraccion-n-ambiente-geojson/<uuid:cultivo_id>/', cultivo_view.extraccion_n_ambiente_geojson_view, name='extraccion-n-ambiente-geojson'),
     path('download-rendimiento-ambiente-shapefile/<uuid:cultivo_id>/', cultivo_view.download_rendimiento_ambiente_shapefile, name='download_rendimiento_ambiente_shapefile'),
-
-
-
-
-
+    path('download-extraccion-p-shapefile/<uuid:cultivo_id>/', cultivo_view.download_extraccion_p_ambiente_shapefile, name='download_extraccion_p_ambiente_shapefile'),
+    path('download-extraccion-k-shapefile/<uuid:cultivo_id>/', cultivo_view.download_extraccion_k_ambiente_shapefile, name='download_extraccion_k_ambiente_shapefile'),
+    path('download-extraccion-n-shapefile/<uuid:cultivo_id>/', cultivo_view.download_extraccion_n_ambiente_shapefile, name='download_extraccion_n_ambiente_shapefile'),
+    path('coeficiente_variacion_geojson/<uuid:cultivo_id>/', cultivo_view.coeficiente_variacion_geojson_view, name='coeficiente_variacion_geojson_view'),
 
 ] +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

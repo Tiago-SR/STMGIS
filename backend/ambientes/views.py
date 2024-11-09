@@ -124,6 +124,7 @@ class FileUploadView(APIView):
 
 def download_shapefile_ambiente(request, campo_id):
     try:
+        campo = Campo.objects.get(id=campo_id)
         ambientes = Ambiente.objects.filter(campo_id=campo_id)
         if not ambientes.exists():
             raise Http404("No se encontraron ambientes para el campo especificado.")
@@ -170,12 +171,13 @@ def download_shapefile_ambiente(request, campo_id):
                                     ID_A=ambiente.idA or 0
                                 )
 
+                campo_nombre = campo.nombre.replace(" ", "_")               
                 # Agregar los archivos SHP, DBF y SHX al ZIP
-                zip_file.write(shp_file.name, "ambiente.shp")
-                zip_file.write(shp_file.name.replace('.shp', '.dbf'), "ambiente.dbf")
-                zip_file.write(shp_file.name.replace('.shp', '.shx'), "ambiente.shx")
+                zip_file.write(shp_file.name, f"Mapa_Ambientes_{campo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Mapa_Ambientes_{campo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Mapa_Ambientes_{campo_nombre}.shx")
 
         temp_zip.seek(0)
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
-        response['Content-Disposition'] = f'attachment; filename="ambientes_campo_{campo_id}.zip"'
+        response['Content-Disposition'] = f'attachment; filename="Mapa_Ambientes_{campo_nombre}.zip"'
         return response
