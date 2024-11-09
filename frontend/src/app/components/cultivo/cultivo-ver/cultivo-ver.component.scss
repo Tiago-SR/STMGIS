@@ -1,5 +1,8 @@
 :host {
-    @apply flex min-w-full flex-1 justify-center
+    display: flex;
+    min-width: 100%;
+    flex: 1;
+    justify-content: center;
 }
 
 .floating-table {
