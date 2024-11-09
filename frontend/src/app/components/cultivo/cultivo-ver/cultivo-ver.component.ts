@@ -963,6 +963,9 @@ export class CultivoVerComponent implements OnInit {
   descargarShapefileExtraccionN() {
     this.cultivoService.descargarShapefileExtraccionN(this.idCultivo);
   }
+  descargarShapefileCoeficienteVariacion() {
+    this.cultivoService.descargarShapefileCoeficienteVariacion(this.idCultivo);
+  }
   calcularYDescargarExcel(): void {
     const cultivoId = this.cultivo?.id;
 
@@ -1012,7 +1015,7 @@ export class CultivoVerComponent implements OnInit {
             console.error('Error al calcular el rendimiento:', error);
         }
     });
-}
+  }
 //Mostrar y ocultar
   toggleLayerMapaRendimiento(): void {
     if (this.cultivoDataLayerMapaRendimiento) {

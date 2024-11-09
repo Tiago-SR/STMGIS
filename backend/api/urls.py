@@ -75,6 +75,7 @@ urlpatterns = [
     path('download-extraccion-p-shapefile/<uuid:cultivo_id>/', cultivo_view.download_extraccion_p_ambiente_shapefile, name='download_extraccion_p_ambiente_shapefile'),
     path('download-extraccion-k-shapefile/<uuid:cultivo_id>/', cultivo_view.download_extraccion_k_ambiente_shapefile, name='download_extraccion_k_ambiente_shapefile'),
     path('download-extraccion-n-shapefile/<uuid:cultivo_id>/', cultivo_view.download_extraccion_n_ambiente_shapefile, name='download_extraccion_n_ambiente_shapefile'),
+    path('download-coeficiente-variacion-shapefile/<uuid:cultivo_id>/', cultivo_view.download_coeficiente_variacion_shapefile, name='download_coeficiente_variacion_shapefile'),
     path('coeficiente_variacion_geojson/<uuid:cultivo_id>/', cultivo_view.coeficiente_variacion_geojson_view, name='coeficiente_variacion_geojson_view'),
 
 ] +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

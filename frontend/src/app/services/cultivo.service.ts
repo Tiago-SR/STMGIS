@@ -104,4 +104,8 @@ export class CultivoService {
     const url = `http://api.proyecto.local/download-extraccion-n-shapefile/${idCultivo}`;
     window.open(url, '_blank');
   }
+  descargarShapefileCoeficienteVariacion(idCultivo: string): void {
+    const url = `http://api.proyecto.local/download-coeficiente-variacion-shapefile/${idCultivo}`;
+    window.open(url, '_blank');
+  }
 }

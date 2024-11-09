@@ -633,6 +633,63 @@ def download_extraccion_n_ambiente_shapefile(request, cultivo_id):
         response['Content-Disposition'] = f'attachment; filename="Extraccion_N_{cultivo_nombre}.zip"'
         return response  
 
+def download_coeficiente_variacion_shapefile(request, cultivo_id):
+    try:
+        cultivo = get_object_or_404(Cultivo, id=cultivo_id)
+        coef_variaciones = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
+        
+        if not coef_variaciones.exists():
+            raise Http404("No se encontraron datos de coeficiente de variación para el cultivo especificado.")
+        
+    except Cultivo.DoesNotExist:
+        raise Http404("Cultivo no encontrado.")
+
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    
+                    # Definir campos del shapefile
+                    shp_writer.field("idA", "C", size=50)
+                    shp_writer.field("name", "C", size=255)
+                    shp_writer.field("ambiente", "C", size=255)
+                    shp_writer.field("area", "F", decimal=2)
+                    shp_writer.field("CoefVarReal", "F", decimal=2)
+
+                    # Añadir los multipolígonos y sus atributos
+                    for coef_variacion in coef_variaciones:
+                        if coef_variacion.ambiente and coef_variacion.ambiente.ambiente_geom:
+                            geom = json.loads(coef_variacion.ambiente.ambiente_geom.json)
+                            coef_var_real = coef_variacion.coef_variacion_real or 0  # Asegúrate de que el campo existe y tiene un valor
+                            
+                            # Añadir geometría (soporta MultiPolygon)
+                            if geom['type'] == 'MultiPolygon':
+                                for polygon in geom['coordinates']:
+                                    shp_writer.poly(polygon)
+                            else:
+                                shp_writer.poly(geom['coordinates'])
+                            
+                            # Añadir los datos al registro
+                            shp_writer.record(
+                                idA=coef_variacion.ambiente.idA,
+                                name=coef_variacion.ambiente.name or '',
+                                ambiente=coef_variacion.ambiente.ambiente or '',
+                                area=coef_variacion.ambiente.area or 0,
+                                CoefVarReal=coef_var_real * 100  # Convertir a porcentaje
+                            )
+
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                cultivo_nombre = cultivo.nombre.replace(" ", "_")
+                zip_file.write(shp_file.name, f"Ajuste_MBA_{cultivo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Ajuste_MBA_{cultivo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Ajuste_MBA_{cultivo_nombre}.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="Ajuste_MBA_{cultivo_nombre}.zip"'
+        return response
+
 def sse_notify(request, upload_id):
     def event_stream():
         status = cache.get(f'upload_status_{upload_id}')
