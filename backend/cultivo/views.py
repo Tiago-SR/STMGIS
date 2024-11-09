@@ -1,12 +1,11 @@
+from api.pagination import StandardResultsSetPagination
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
-from .models import Cultivo, CultivoData
-from .serializers import CultivoSerializer, CultivoDataGeoSerializer
+from .serializers import CultivoSerializer
 import json
-
 from django.http import StreamingHttpResponse
 import time
 from django.core.serializers import serialize
@@ -20,38 +19,36 @@ import io
 import threading
 import uuid
 from django.core.cache import cache
-from django.http import HttpResponse, Http404
+from django.http import Http404         
 from .models import Cultivo, CultivoData
-from django.contrib.gis.geos import GEOSGeometry
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from rest_framework import generics
-from .models import Cultivo, CultivoData
-from .serializers import CultivoSerializer, CultivoDataGeoSerializer
-import json
+from django_filters.rest_framework import DjangoFilterBackend
+import logging
 
-from django.http import StreamingHttpResponse
-import time
-from django.core.serializers import serialize
-from django.http import JsonResponse
-from django.db import transaction
-from django.contrib.gis.geos import Point
-import chardet
-from datetime import datetime
-import pandas as pd
-import io
-import threading
-import uuid
-from django.core.cache import cache
-from django.http import HttpResponse, Http404
-from .models import Cultivo, CultivoData
-from django.contrib.gis.geos import GEOSGeometry
+logger = logging.getLogger(__name__)
+
+class CultivoListView(generics.ListAPIView):
+    queryset = Cultivo.objects.all().order_by('nombre')
+    serializer_class = CultivoSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['campo', 'especie', 'campo__empresa', 'gestion']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        empresa_id = self.request.query_params.get('campo__empresa', None)
+        
+        logger.info(f"Empresa ID recibido: {empresa_id}")
+        
+        if empresa_id:
+            queryset = queryset.filter(campo__empresa=empresa_id)
+            logger.info(f"Queryset filtrado por empresa: {queryset.query}")
+
+        return queryset
 
 class CultivoViewSet(viewsets.ModelViewSet):
     queryset = Cultivo.objects.all().order_by('nombre')
     serializer_class = CultivoSerializer
+    pagination_class = None
 
     @action(detail=True, methods=['get'], url_path='is-normalized')
     def is_normalized(self, request, pk=None):
