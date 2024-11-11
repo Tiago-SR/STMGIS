@@ -22,6 +22,7 @@ import { CultivoListComponent } from './components/cultivo/cultivo-list/cultivo-
 import { SubirCsvComponent } from './components/subir-csv/subir-csv.component';
 import { NormalizarMapasComponent } from './components/normalizar-mapas/normalizar-mapas.component';
 import { NormalizarMapasRendimientoComponent } from './components/normalizar-mapas-rendimiento/normalizar-mapas-rendimiento.component';
+import { CultivoVerComponent } from './components/cultivo/cultivo-ver/cultivo-ver.component';
 
 const routes: Routes = [
   { path: 'empresas', component: EmpresaListComponent , canActivate: [authAdminGuard] },
@@ -39,6 +40,7 @@ const routes: Routes = [
   { path: 'mapa', component: MapaComponent},
   { path: 'reset-password', component: ForgotPasswordComponent, canActivate: [noAuthGuard] },
   { path: 'cultivo', component: CultivoListComponent, canActivate: [authResponsableGuard] },
+  { path: 'cultivo/:id', component: CultivoVerComponent, canActivate: [authResponsableGuard] },
   { path: 'subir-csv', component: SubirCsvComponent, canActivate: [authResponsableGuard] },
   { path: 'normalizar-mapas', component: NormalizarMapasComponent, canActivate: [authResponsableGuard] },
   //{ path: 'resultado-normalizacion/:id', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },

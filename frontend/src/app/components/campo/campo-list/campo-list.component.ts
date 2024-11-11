@@ -7,7 +7,6 @@ import { Empresa } from '../../../models/empresa.model';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../services/auth.service';
 import { UserType } from '../../../enums/user-type';
-import { FormControl } from '@angular/forms';
 
 @Component({
   selector: 'app-campo-list',
@@ -21,7 +20,6 @@ export class CampoListComponent implements OnInit {
   isAdmin = false; 
   cargando = false;
   resetearForm = false;
-  // Propiedades para paginación
   totalItems = 0;
   currentPage = 1;
   pageSize = 20;
@@ -67,7 +65,7 @@ export class CampoListComponent implements OnInit {
       }
     });
   }
-  
+
   loadCampos() {
     this.cargando = true;
     const parametrosFiltro = {
@@ -129,11 +127,11 @@ export class CampoListComponent implements OnInit {
     this.router.navigate(['/campos/nuevo']);
   }
 
-  editarCampo(id: number, campo: Campo) {
-    this.router.navigate(['campos/editar/', id]);      
+  editarCampo(id: string, campo: Campo) {
+    this.router.navigate(['campos/editar/',id]);      
   }
 
-  softDeleteCampo(id: number){
+  softDeleteCampo(id: string){
     this.campoService.deleteCampo(id).subscribe({
       next: () => {
         this.toastr.success('Campo eliminado correctamente', 'Éxito');
@@ -146,7 +144,7 @@ export class CampoListComponent implements OnInit {
     });
   }
 
-  activateCampo(id: number) {
+  activateCampo(id: string) {
     this.campoService.activateCampo(id).subscribe({
       next: () => {
         this.filterCampos();

@@ -10,7 +10,7 @@ import { CultivoService } from '../../services/cultivo.service';
 import { EspecieService } from '../../services/especie.service';
 import { ToastrService } from 'ngx-toastr';
 import { UploadService } from '../../services/upload.service';
-import { PaginatedResponse } from '../../models/paginated-response.model';
+import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-subir-csv',
@@ -25,8 +25,8 @@ export class SubirCsvComponent implements OnInit {
   cultivosTodos: Cultivo[] = [];
   archivosCsv: File[] = [];
 
-  empresaSeleccionadaId: number | null = null;
-  campoSeleccionadoId: number | null = null;
+  empresaSeleccionadaId: string | null | undefined = null;
+  campoSeleccionadoId: string | null | undefined = null;
   especieSeleccionadaId: string | null = null;
   cultivoSeleccionadoId: string | null = null;
 
@@ -40,7 +40,9 @@ export class SubirCsvComponent implements OnInit {
     private especieService: EspecieService,
     private cd: ChangeDetectorRef,
     private toastr: ToastrService,
-    private uploadService: UploadService
+    private uploadService: UploadService,
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.csvForm = this.fb.group({
       cultivo: [null, Validators.required],
@@ -49,8 +51,48 @@ export class SubirCsvComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    let cultivoId = this.route.snapshot.queryParamMap.get('cultivoId');
     this.cargarEmpresas();
     this.cargarEspecies();
+    if (cultivoId) {
+      this.cultivoService.obtenerCultivo(cultivoId).subscribe({
+        next: cultivoData => {
+          this.campoService.getCampoById(cultivoData.campo).subscribe({
+            next: campoData => {
+              this.empresaService.getEmpresaById(campoData.empresa).subscribe({
+                next: data => {
+                  this.empresaSeleccionadaId = data.id;
+                  this.onEmpresaChange();
+                  this.onCampoChange();
+                  this.campoSeleccionadoId = campoData.id;
+                  this.onEspecieChange();
+                  this.especieSeleccionadaId = cultivoData.especie
+                  this.cargarCultivos();
+                  this.cultivoSeleccionadoId = cultivoId;
+                  this.csvForm.patchValue({
+                    cultivo: cultivoId
+                  });
+                },
+                error: error => {
+                  this.toastr.warning('Error al obtener la empresa', 'Alerta');
+                  this.router.navigate(['/']);
+                }
+              });
+
+            },
+            error: error => {
+              this.toastr.warning('Error al obtener el campo', 'Alerta');
+              this.router.navigate(['/']);
+            }
+          });
+        },
+        error: error => {
+          this.toastr.warning('Cultivo no encontrado', 'Alerta');
+          this.router.navigate(['/']);
+        }
+      })
+
+    }
   }
 
   cargarEmpresas() {
@@ -79,7 +121,7 @@ export class SubirCsvComponent implements OnInit {
     this.resetForm();
   }
 
-  cargarCamposPorEmpresa(empresaId: number) {
+  cargarCamposPorEmpresa(empresaId: string | number) {
     this.campoService.getCamposByEmpresa(empresaId.toString()).subscribe(
       response => {
         this.campos = response.data;

@@ -15,7 +15,7 @@ export class CampoService {
 
     getCamposPaginados(parametrosFiltro?: any): Observable<PaginatedResponse<Campo>> {
         let params = new HttpParams();
-    
+
         if (parametrosFiltro) {
             Object.keys(parametrosFiltro).forEach(key => {
                 if (parametrosFiltro[key] !== null && parametrosFiltro[key] !== undefined) {
@@ -23,10 +23,10 @@ export class CampoService {
                 }
             });
         }
-    
+
         return this.http.get<PaginatedResponse<Campo>>(this.apiUrl + 'list/', { params });
     }
-    
+
 
     getCampos(): Observable<any> {
          const headers = new HttpHeaders({
@@ -55,11 +55,11 @@ export class CampoService {
         );
     }
 
-    updateCampo(id: number, campo: Campo): Observable<any> {
+    updateCampo(id: string, campo: Campo): Observable<any> {
         return this.http.put<any>(`${this.apiUrl}${id}/`, campo);
     }
 
-    deleteCampo(id: number): Observable<any> {
+    deleteCampo(id: string): Observable<any> {
         return this.http.patch(`${this.apiUrl}${id}/deactivate/`, {}).pipe(
             catchError(error => {
                 console.error('Error al desactivar el campo:', error);
@@ -68,7 +68,7 @@ export class CampoService {
         );
     }
 
-    activateCampo(id: number): Observable<any> {
+    activateCampo(id: string): Observable<any> {
         return this.http.post(`${this.apiUrl}activate/${id}/`, {});
       }
 }

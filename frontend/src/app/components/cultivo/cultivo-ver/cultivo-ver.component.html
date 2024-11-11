@@ -1,0 +1,244 @@
+<main class="w-full max-w-screen-xl p-4 flex mx-auto">
+    <div *ngIf="cultivo else loading" class="flex flex-1 flex-col">
+        <p class="text-lg font-bold">
+            {{nombreEmpresa}} - {{cultivo.nombre}}
+        </p>
+        <div class="bg-zinc-100 flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Div que ocupará 2/3 del espacio en pantallas medianas y más grandes -->
+            <div class="relative md:col-span-2 bg-green-100 min-h-[400px]">
+                <div id="viewDiv" class="h-full w-full"></div>
+                <div class="floating-table bg-white p-4 border rounded shadow-lg"  *ngIf="showPercentileTable" >
+                    <h2 class="font-bold text-lg">Referencias de Percentiles</h2>
+                    <table class="min-w-full border-collapse border border-gray-300 mt-1 text-xs text-center">
+                        <thead>
+                          <tr class="bg-gray-100">
+                            <th class="border border-gray-300 px-1 py-1 w-18">Percentil Color</th>
+                            <th class="border border-gray-300 px-1 py-1 w-18">Valor Calculado</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td class="border border-gray-300 px-1 py-1" style="background-color: red;">0-19%</td>
+                            <td class="border border-gray-300 px-1 py-1">{{ p19 | number:'1.2-2' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="border border-gray-300 px-1 py-1" style="background-color: orange;">20-39%</td>
+                            <td class="border border-gray-300 px-1 py-1">{{ p39 | number:'1.2-2' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="border border-gray-300 px-1 py-1" style="background-color: yellow;">40-59%</td>
+                            <td class="border border-gray-300 px-1 py-1">{{ p59 | number:'1.2-2' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="border border-gray-300 px-1 py-1" style="background-color: lightgreen;">60-79%</td>
+                            <td class="border border-gray-300 px-1 py-1">{{ p79 | number:'1.2-2' }}</td>
+                          </tr>
+                          <tr>
+                            <td class="border border-gray-300 px-1 py-1" style="background-color: green;">80-100%</td>
+                            <td class="border border-gray-300 px-1 py-1">{{ p100 | number:'1.2-2' }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                </div>
+                <div id="tooltip" class="absolute bg-white p-2 border rounded shadow" style="display: none;"></div>
+            </div>
+            <!-- Div que ocupará 1/3 del espacio en pantallas medianas y más grandes -->
+            <div>
+                <p class="underline font-bold text-xl">Datos Del Cultivo</p>
+                <ul class="mt-6">
+                    <li class="flex items-center mb-4">
+                        <label for="mapa_rendimiento" class="flex-grow">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Mapa Rendimiento</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="mapa_rendimiento" type="checkbox" (change)="toggleLayerMapaRendimiento()" [formControl]="mapaRendimientoChecked" 
+                            class="h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)="descargarShapefilePorCultivoData()" title="Descargar Mapa de Rendimiento">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="mba" class="flex-grow cursor-pointer">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Mapa Base Ambiente</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="mba" type="checkbox" (change)="toggleLayerMBA()" [formControl]="mbaChecked"
+                            class="form-checkbox h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)="descargarShapefilePorCultivo()" title="Descargar Mapa Base Ambiente">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="extraccion_p" class="flex-grow cursor-pointer">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Extracción P</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="extraccion_p" type="checkbox" (change)="toggleLayerExtraccionP()" [formControl]="extraccionPChecked"
+                            class="form-checkbox h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)="descargarShapefileExtraccionP()" title="Descargar Mapa Extraccion de P">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="extraccion_k" class="flex-grow">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Extracción K</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="extraccion_k" type="checkbox" (change)="toggleLayerExtraccionK()" [formControl]="extraccionKChecked"
+                            class="form-checkbox h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)=" descargarShapefileExtraccionK()" title="Descargar Mapa Extraccion de K">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="extraccion_k" class="flex-grow">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Extracción N</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="extraccion_n" type="checkbox" (change)="toggleLayerExtraccionN()" [formControl]="extraccionNChecked"
+                            class="form-checkbox h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)=" descargarShapefileExtraccionN()" title="Descargar Mapa Extraccion de N">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="rendimiento_ambiente" class="flex-grow cursor-pointer">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Rendimiento Ambiente</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="rendimiento_ambiente" type="checkbox" (change)="toggleLayerRendimientoMBA()" [formControl]="rendimientoAmbienteChecked"
+                            class="form-checkbox h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)="descargarShapefileRendimientoAmbiente()" title="Descargar Mapa de Rendimiento">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="ajuste_mba" class="flex-grow cursor-pointer">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Ajuste con MBA</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>
+                        <input id="ajuste_mba" type="checkbox" (change)="toggleLayerCoeficienteVariacion()" [formControl]="ajusteMBAChecked"
+                            class="form-checkbox h-6 w-6 text-blue-600 rounded ml-auto mr-4">
+                        <button (click)="descargarShapefileCoeficienteVariacion()">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>
+                    <li class="flex items-center mb-4">
+                        <label for="ajuste_excel" class="flex-grow cursor-pointer">
+                            <p class="group relative w-max cursor-pointer">
+                                <span>Descargar Excel</span>
+                                <span
+                                    class="absolute -bottom-1 left-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                                <span
+                                    class="absolute -bottom-1 right-1/2 w-0 transition-all h-0.5 bg-indigo-600 group-hover:w-3/6"></span>
+                            </p>
+                        </label>                     
+                        <button (click)="calcularYDescargarExcel()">
+                            <svg class="w-6 h-6 text-gray-800" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"
+                                width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2m-8 1V4m0 12-4-4m4 4 4-4" />
+                            </svg>
+                        </button>
+                    </li>   
+                </ul>
+            </div>
+        </div>
+
+        <div class="p-3">
+            <a routerLink="/normalizar-mapas"
+                class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">
+                Normalizar
+            </a>
+            <a routerLink="/subir-csv" [queryParams]="{cultivoId: cultivo.id}"
+                class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 dark:bg-green-600 dark:hover:bg-green-700 focus:outline-none dark:focus:ring-green-800">
+                Subir CSV
+            </a>
+        </div>
+    </div>
+    <ng-template #loading>
+        <div role="status">
+            <svg aria-hidden="true" class="w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                    fill="currentColor" />
+                <path
+                    d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                    fill="currentFill" />
+            </svg>
+            <span class="sr-only">Cargando...</span>
+        </div>
+    </ng-template>
+</main>

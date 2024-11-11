@@ -35,9 +35,11 @@ import { CultivoCardComponent } from './components/cultivo/cultivo-card/cultivo-
 import { SubirCsvComponent } from './components/subir-csv/subir-csv.component';
 import { NormalizarMapasComponent } from './components/normalizar-mapas/normalizar-mapas.component';
 import { NormalizarMapasRendimientoComponent } from './components/normalizar-mapas-rendimiento/normalizar-mapas-rendimiento.component';
+import { CultivoVerComponent } from './components/cultivo/cultivo-ver/cultivo-ver.component';
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationService } from './services/confirmation.service';
 import { NgxPaginationModule } from 'ngx-pagination';
+
 
 @NgModule({
   declarations: [
@@ -68,6 +70,7 @@ import { NgxPaginationModule } from 'ngx-pagination';
     SubirCsvComponent,
     NormalizarMapasComponent,
     NormalizarMapasRendimientoComponent,
+    CultivoVerComponent,
     ConfirmationDialogComponent
   ],
   imports: [

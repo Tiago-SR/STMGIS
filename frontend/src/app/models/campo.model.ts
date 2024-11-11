@@ -1,6 +1,6 @@
 // src/app/models/campo.model.ts
 export interface Campo {
-  id?: number;
+  id?: string;
   nombre: string;
   superficie: number;
   departamento: string;

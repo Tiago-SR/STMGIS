@@ -9,9 +9,11 @@ from rest_framework import status, viewsets, generics
 from rest_framework_gis.filters import InBBOXFilter
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 import shapefile
+import zipfile
 import json
 from django.core.serializers import serialize
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse, Http404
+from tempfile import NamedTemporaryFile
 from .serializers import AmbienteSerializer
 
 def ambiente_geojson_view(request):
@@ -118,3 +120,64 @@ class FileUploadView(APIView):
                 return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         else:
             return Response({"error": "Missing files. Please ensure that SHP, SHX, and DBF files are included in the request."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+def download_shapefile_ambiente(request, campo_id):
+    try:
+        campo = Campo.objects.get(id=campo_id)
+        ambientes = Ambiente.objects.filter(campo_id=campo_id)
+        if not ambientes.exists():
+            raise Http404("No se encontraron ambientes para el campo especificado.")
+    except Ambiente.DoesNotExist:
+        raise Http404("Campo no encontrado.")
+
+    with NamedTemporaryFile(suffix='.zip') as temp_zip:
+        with zipfile.ZipFile(temp_zip, 'w') as zip_file:
+            with NamedTemporaryFile(suffix='.shp') as shp_file:
+                # Crear el shapefile con el autoBalance activado
+                with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
+                    shp_writer.autoBalance = 1
+                    shp_writer.field("Name", "C", size=100)
+                    shp_writer.field("Area", "F", decimal=2)
+                    shp_writer.field("IA", "N", decimal=0)
+                    shp_writer.field("Lote", "C", size=100)
+                    shp_writer.field("SistProd", "C", size=100)
+                    shp_writer.field("Zona", "C", size=100)
+                    shp_writer.field("TipoSuelo", "N", decimal=0)
+                    shp_writer.field("Posicion", "C", size=100)
+                    shp_writer.field("Prof", "C", size=100)
+                    shp_writer.field("Restriccion", "C", size=100)
+                    shp_writer.field("Ambiente", "C", size=100)
+                    shp_writer.field("ID_A", "N", decimal=0)
+
+                    for ambiente in ambientes:
+                        if ambiente.ambiente_geom:
+                            polygons = [ambiente.ambiente_geom] if ambiente.ambiente_geom.geom_type == 'Polygon' else list(ambiente.ambiente_geom)
+                            for polygon in polygons:
+                                coords = [[(x, y) for x, y in ring] for ring in polygon]
+                                shp_writer.poly(coords)
+                                shp_writer.record(
+                                    Name=ambiente.name or '',
+                                    Area=ambiente.area or 0,
+                                    IA=ambiente.ia or 0,
+                                    Lote=ambiente.lote or '',
+                                    SistProd=ambiente.sist_prod or '',
+                                    Zona=ambiente.zona or '',
+                                    TipoSuelo=ambiente.tipo_suelo or 0,
+                                    Posicion=ambiente.posicion or '',
+                                    Prof=ambiente.prof or '',
+                                    Restriccion=ambiente.restriccion or '',
+                                    Ambiente=ambiente.ambiente or '',
+                                    ID_A=ambiente.idA or 0
+                                )
+
+                campo_nombre = campo.nombre.replace(" ", "_")               
+                # Agregar los archivos SHP, DBF y SHX al ZIP
+                zip_file.write(shp_file.name, f"Mapa_Ambientes_{campo_nombre}.shp")
+                zip_file.write(shp_file.name.replace('.shp', '.dbf'), f"Mapa_Ambientes_{campo_nombre}.dbf")
+                zip_file.write(shp_file.name.replace('.shp', '.shx'), f"Mapa_Ambientes_{campo_nombre}.shx")
+
+        temp_zip.seek(0)
+        response = HttpResponse(temp_zip.read(), content_type='application/zip')
+        response['Content-Disposition'] = f'attachment; filename="Mapa_Ambientes_{campo_nombre}.zip"'
+        return response
