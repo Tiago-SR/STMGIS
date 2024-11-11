@@ -37,13 +37,17 @@ class CultivoListView(generics.ListAPIView):
         queryset = super().get_queryset()
         empresa_id = self.request.query_params.get('campo__empresa', None)
         
-        logger.info(f"Empresa ID recibido: {empresa_id}")
-        
         if empresa_id:
             queryset = queryset.filter(campo__empresa=empresa_id)
-            logger.info(f"Queryset filtrado por empresa: {queryset.query}")
+
+        user = self.request.user
+        
+        if hasattr(user, 'responsable'):
+            empresas_asignadas = user.responsable.empresas.all()
+            queryset = queryset.filter(campo__empresa__in=empresas_asignadas)
 
         return queryset
+
 
 class CultivoViewSet(viewsets.ModelViewSet):
     queryset = Cultivo.objects.all().order_by('nombre')
@@ -53,7 +57,6 @@ class CultivoViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='is-normalized')
     def is_normalized(self, request, pk=None):
         cultivo = self.get_object()
-        # Check if any CultivoData entries have rendimiento_normalizado equal to 0
         has_unormalized_data = CultivoData.objects.filter(cultivo=cultivo, rendimiento_normalizado=0).exists()
         all_normalized = not has_unormalized_data
         return Response({'all_normalized': all_normalized})
@@ -62,13 +65,10 @@ class CultivoViewSet(viewsets.ModelViewSet):
         queryset = Cultivo.objects.all().order_by('nombre')
         user = self.request.user
 
-        # Filtrado para usuarios de tipo Responsable
         if hasattr(user, 'responsable'):
             empresas_asignadas = user.responsable.empresas.all()
-            # Filtrar los cultivos pertenecientes a los campos de las empresas asignadas
             queryset = queryset.filter(campo__empresa__in=empresas_asignadas)
 
-        # Filtro adicional por campo y especie si están presentes en los parámetros de la consulta
         campo = self.request.query_params.get('campo')
         especie = self.request.query_params.get('especie')
 

@@ -58,7 +58,6 @@ export class CultivoListComponent implements OnInit {
     this.cargarEspecies();
     this.cargarCampos();
     this.cargarGestiones();
-    console.log('results totales:', this.cultivos);
   }
 
   cargarEspecies() {

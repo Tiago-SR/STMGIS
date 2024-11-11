@@ -1,10 +1,27 @@
-<div class="ml-2 mr-2">
+<div class="ml-6 mr-6 w-full">
   <div class="flex justify-between items-center mb-4">
     <h1 class="text-2xl font-bold">Lista de Campos</h1>
     <button *ngIf="!cargando && campos.length !== 0" (click)="nuevoCampo()"
             class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-2">
       Crear Campo
     </button>
+  </div>
+
+  <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+    <div>
+      <label for="empresa" class="block text-sm font-medium text-gray-700">Empresa</label>
+      <select id="empresa" [(ngModel)]="selectedEmpresa" (change)="onFiltroChange()"
+              class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
+        <option value="">Todas</option>
+        <option *ngFor="let empresa of empresas" [value]="empresa.id">{{ empresa.nombre }}</option>
+      </select>
+    </div>
+    <div *ngIf="resetearForm">
+      <label class="block text-sm font-medium text-gray-700">Resetear</label>
+      <button (click)="resetearFiltros()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+        Resetear Filtros
+      </button>
+    </div>
   </div>
 
   <div *ngIf="cargando" class="flex justify-center items-center py-10">
@@ -39,5 +56,16 @@
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- Paginación -->
+  <div *ngIf="!cargando && totalItems > pageSize" class="flex justify-center mt-4">
+    <button (click)="previousPage()" [disabled]="currentPage === 1" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l">
+      Anterior
+    </button>
+    <span class="mx-2 text-gray-700">Página {{ currentPage }} de {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r">
+      Siguiente
+    </button>
   </div>
 </div>

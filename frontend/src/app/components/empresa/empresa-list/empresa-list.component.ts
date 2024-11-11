@@ -1,7 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+
 import { Router } from '@angular/router';
 import { Empresa } from '../../../models/empresa.model';
 import { EmpresaService } from '../../../services/empresa.service';
+import { Component, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-empresa-list',
@@ -11,7 +12,10 @@ import { EmpresaService } from '../../../services/empresa.service';
 export class EmpresaListComponent implements OnInit {
   empresas: Empresa[] = [];
   cargando = false;
-
+  totalItems = 0;
+  currentPage = 1;
+  pageSize = 20;
+  
   constructor(private empresaService: EmpresaService, private router: Router) {}
 
   ngOnInit() {
@@ -20,9 +24,15 @@ export class EmpresaListComponent implements OnInit {
 
   loadEmpresas() {
     this.cargando = true;
-    this.empresaService.getAllEmpresas().subscribe({
-      next: (empresas) => {
-        this.empresas = empresas;
+    const params = {
+      page: this.currentPage,
+      page_size: this.pageSize
+    };
+  
+    this.empresaService.getEmpresasPaginadas(params).subscribe({
+      next: (data) => {
+        this.empresas = data.results;
+        this.totalItems = data.count;
         this.cargando = false;
       },
       error: (error) => {
@@ -31,6 +41,7 @@ export class EmpresaListComponent implements OnInit {
       }
     });
   }
+  
 
   editarEmpresa(id: number, empresa: Empresa) { 
     this.router.navigate(['/editar-empresa', id]);
@@ -53,4 +64,23 @@ export class EmpresaListComponent implements OnInit {
       }
     });
   }
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize);
+  }
+  
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadEmpresas();
+    }
+  }
+  
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadEmpresas();
+    }
+  }
+  
 }

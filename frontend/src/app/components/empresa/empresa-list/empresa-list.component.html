@@ -1,4 +1,4 @@
-<div class="ml-2 mr-2">
+<div class="ml-6 mr-6 w-full">
   <div class="flex justify-end items-center mb-4 w-full">
     <button routerLink="/empresas/nuevo" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
       Crear Empresa
@@ -35,4 +35,15 @@
       </div>
     </div>
   </div>
+
+  <div *ngIf="!cargando && totalItems > pageSize" class="flex justify-center mt-4">
+    <button (click)="previousPage()" [disabled]="currentPage === 1" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l">
+      Anterior
+    </button>
+    <span class="mx-2 text-gray-700">Página {{ currentPage }} de {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r">
+      Siguiente
+    </button>
+  </div>
+  
 </div>

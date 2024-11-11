@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { catchError , Observable, throwError } from 'rxjs';
 import { Campo } from '../models/campo.model';
+import { PaginatedResponse } from '../models/paginated-response.model';
 
 @Injectable({
     providedIn: 'root'
@@ -11,6 +12,21 @@ export class CampoService {
     private apiUrl = 'http://api.proyecto.local/campos/';
 
     constructor(private http: HttpClient) { }
+
+    getCamposPaginados(parametrosFiltro?: any): Observable<PaginatedResponse<Campo>> {
+        let params = new HttpParams();
+    
+        if (parametrosFiltro) {
+            Object.keys(parametrosFiltro).forEach(key => {
+                if (parametrosFiltro[key] !== null && parametrosFiltro[key] !== undefined) {
+                    params = params.append(key, parametrosFiltro[key]);
+                }
+            });
+        }
+    
+        return this.http.get<PaginatedResponse<Campo>>(this.apiUrl + 'list/', { params });
+    }
+    
 
     getCampos(): Observable<any> {
          const headers = new HttpHeaders({

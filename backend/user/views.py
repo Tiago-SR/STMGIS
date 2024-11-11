@@ -1,15 +1,27 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, generics
 from django.core.mail import EmailMessage
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.conf import settings
-from .serializers import UserSerializer, UserListSerializer, ResponsableSerializer, AdminSerializer
+
+from api.pagination import StandardResultsSetPagination
+from .serializers import UserSerializer, UserListSerializer, ResponsableSerializer
 from .models import User, Responsable, Admin
 from api.const import ADMIN, RESPONSABLE
 
+class UserListView(generics.ListAPIView):
+    queryset = User.objects.filter(is_staff=False, is_superuser=False)
+    serializer_class = UserListSerializer
+    pagination_class = StandardResultsSetPagination
 
-# Create your views here.
+    def get_queryset(self):
+        user = self.request.user
+        queryset = super().get_queryset()
+        if user.is_authenticated and user.user_type == ADMIN:
+            queryset = queryset.filter(user_type=RESPONSABLE)
+        return queryset
+        
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
