@@ -25,7 +25,7 @@ export class SubirCsvComponent implements OnInit {
   cultivosTodos: Cultivo[] = [];
   archivosCsv: File[] = [];
 
-  empresaSeleccionadaId: number | null | undefined = null;
+  empresaSeleccionadaId: string | null | undefined = null;
   campoSeleccionadoId: string | null | undefined = null;
   especieSeleccionadaId: string | null = null;
   cultivoSeleccionadoId: string | null = null;
@@ -94,8 +94,6 @@ export class SubirCsvComponent implements OnInit {
 
     }
   }
-
-
 
   cargarEmpresas() {
     this.empresaService.getAllEmpresas().subscribe(

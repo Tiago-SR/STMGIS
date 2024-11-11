@@ -1,3 +1,4 @@
+from api.pagination import StandardResultsSetPagination
 #from geojson import Feature, FeatureCollection
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -30,8 +31,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
-from .models import Cultivo, CultivoData
-from .serializers import CultivoSerializer, CultivoDataGeoSerializer
+from .serializers import CultivoSerializer
 import json
 from django.core.files.temp import NamedTemporaryFile
 import shapefile
@@ -57,27 +57,61 @@ from django.db.models import F, OuterRef, Subquery
 
 
 
+from django.http import Http404
+from .models import Cultivo, CultivoData
+from django_filters.rest_framework import DjangoFilterBackend
+import logging
+
+logger = logging.getLogger(__name__)
+
+class CultivoListView(generics.ListAPIView):
+    queryset = Cultivo.objects.all().order_by('nombre')
+    serializer_class = CultivoSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['campo', 'especie', 'campo__empresa', 'gestion']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        empresa_id = self.request.query_params.get('campo__empresa', None)
+
+        if empresa_id:
+            queryset = queryset.filter(campo__empresa=empresa_id)
+
+        user = self.request.user
+
+        if hasattr(user, 'responsable'):
+            empresas_asignadas = user.responsable.empresas.all()
+            queryset = queryset.filter(campo__empresa__in=empresas_asignadas)
+
+        return queryset
+
 
 class CultivoViewSet(viewsets.ModelViewSet):
     queryset = Cultivo.objects.all().order_by('nombre')
     serializer_class = CultivoSerializer
+    pagination_class = None
 
     @action(detail=True, methods=['get'], url_path='is-normalized')
     def is_normalized(self, request, pk=None):
         cultivo = self.get_object()
-        # Check if any CultivoData entries have rendimiento_normalizado equal to 0
         has_unormalized_data = CultivoData.objects.filter(cultivo=cultivo, rendimiento_normalizado=0).exists()
         all_normalized = not has_unormalized_data
         return Response({'all_normalized': all_normalized})
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = Cultivo.objects.all().order_by('nombre')
+        user = self.request.user
+
+        if hasattr(user, 'responsable'):
+            empresas_asignadas = user.responsable.empresas.all()
+            queryset = queryset.filter(campo__empresa__in=empresas_asignadas)
+
         campo = self.request.query_params.get('campo')
         especie = self.request.query_params.get('especie')
 
         if campo:
             queryset = queryset.filter(campo_id=campo)
-
         if especie:
             queryset = queryset.filter(especie_id=especie)
 
@@ -341,14 +375,14 @@ def download_shapefile_cultivo_data(request, cultivo_id):
     except CultivoData.DoesNotExist:
         raise Http404("Cultivo no encontrado.")
 
-    
+
     with NamedTemporaryFile(suffix='.zip') as temp_zip:
         with zipfile.ZipFile(temp_zip, 'w') as zip_file:
             with NamedTemporaryFile(suffix='.shp') as shp_file:
                 # Crear el shapefile con el autoBalance activado
                 with shapefile.Writer(shp_file.name, shapeType=shapefile.POINT) as shp_writer:
                     shp_writer.autoBalance = 1
-                    
+
                     # Definir los campos
                     shp_writer.field("ArchivoCsv", "C", size=255)
                     shp_writer.field("AnchFja", "F", decimal=2)
@@ -387,7 +421,7 @@ def download_shapefile_cultivo_data(request, cultivo_id):
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="Mapa_Rendimiento_{cultivo_nombre}.zip"'
         return response
- 
+
 def download_rendimiento_ambiente_shapefile(request, cultivo_id):
     try:
         cultivo = Cultivo.objects.get(id=cultivo_id)
@@ -402,7 +436,7 @@ def download_rendimiento_ambiente_shapefile(request, cultivo_id):
             with NamedTemporaryFile(suffix='.shp') as shp_file:
                 with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
                     shp_writer.autoBalance = 1
-                    
+
                     # Definir campos del shapefile
                     shp_writer.field("idA", "C", size=50)
                     shp_writer.field("name", "C", size=255)
@@ -419,7 +453,7 @@ def download_rendimiento_ambiente_shapefile(request, cultivo_id):
                                     shp_writer.poly(polygon)
                             else:
                                 shp_writer.poly(geom['coordinates'])
-                            
+
                             shp_writer.record(
                                 idA=rendimiento.ambiente.idA,
                                 name=rendimiento.ambiente.name or '',
@@ -446,14 +480,14 @@ def download_extraccion_p_ambiente_shapefile(request, cultivo_id):
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
         especie = cultivo.especie
         rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
-        
+
         if not rendimiento_ambiente.exists():
             raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
-        
+
         # Validar que la especie tenga el valor de fósforo en nutrientes
         if 'Fosforo' not in especie.nutrientes:
             raise Http404("La especie del cultivo no tiene definido el valor de fósforo en nutrientes.")
-        
+
         fosforo_valor = especie.nutrientes.get("Fosforo", 0)
 
     except Cultivo.DoesNotExist:
@@ -464,7 +498,7 @@ def download_extraccion_p_ambiente_shapefile(request, cultivo_id):
             with NamedTemporaryFile(suffix='.shp') as shp_file:
                 with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
                     shp_writer.autoBalance = 1
-                    
+
                     # Definir campos del shapefile
                     shp_writer.field("idA", "C", size=50)
                     shp_writer.field("name", "C", size=255)
@@ -477,14 +511,14 @@ def download_extraccion_p_ambiente_shapefile(request, cultivo_id):
                         if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
                             geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
                             extraccion_p = rendimiento.rendimiento_real_promedio * fosforo_valor
-                            
+
                             # Añadir geometría (soporta MultiPolygon)
                             if geom['type'] == 'MultiPolygon':
                                 for polygon in geom['coordinates']:
                                     shp_writer.poly(polygon)
                             else:
                                 shp_writer.poly(geom['coordinates'])
-                            
+
                             # Añadir los datos al registro
                             shp_writer.record(
                                 idA=rendimiento.ambiente.idA,
@@ -504,20 +538,20 @@ def download_extraccion_p_ambiente_shapefile(request, cultivo_id):
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="Extraccion_P_{cultivo_nombre}.zip"'
         return response
-    
+
 def download_extraccion_k_ambiente_shapefile(request, cultivo_id):
     try:
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
         especie = cultivo.especie
         rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
-        
+
         if not rendimiento_ambiente.exists():
             raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
-        
+
         # Validar que la especie tenga el valor de fósforo en nutrientes
         if 'Potasio' not in especie.nutrientes:
             raise Http404("La especie del cultivo no tiene definido el valor de potasio en nutrientes.")
-        
+
         potasio_valor = especie.nutrientes.get("Potasio", 0)
 
     except Cultivo.DoesNotExist:
@@ -528,7 +562,7 @@ def download_extraccion_k_ambiente_shapefile(request, cultivo_id):
             with NamedTemporaryFile(suffix='.shp') as shp_file:
                 with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
                     shp_writer.autoBalance = 1
-                    
+
                     # Definir campos del shapefile
                     shp_writer.field("idA", "C", size=50)
                     shp_writer.field("name", "C", size=255)
@@ -541,14 +575,14 @@ def download_extraccion_k_ambiente_shapefile(request, cultivo_id):
                         if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
                             geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
                             extraccion_k = rendimiento.rendimiento_real_promedio * potasio_valor
-                            
+
                             # Añadir geometría (soporta MultiPolygon)
                             if geom['type'] == 'MultiPolygon':
                                 for polygon in geom['coordinates']:
                                     shp_writer.poly(polygon)
                             else:
                                 shp_writer.poly(geom['coordinates'])
-                            
+
                             # Añadir los datos al registro
                             shp_writer.record(
                                 idA=rendimiento.ambiente.idA,
@@ -574,14 +608,14 @@ def download_extraccion_n_ambiente_shapefile(request, cultivo_id):
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
         especie = cultivo.especie
         rendimiento_ambiente = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
-        
+
         if not rendimiento_ambiente.exists():
             raise Http404("No se encontraron datos de rendimiento para el cultivo especificado.")
-        
+
         # Validar que la especie tenga el valor de Nitrógeno en nutrientes
         if 'Nitrogeno' not in especie.nutrientes:
             raise Http404("La especie del cultivo no tiene definido el valor de nitrógeno en nutrientes.")
-        
+
         nitrogeno_valor = especie.nutrientes.get("Nitrogeno", 0)
 
     except Cultivo.DoesNotExist:
@@ -592,7 +626,7 @@ def download_extraccion_n_ambiente_shapefile(request, cultivo_id):
             with NamedTemporaryFile(suffix='.shp') as shp_file:
                 with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
                     shp_writer.autoBalance = 1
-                    
+
                     # Definir campos del shapefile
                     shp_writer.field("idA", "C", size=50)
                     shp_writer.field("name", "C", size=255)
@@ -605,14 +639,14 @@ def download_extraccion_n_ambiente_shapefile(request, cultivo_id):
                         if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom:
                             geom = json.loads(rendimiento.ambiente.ambiente_geom.json)
                             extraccion_n = rendimiento.rendimiento_real_promedio * nitrogeno_valor
-                            
+
                             # Añadir geometría (soporta MultiPolygon)
                             if geom['type'] == 'MultiPolygon':
                                 for polygon in geom['coordinates']:
                                     shp_writer.poly(polygon)
                             else:
                                 shp_writer.poly(geom['coordinates'])
-                            
+
                             # Añadir los datos al registro
                             shp_writer.record(
                                 idA=rendimiento.ambiente.idA,
@@ -631,16 +665,16 @@ def download_extraccion_n_ambiente_shapefile(request, cultivo_id):
         temp_zip.seek(0)
         response = HttpResponse(temp_zip.read(), content_type='application/zip')
         response['Content-Disposition'] = f'attachment; filename="Extraccion_N_{cultivo_nombre}.zip"'
-        return response  
+        return response
 
 def download_coeficiente_variacion_shapefile(request, cultivo_id):
     try:
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
         coef_variaciones = RendimientoAmbiente.objects.filter(cultivo=cultivo).select_related('ambiente')
-        
+
         if not coef_variaciones.exists():
             raise Http404("No se encontraron datos de coeficiente de variación para el cultivo especificado.")
-        
+
     except Cultivo.DoesNotExist:
         raise Http404("Cultivo no encontrado.")
 
@@ -649,7 +683,7 @@ def download_coeficiente_variacion_shapefile(request, cultivo_id):
             with NamedTemporaryFile(suffix='.shp') as shp_file:
                 with shapefile.Writer(shp_file.name, shapeType=shapefile.POLYGON) as shp_writer:
                     shp_writer.autoBalance = 1
-                    
+
                     # Definir campos del shapefile
                     shp_writer.field("idA", "C", size=50)
                     shp_writer.field("name", "C", size=255)
@@ -662,14 +696,14 @@ def download_coeficiente_variacion_shapefile(request, cultivo_id):
                         if coef_variacion.ambiente and coef_variacion.ambiente.ambiente_geom:
                             geom = json.loads(coef_variacion.ambiente.ambiente_geom.json)
                             coef_var_real = coef_variacion.coef_variacion_real or 0  # Asegúrate de que el campo existe y tiene un valor
-                            
+
                             # Añadir geometría (soporta MultiPolygon)
                             if geom['type'] == 'MultiPolygon':
                                 for polygon in geom['coordinates']:
                                     shp_writer.poly(polygon)
                             else:
                                 shp_writer.poly(geom['coordinates'])
-                            
+
                             # Añadir los datos al registro
                             shp_writer.record(
                                 idA=coef_variacion.ambiente.idA,
@@ -722,7 +756,7 @@ def rendimiento_ambiente_geojson_view(request, cultivo_id):
         rendimientos = RendimientoAmbiente.objects.filter(
             cultivo=cultivo
         ).select_related('ambiente')
-        
+
         print(f"Rendimientos encontrados: {rendimientos.count()}")
 
         # Crear el GeoJSON manualmente
@@ -733,7 +767,7 @@ def rendimiento_ambiente_geojson_view(request, cultivo_id):
             if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom and rendimiento.rendimiento_real_promedio:
                 # Guardar el valor para calcular percentiles
                 rendimientos_valores.append(float(rendimiento.rendimiento_real_promedio))
-                
+
                 feature = {
                     'type': 'Feature',
                     'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
@@ -794,12 +828,12 @@ def coeficiente_variacion_geojson_view(request, cultivo_id):
     try:
         # Obtener el cultivo especificado
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
-        
+
         # Obtener todos los registros de RendimientoAmbiente asociados con este cultivo
         rendimientos = RendimientoAmbiente.objects.filter(
             cultivo=cultivo
         ).select_related('ambiente')
-        
+
         # Crear una lista de características (features) para el GeoJSON
         features = []
         coeficientes_variacion = []
@@ -856,12 +890,12 @@ def extraccion_p_ambiente_geojson_view(request, cultivo_id):
         especie = cultivo.especie
         print(f"Cultivo encontrado: {cultivo.nombre}")
         print(f"Especie: {especie.nombre}")
-        
+
         # Primero, obtener los rendimientos por ambiente
         rendimientos = RendimientoAmbiente.objects.filter(
             cultivo=cultivo
         ).select_related('ambiente')
-        
+
         print(f"Rendimientos encontrados: {rendimientos.count()}")
 
         # Crear el GeoJSON manualmente
@@ -876,10 +910,10 @@ def extraccion_p_ambiente_geojson_view(request, cultivo_id):
                 else:
                     extraccion_p = 0
                     print(f"No se encontró el valor de 'Fósforo' para la especie '{especie.nombre}'")
-                
+
                 # Guardar el valor para calcular percentiles
                 rendimientos_valores.append(extraccion_p)
-                
+
                 feature = {
                     'type': 'Feature',
                     'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
@@ -948,12 +982,12 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
         especie = cultivo.especie
         print(f"Cultivo encontrado: {cultivo.nombre}")
         print(f"Especie: {especie.nombre}")
-        
+
         # Primero, obtener los rendimientos por ambiente
         rendimientos = RendimientoAmbiente.objects.filter(
             cultivo=cultivo
         ).select_related('ambiente')
-        
+
         print(f"Rendimientos encontrados: {rendimientos.count()}")
 
         # Crear el GeoJSON manualmente
@@ -968,10 +1002,10 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
                 else:
                     extraccion_k = 0
                     print(f"No se encontró el valor de 'Potasio' para la especie '{especie.nombre}'")
-                
+
                 # Guardar el valor para calcular percentiles
                 rendimientos_valores.append(extraccion_k)
-                
+
                 feature = {
                     'type': 'Feature',
                     'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),
@@ -1029,7 +1063,7 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
             {'error': f'Error al obtener datos: {str(e)}'},
             status=500
         )
-    
+
 def extraccion_n_ambiente_geojson_view(request, cultivo_id):
     try:
         print(f"Procesando cultivo_id: {cultivo_id}")
@@ -1037,12 +1071,12 @@ def extraccion_n_ambiente_geojson_view(request, cultivo_id):
         especie = cultivo.especie
         print(f"Cultivo encontrado: {cultivo.nombre}")
         print(f"Especie: {especie.nombre}")
-        
+
         # Obtener los rendimientos por ambiente
         rendimientos = RendimientoAmbiente.objects.filter(
             cultivo=cultivo
         ).select_related('ambiente')
-        
+
         print(f"Rendimientos encontrados: {rendimientos.count()}")
 
         # Crear el GeoJSON manualmente
@@ -1057,10 +1091,10 @@ def extraccion_n_ambiente_geojson_view(request, cultivo_id):
                 else:
                     extraccion_n = 0
                     print(f"No se encontró el valor de 'Nitrógeno' para la especie '{especie.nombre}'")
-                
+
                 # Guardar el valor para calcular percentiles
                 rendimientos_valores.append(extraccion_n)
-                
+
                 feature = {
                     'type': 'Feature',
                     'geometry': json.loads(rendimiento.ambiente.ambiente_geom.json),

@@ -12,6 +12,8 @@ import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import { CultivoService } from '../../services/cultivo.service'; // Servicio de cultivo
 import * as blobUtil from 'blob-util';
 import { HttpResponse } from '@angular/common/http';
+import { PaginatedResponse } from '../../models/paginated-response.model';
+import Cultivo from '../../models/cultivo.model';
 
 @Component({
   selector: 'app-mapa',

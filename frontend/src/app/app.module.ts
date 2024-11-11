@@ -21,9 +21,9 @@ import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.com
 import { EmpresaForm2Component } from './components/empresa/empresa-form2/empresa-form2.component';
 import { EmpresaListComponent } from './components/empresa/empresa-list/empresa-list.component';
 import { EmpresaEditComponent } from './components/empresa/empresa-edit/empresa-edit.component';
-import { EspecieFormComponent } from './components/especie-form/especie-form.component';
-import { EspecieCardComponent } from './components/especie-card/especie-card.component';
-import { EspecieListComponent } from './components/especie-list/especie-list.component';
+import { EspecieFormComponent } from './components/especie/especie-form/especie-form.component';
+import { EspecieCardComponent } from './components/especie/especie-card/especie-card.component';
+import { EspecieListComponent } from './components/especie/especie-list/especie-list.component';
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { ToastrModule } from "ngx-toastr";
 import { MapaComponent } from './components/mapa/mapa.component';
@@ -38,6 +38,7 @@ import { NormalizarMapasRendimientoComponent } from './components/normalizar-map
 import { CultivoVerComponent } from './components/cultivo/cultivo-ver/cultivo-ver.component';
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationService } from './services/confirmation.service';
+import { NgxPaginationModule } from 'ngx-pagination';
 
 
 @NgModule({
@@ -80,6 +81,7 @@ import { ConfirmationService } from './services/confirmation.service';
     ReactiveFormsModule,
     CommonModule,
     BrowserAnimationsModule,
+    NgxPaginationModule,
     ToastrModule.forRoot({
       timeOut: 3000,
       positionClass: 'toast-bottom-right',
