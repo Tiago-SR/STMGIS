@@ -15,7 +15,7 @@ import { ToastrService } from 'ngx-toastr';
 })
 export class CampoFormComponent implements OnInit {
   empresas: Empresa[] = [];
-  campo!: Campo;
+  campo!: Campo;  
   selectedFiles: {[key: string]: File | null} = {};
   departamentos: string[] = [
     'Artigas', 'Canelones', 'Cerro Largo', 'Colonia', 'Durazno', 'Flores', 'Florida',
@@ -41,7 +41,8 @@ export class CampoFormComponent implements OnInit {
       departamento: [null, [Validators.required]],
       dbfFile: [null, [Validators.required]],
       shpFile: [null, [Validators.required]],
-      shxFile: [null, [Validators.required]]
+      shxFile: [null, [Validators.required]],
+      
     });
   }
 
@@ -108,4 +109,6 @@ export class CampoFormComponent implements OnInit {
   get isFormValid() {
     return this.campoForm.valid && this.selectedFiles['shpFile'] && this.selectedFiles['shxFile'] && this.selectedFiles['dbfFile'];
   }
+
+
 }

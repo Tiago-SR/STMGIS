@@ -30,6 +30,13 @@
         </div>
         <div>
           <p class="text-xs text-gray-500">Los Archivos a cargar deben tener SRC: 4236</p>
+
+          <div class="mt-4">
+            <p class="text-sm font-medium text-gray-700">Encabezado de Carga:</p>
+            <img src="assets/img/encabezadoShp.png" alt="Encabezado SHP" class="w-full h-auto rounded-md shadow-md mt-2">
+            <br>
+        </div>
+
           <label for="shpFile" class="block text-sm font-medium text-gray-700">Archivo SHP:</label>
           <input type="file" formControlName="shpFile" id="shpFile" accept=".shp" (change)="handleFileInput($event, 'shpFile')"
                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
