@@ -1,24 +1,38 @@
-from rest_framework import viewsets
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
-from campo.models import Campo
-from user.models import User
-from campo.serializers import CampoSerializer
+from api.pagination import StandardResultsSetPagination
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from django.contrib.gis.geos import Polygon, MultiPolygon
 from ambientes.models import Ambiente
 from rest_framework import viewsets
 from campo.models import Campo
 from campo.serializers import CampoSerializer
-from django.contrib.gis.geos import GEOSGeometry
 import shapefile
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
 from api.const import ADMIN, RESPONSABLE
 import logging
+from rest_framework import generics
 
 logger = logging.getLogger(__name__)
+
+class CampoListView(generics.ListAPIView):
+    queryset = Campo.objects.filter(is_active=True).order_by('nombre')
+    serializer_class = CampoSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['empresa']
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        user = self.request.user
+        if hasattr(user, 'responsable'):
+            empresas_asignadas = user.responsable.empresas.all()
+            queryset = queryset.filter(empresa__in=empresas_asignadas)
+        
+        return queryset
 
 class CampoViewSet(viewsets.ModelViewSet):
     serializer_class = CampoSerializer

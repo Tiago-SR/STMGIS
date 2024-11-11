@@ -8,8 +8,6 @@ import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../services/auth.service';
 import { UserType } from '../../../enums/user-type';
 import { FormControl } from '@angular/forms';
-import { LoginComponent } from '../../login/login.component';
-
 
 @Component({
   selector: 'app-campo-list',
@@ -19,9 +17,14 @@ import { LoginComponent } from '../../login/login.component';
 export class CampoListComponent implements OnInit {
   empresas: Empresa[] = [];
   campos: Campo[] = [];
-  selectedEmpresa = new FormControl('');
+  selectedEmpresa = '';
   isAdmin = false; 
   cargando = false;
+  resetearForm = false;
+  // Propiedades para paginación
+  totalItems = 0;
+  currentPage = 1;
+  pageSize = 20;
 
   constructor(
     private empresaService: EmpresaService,
@@ -29,8 +32,7 @@ export class CampoListComponent implements OnInit {
     private router: Router,
     private toastr: ToastrService,
     private authService: AuthService
-
-    ) {}
+  ) {}
 
   ngOnInit() {
     this.loadEmpresas();
@@ -41,7 +43,6 @@ export class CampoListComponent implements OnInit {
     const state = navigation?.extras?.state;
     
     if (state) {
-     
       if (state["message"]) {
         if (state["type"] === 'success') {
           this.toastr.success(state["message"], 'Éxito');
@@ -50,7 +51,6 @@ export class CampoListComponent implements OnInit {
         }
       }
     }
-  
   }
 
   loadEmpresas() {
@@ -70,53 +70,58 @@ export class CampoListComponent implements OnInit {
   
   loadCampos() {
     this.cargando = true;
-    this.campoService.getCampos().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.campos = response.data;
-        } else {
-          console.error('No se pudieron cargar todos los campos');
-          this.campos = [];
-          this.toastr.error('No se pudieron cargar los campos', 'Error');
-        }
+    const parametrosFiltro = {
+      page: this.currentPage,
+      page_size: this.pageSize,
+      empresa: this.selectedEmpresa
+    };
+
+    this.campoService.getCamposPaginados(parametrosFiltro).subscribe({
+      next: (data) => {
+        this.campos = data.results;
+        this.totalItems = data.count;
         this.cargando = false;
       },
       error: (error) => {
-        console.error('Error al cargar todos los campos', error);
+        console.error('Error al cargar campos', error);
         this.campos = [];
         this.toastr.error('Error al cargar los campos', 'Error');
         this.cargando = false;
       }
     });
   }
-  
-  
+
   checkAdminStatus() {
     this.isAdmin = this.authService.getUserType() === UserType.ADMIN;
   }
 
   filterCampos() {
-    const selectedEmpresa = this.selectedEmpresa.value;
-    if (this.selectedEmpresa.valid && selectedEmpresa) {
-      this.campoService.getCamposByEmpresa(selectedEmpresa).subscribe({
-        next: (campos) => {
-          if (campos.success) {
-            this.campos = campos.data;
-          }else{
-            console.log('No hay campos disponibles para esta empresa.');
-            this.toastr.info('No hay campos disponibles para esta empresa', 'Información');
+    this.currentPage = 1;
+    this.loadCampos();
+  }
 
-          }
-        },
-        error: (error) => {
-          console.error('Error al obtener campos', error);
-          this.campos = [];
-          this.toastr.error('Error al filtrar campos por empresa', 'Error');
+  resetearFiltros(): void {
+    this.resetearForm = false;
+    this.selectedEmpresa = '';
+    this.currentPage = 1;
+    this.loadCampos();
+  }
 
-        }
-      });
-    } else {
-      this.loadCampos(); 
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize);
+  }
+
+  nextPage(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.loadCampos();
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.loadCampos();
     }
   }
 
@@ -125,16 +130,14 @@ export class CampoListComponent implements OnInit {
   }
 
   editarCampo(id: number, campo: Campo) {
-    this.router.navigate(['campos/editar/',id]);      
+    this.router.navigate(['campos/editar/', id]);      
   }
 
   softDeleteCampo(id: number){
     this.campoService.deleteCampo(id).subscribe({
       next: () => {
-        console.log('Campo eliminado');
         this.toastr.success('Campo eliminado correctamente', 'Éxito');
-
-        this.loadCampos();  
+        this.loadCampos();
       },
       error: (error) => {
         console.error('Error al eliminar campo', error);
@@ -142,9 +145,22 @@ export class CampoListComponent implements OnInit {
       } 
     });
   }
+
   activateCampo(id: number) {
-    this.campoService.activateCampo(id).subscribe(() => {
-      this.filterCampos(); 
+    this.campoService.activateCampo(id).subscribe({
+      next: () => {
+        this.filterCampos();
+      },
+      error: (error) => {
+        console.error('Error al activar campo', error);
+        this.toastr.error('Error al activar campo', 'Error');
+      }
     });
+  }
+
+  onFiltroChange(): void {
+    this.resetearForm = true;
+    this.currentPage = 1;
+    this.loadCampos();
   }
 }

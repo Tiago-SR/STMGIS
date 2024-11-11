@@ -15,15 +15,15 @@ export class CultivoService {
   obtenerCultivosPaginados(parametrosFiltro?: any): Observable<PaginatedResponse<Cultivo>> {
     let params = new HttpParams();
     if (parametrosFiltro) {
-        Object.keys(parametrosFiltro).forEach(key => {
-            if (parametrosFiltro[key] !== null && parametrosFiltro[key] !== undefined) {
-                const paramKey = key === 'empresa' ? 'campo__empresa' : key;
-                params = params.append(paramKey, parametrosFiltro[key]);
-            }
-        });
+      Object.keys(parametrosFiltro).forEach(key => {
+        if (parametrosFiltro[key] !== null && parametrosFiltro[key] !== undefined) {
+          const paramKey = key === 'empresa' ? 'campo__empresa' : key;
+          params = params.append(paramKey, parametrosFiltro[key]);
+        }
+      });
     }
     return this.http.get<PaginatedResponse<Cultivo>>(this.baseUrl + 'list/', { params });
-}
+  }
 
   eliminarCultivo(id: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}${id}`);
@@ -48,22 +48,22 @@ export class CultivoService {
     }
     return this.http.get<Cultivo[]>(this.baseUrl, { params });
   }
-  
+
   subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
   }
-   normalizarMapas(cultivoId: string): Observable<any> {
-     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-   }
+  normalizarMapas(cultivoId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+  }
 
-   // Método para obtener los datos de normalización
-   obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
-     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
-   }
+  // Método para obtener los datos de normalización
+  obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+  }
 
   resultadoNormalizacion(cultivoId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);
-  } 
+  }
 
   // Método para confirmar la normalización después de la revisión
   confirmarNormalizacion(cultivoId: string, coeficienteAjuste: number): Observable<any> {

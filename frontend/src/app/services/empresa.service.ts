@@ -1,8 +1,9 @@
 // Ejemplo de cómo importar y usar el modelo en un servicio
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Empresa } from '../models/empresa.model';
+import { PaginatedResponse } from '../models/paginated-response.model';
 
 
 @Injectable({
@@ -12,6 +13,15 @@ export class EmpresaService {
   private baseUrl = 'http://api.proyecto.local/empresas/';
 
   constructor(private http: HttpClient) { }
+
+  getEmpresasPaginadas(params: any): Observable<PaginatedResponse<Empresa>> {
+    let queryParams = new HttpParams();
+    Object.keys(params).forEach(key => {
+      queryParams = queryParams.append(key, params[key]);
+    });
+
+    return this.http.get<PaginatedResponse<Empresa>>(this.baseUrl + 'list/', { params: queryParams });
+  }
 
   getAllEmpresas(): Observable<Empresa[]> {
     return this.http.get<Empresa[]>(this.baseUrl);

@@ -7,9 +7,9 @@
     </button>
   </div>
 
-  <div *ngIf="userList$ | async as userList; else loaderAndError">
-    <div *ngIf="userList.length > 0; else emptyState" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      <app-user-card *ngFor="let user of userList" [user]="user"></app-user-card>
+  <div *ngIf="!cargando; else loaderAndError">
+    <div *ngIf="users.length > 0; else emptyState" class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      <app-user-card *ngFor="let user of users" [user]="user"></app-user-card>
     </div>
   </div>
 
@@ -34,5 +34,15 @@
       </button>
     </div>
   </ng-template>
+
+  <div *ngIf="!hasError && totalItems > pageSize" class="flex justify-center mt-4">
+    <button (click)="previousPage()" [disabled]="currentPage === 1" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l">
+      Anterior
+    </button>
+    <span class="mx-2 text-gray-700">Página {{ currentPage }} de {{ totalPages }}</span>
+    <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r">
+      Siguiente
+    </button>
+  </div>
 </main>
 <app-user-create-modal />
