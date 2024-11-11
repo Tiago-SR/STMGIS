@@ -57,9 +57,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     private webSocketService: WebSocketService
   ) {
     this.connectionStatus$.subscribe(isConnected => {
-      // if (!isConnected) {
-      //   this.toastr.warning('Conexión perdida, intentando reconectar...');
-      // }
     });
   }
 
@@ -67,12 +64,9 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
     this.cultivoId = this.route.snapshot.params['cultivoId'];
     this.initMap();
-    // Verifica si el cultivoId es válido antes de proceder
     if (this.cultivoId) {
-      // Conectar al WebSocket con el cultivoId
       this.webSocketService.connect(this.cultivoId);
 
-      // Esperar a que el WebSocket esté abierto antes de enviar el mensaje
       this.webSocketService.onOpen().subscribe(() => {
         console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
         this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
@@ -81,7 +75,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       console.error('Error: cultivoId no está definido');
     }
 
-    // Escuchar mensajes del WebSocket
     this.webSocketService.getMessages().subscribe((data) => {
       this.isLoading = false;
       console.log('Mensaje del WebSocket:', data);
@@ -211,7 +204,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     });
 
     const geoJsonLayerIA = new GeoJSONLayer({
-      url: `http://api.proyecto.local/geojson/?cultivo_id=${this.cultivoId}`,
+      url: `http://api.proyecto.local/geojson-por-cultivo/?cultivo_id=${this.cultivoId}`,
       title: 'Zonas de Rendimiento',
       outFields: ['*'],
       popupTemplate: {
