@@ -215,9 +215,9 @@ export class SubirCsvComponent implements OnInit {
       formData.append('archivos_csv', file, file.name);
     });
 
-    formData.append('mapa_unico', JSON.stringify(this.mapaUnico));
-
-    this.cultivoService.subirArchivosCsv(this.csvForm.get('cultivo')?.value, formData).subscribe(
+    const cultivoId = this.csvForm.get('cultivo')?.value;
+    const queryParams = `?mapa_unico=${this.mapaUnico}`;
+    this.cultivoService.subirArchivosCsv(cultivoId, formData, queryParams).subscribe(
       response => {
         if (response.archivos_no_procesados && response.archivos_no_procesados.length > 0) {
           this.toastr.warning(

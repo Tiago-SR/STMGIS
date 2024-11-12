@@ -51,9 +51,9 @@ export class CultivoService {
     }
     return this.http.get<Cultivo[]>(this.baseUrl, { params });
   }
-  subirArchivosCsv(cultivoId: string, formData: FormData): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/`, formData);
-  }
+  subirArchivosCsv(cultivoId: string, formData: FormData, queryParams: string) {
+    return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/${queryParams}`, formData);
+  }  
   normalizarMapas(cultivoId: string): Observable<any> {
      return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
   }
