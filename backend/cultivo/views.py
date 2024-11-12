@@ -97,6 +97,13 @@ class CultivoViewSet(viewsets.ModelViewSet):
         all_normalized = not has_unormalized_data
         return Response({'all_normalized': all_normalized})
 
+    @action(detail=True, methods=['get'], url_path='rendimiento-existe')
+    def rendimiento_existe(self, request, pk=None):
+        cultivo = self.get_object()
+        existe_rendimiento = CultivoData.objects.filter(cultivo=cultivo).exists()
+        
+        return Response({'rendimiento_existe': existe_rendimiento})
+
     def get_queryset(self):
         queryset = Cultivo.objects.all().order_by('nombre')
         user = self.request.user

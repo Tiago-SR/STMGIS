@@ -14,6 +14,7 @@ import * as blobUtil from 'blob-util';
 import { HttpResponse } from '@angular/common/http';
 import { PaginatedResponse } from '../../models/paginated-response.model';
 import Cultivo from '../../models/cultivo.model';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-mapa',
@@ -37,11 +38,15 @@ export class MapaComponent implements OnInit {
   p79: number = 0;
   p100: number = 0;
   mapLoaded: boolean = false; 
+  mostrarReferencias = false;
   tipoRendimiento: string = 'rendimiento_relativo'; 
+  rendimientoDisponible: boolean = false;
 
-
-
-  constructor(private campoService: CampoService, private cultivoService: CultivoService) { }
+  constructor(
+    private campoService: CampoService,
+    private cultivoService: CultivoService,
+    private toastr: ToastrService
+  ) { }
 
   ngOnInit(): void {
     this.map = new Map({
@@ -60,8 +65,6 @@ export class MapaComponent implements OnInit {
     this.view.on('pointer-move', (event) => {
       this.displayFeatureInfo(event);
     });
-    this.hideReferences();
-
   }
 
   loadCampos() {
@@ -212,11 +215,41 @@ export class MapaComponent implements OnInit {
   }
 
   onCultivoSelected(cultivoId: string): void {
+    if (this.cultivoDataLayer) {
+      this.map.remove(this.cultivoDataLayer);
+    }
+    this.mostrarReferencias = false;
     this.selectedCultivoId = cultivoId;
+    this.verificarRendimiento();
+  }
+
+  verificarRendimiento(): void {
+    if (this.selectedCultivoId) {
+      this.cultivoService.verificarRendimientoCargado(this.selectedCultivoId).subscribe({
+        next: (response) => {
+          this.rendimientoDisponible = response.rendimiento_existe;
+          if (!this.rendimientoDisponible) {
+            this.toastr.warning('No hay mapas de rendimiento cargados para el cultivo seleccionado', 'Advertencia');
+            this.rendimientoDisponible = false;
+          }
+        },
+        error: (error) => {
+          console.error('Error al verificar rendimiento:', error);
+          this.rendimientoDisponible = false;
+        }
+      });
+    } else {
+      this.rendimientoDisponible = false;
+    }
   }
 
   onCalcularRendimiento(): void {
     if (!this.selectedCultivoId) {
+      return;
+    }
+
+     if(!this.rendimientoDisponible){
+      this.toastr.warning('No hay mapas de rendimientos cargados para este cultivo.', 'Advertencia')
       return;
     }
 
@@ -237,7 +270,6 @@ export class MapaComponent implements OnInit {
               }
             }
 
-            // Crear blob y descargar
             const blob = new Blob([response.body as Blob], { 
               type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
             });
@@ -248,19 +280,16 @@ export class MapaComponent implements OnInit {
             link.download = filename;
             link.click();
             
-            // Limpieza
             window.URL.revokeObjectURL(url);
             link.remove();
           },
           error: (error) => {
             console.error('Error al descargar el archivo Excel:', error);
-            // Aquí puedes agregar manejo de errores según tu UI
           }
         });
       },
       error: (error) => {
         console.error('Error al calcular el rendimiento:', error);
-        // Aquí puedes agregar manejo de errores según tu UI
       }
     });
   }
@@ -312,14 +341,18 @@ export class MapaComponent implements OnInit {
     if (!this.selectedUuid) {
       return;
     }
+
+     if(!this.rendimientoDisponible){
+      this.toastr.warning('No hay mapas de rendimientos cargados para este cultivo.', 'Advertencia')
+      return;
+    }
   
-    const cultivoDataUrl = `http://api.proyecto.local/cultivodata-geojson/?campo_id=${this.selectedUuid}`;
+    const cultivoDataUrl = `http://api.proyecto.local/cultivodata-geojson-por-cultivo/?cultivo_id=${this.selectedCultivoId}`;
   
     if (this.cultivoDataLayer) {
       this.map.remove(this.cultivoDataLayer);
     }
   
-    // Obtener los datos del GeoJSON desde el endpoint
     fetch(cultivoDataUrl)
       .then(response => response.json())
       .then(data => {
@@ -329,7 +362,7 @@ export class MapaComponent implements OnInit {
   
         const getPercentileValue = (percentile: number) => {
           const index = Math.floor((percentile / 100) * rendimientos.length);
-          return rendimientos[index] || rendimientos[rendimientos.length - 1]; // Ajuste para el 100%
+          return rendimientos[index] || rendimientos[rendimientos.length - 1];
         };
   
         this.p19 = getPercentileValue(19);
@@ -403,6 +436,7 @@ export class MapaComponent implements OnInit {
   
         this.map.add(this.cultivoDataLayer);
         this.mapLoaded = true;
+        this.mostrarReferencias = true;
       })
       .catch(error => {
         console.error('Error al cargar los datos del GeoJSON:', error);
@@ -433,20 +467,6 @@ export class MapaComponent implements OnInit {
       this.highlightedGraphic.symbol = this.originalSymbol;
       this.highlightedGraphic = null;
       this.originalSymbol = null;
-    }
-  }
-
-  showReferences() {
-    const referenceElement = document.getElementById('references');
-    if (referenceElement) {
-      referenceElement.style.display = 'block';
-    }
-  }
-
-  hideReferences() {
-    const referenceElement = document.getElementById('references');
-    if (referenceElement) {
-      referenceElement.style.display = 'none';
     }
   }
 }
