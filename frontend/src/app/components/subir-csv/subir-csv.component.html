@@ -60,11 +60,11 @@
       </button>
     </form>
 
-    <div class="mb-4 flex items-center">
+    <div class="mb-4 mt-2 flex items-center" *ngIf="archivosCsv.length <= 1">
       <input type="checkbox" id="mapaUnico" [(ngModel)]="mapaUnico" name="mapaUnico"
         class="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
       <label for="mapaUnico" class="text-gray-700 font-medium">Mapa de rendimiento único</label>
-    </div>  
+    </div>
     
   </div>
   

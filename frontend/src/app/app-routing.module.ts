@@ -11,7 +11,6 @@ import { DataUserComponent } from './components/usuarios/data-user/data-user.com
 import { CampoListComponent } from './components/campo/campo-list/campo-list.component';
 import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.component';
 import { CampoFormComponent } from './components/campo/campo-form/campo-form.component';
-import { EspecieCardComponent } from "./components/especie/especie-card/especie-card.component";
 import { EspecieListComponent } from "./components/especie/especie-list/especie-list.component";
 import { EmpresaListComponent } from "./components/empresa/empresa-list/empresa-list.component";
 import { EmpresaForm2Component } from "./components/empresa/empresa-form2/empresa-form2.component";
@@ -45,9 +44,7 @@ const routes: Routes = [
   { path: 'subir-csv', component: SubirCsvComponent, canActivate: [authResponsableGuard] },
   { path: 'normalizar-mapas', component: NormalizarMapasComponent, canActivate: [authResponsableGuard] },
   { path: 'normalizar-mapas-rendimiento/:cultivoId', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },
-  { path: '**', component: HomepageComponent },
-
-  // { path: '**', redirectTo: '' }
+  { path: '**', component: HomepageComponent }
 ];
 
 @NgModule({
