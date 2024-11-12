@@ -53,9 +53,7 @@ from django.http import HttpResponse, Http404
 from django.contrib.gis.geos import GEOSGeometry
 from rendimiento_ambiente.models import RendimientoAmbiente
 from ambientes.models import Ambiente
-from django.db.models import F, OuterRef, Subquery
-
-
+from django.db.models import F, OuterRef, Subquery, Avg
 
 from django.http import Http404
 from .models import Cultivo, CultivoData
@@ -121,16 +119,13 @@ class CultivoViewSet(viewsets.ModelViewSet):
     def upload_csv(self, request, pk=None):
         cultivo = get_object_or_404(Cultivo, pk=pk)
         files = request.FILES.getlist('archivos_csv')
+        mapa_unico = json.loads(request.query_params.get('mapa_unico', 'false'))
 
         if not files:
             return Response({'error': 'No se subieron archivos.'}, status=status.HTTP_400_BAD_REQUEST)
 
         archivos_no_procesados = []
         file_contents = []
-        columnas_requeridas = [
-            'Longitude', 'Latitude', 'Anch. de fja.(m)', 'Humedad(%)', 
-            '(seco)Masa de rend.(tonne/ha)', 'Velocidad(km/h)', 'Fecha'
-        ]
 
         for file in files:
             if CultivoData.objects.filter(cultivo=cultivo, nombre_archivo_csv=file.name).exists():
@@ -185,6 +180,12 @@ class CultivoViewSet(viewsets.ModelViewSet):
 
             cache.set(f'upload_status_{upload_id}', 'completed', timeout=3600)
 
+            if mapa_unico:
+                logger.warning("Se recibio un mapa unico, iniciando normalización.")
+                normalizar_mapa_unico(cultivo.id)
+            else:
+                logger.warning("No se recibio un mapa unico, normalización omitida.")
+
         processing_thread = threading.Thread(target=process_files)
         processing_thread.start()
 
@@ -205,6 +206,32 @@ class CultivoViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_202_ACCEPTED
         )
+
+
+def normalizar_mapa_unico(cultivo_id):
+    cultivo = Cultivo.objects.get(id=cultivo_id)
+    queryset_base = CultivoData.objects.filter(cultivo=cultivo)
+
+    if not queryset_base.exists():
+        logger.warning(f"No hay mapas de rendimiento para el cultivo con id {cultivo_id}.")
+        return None
+
+    media_rendimiento_normalizado = queryset_base.aggregate(media=Avg('masa_rend_seco'))['media']
+
+    if media_rendimiento_normalizado is None or media_rendimiento_normalizado == 0:
+        logger.warning(f"No se puede calcular la media para el cultivo con id {cultivo_id}.")
+        return None
+
+    logger.warning(f"La media_rendimiento_normalizado es: {media_rendimiento_normalizado}.")
+
+    with transaction.atomic():
+        queryset_base.update(
+            rendimiento_normalizado=F('masa_rend_seco'),
+            rendimiento_relativo=F('masa_rend_seco') / media_rendimiento_normalizado,
+            rendimiento_real=(F('masa_rend_seco') / media_rendimiento_normalizado) * cultivo.rinde_prom
+        )
+
+    logger.info(f"Normalización completa para el cultivo con id {cultivo_id}.")
 
 def cultivodata_geojson_view(request):
     campo_id = request.GET.get('campo_id', None)
@@ -736,6 +763,8 @@ def sse_notify(request, upload_id):
             
             if status == 'completed':
                 yield 'data: El proceso ha terminado.\n\n'
+                logger.warning("SE TERMINO EL PROCESO")
+
                 cache.delete(f'upload_status_{upload_id}')
                 break
             

@@ -25,10 +25,11 @@ export class SubirCsvComponent implements OnInit {
   cultivosTodos: Cultivo[] = [];
   archivosCsv: File[] = [];
 
-  empresaSeleccionadaId: string | null | undefined = null;
+  empresaSeleccionadaId: number | null | undefined = null;
   campoSeleccionadoId: string | null | undefined = null;
   especieSeleccionadaId: string | null = null;
   cultivoSeleccionadoId: string | null = null;
+  mapaUnico: boolean = false;
 
   csvForm: FormGroup;
 
@@ -214,7 +215,9 @@ export class SubirCsvComponent implements OnInit {
       formData.append('archivos_csv', file, file.name);
     });
 
-    this.cultivoService.subirArchivosCsv(this.csvForm.get('cultivo')?.value, formData).subscribe(
+    const cultivoId = this.csvForm.get('cultivo')?.value;
+    const queryParams = `?mapa_unico=${this.mapaUnico}`;
+    this.cultivoService.subirArchivosCsv(cultivoId, formData, queryParams).subscribe(
       response => {
         if (response.archivos_no_procesados && response.archivos_no_procesados.length > 0) {
           this.toastr.warning(

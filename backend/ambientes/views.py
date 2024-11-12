@@ -1,5 +1,7 @@
 from django.shortcuts import render
 from django.contrib.gis.geos import Polygon, MultiPolygon
+
+from cultivo.models import Cultivo
 from .models import Ambiente
 from campo.models import Campo
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -15,6 +17,9 @@ from django.core.serializers import serialize
 from django.http import HttpResponse, JsonResponse, Http404
 from tempfile import NamedTemporaryFile
 from .serializers import AmbienteSerializer
+import logging
+
+logger = logging.getLogger(__name__)
 
 def ambiente_geojson_view(request):
     campo_id = request.GET.get('campo_id', None)
