@@ -27,6 +27,13 @@ export class ListUserComponent implements AfterViewInit, OnInit {
     this.loadUsers();
   }
 
+  triggerModal(): void {
+  const inviteUserButton = document.getElementById('inviteUserButton');
+  if (inviteUserButton) {
+    inviteUserButton.click();
+  }
+}
+
   loadUsers() {
     this.cargando = true;
     const params = {
