@@ -23,7 +23,7 @@ class Cultivo(models.Model):
         especie_nombre = self.especie.nombre
         gestion_nombre = self.gestion.name
 
-        self.nombre = f"{campo_nombre} {especie_nombre} {gestion_nombre} detalle"
+        self.nombre = f"{campo_nombre} {especie_nombre} {gestion_nombre}"
         
         super(Cultivo, self).save(*args, **kwargs)
 
