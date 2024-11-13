@@ -11,7 +11,6 @@ import { DataUserComponent } from './components/usuarios/data-user/data-user.com
 import { CampoListComponent } from './components/campo/campo-list/campo-list.component';
 import { CampoEditComponent } from './components/campo/campo-edit/campo-edit.component';
 import { CampoFormComponent } from './components/campo/campo-form/campo-form.component';
-import { EspecieCardComponent } from "./components/especie/especie-card/especie-card.component";
 import { EspecieListComponent } from "./components/especie/especie-list/especie-list.component";
 import { EmpresaListComponent } from "./components/empresa/empresa-list/empresa-list.component";
 import { EmpresaForm2Component } from "./components/empresa/empresa-form2/empresa-form2.component";
@@ -23,6 +22,7 @@ import { SubirCsvComponent } from './components/subir-csv/subir-csv.component';
 import { NormalizarMapasComponent } from './components/normalizar-mapas/normalizar-mapas.component';
 import { NormalizarMapasRendimientoComponent } from './components/normalizar-mapas-rendimiento/normalizar-mapas-rendimiento.component';
 import { CultivoVerComponent } from './components/cultivo/cultivo-ver/cultivo-ver.component';
+import { HomepageComponent } from './components/homepage/homepage.component';
 
 const routes: Routes = [
   { path: 'empresas', component: EmpresaListComponent , canActivate: [authAdminGuard] },
@@ -37,16 +37,14 @@ const routes: Routes = [
   { path: 'campos/editar/:id', component: CampoEditComponent, canActivate: [authResponsableGuard] },
   { path: 'campos/nuevo', component: CampoFormComponent, canActivate: [authResponsableGuard] },
   { path: 'especies', component: EspecieListComponent, canActivate: [authAdminGuard] },
-  { path: 'mapa', component: MapaComponent},
+  { path: 'mapa', component: MapaComponent, canActivate: [authResponsableGuard]},
   { path: 'reset-password', component: ForgotPasswordComponent, canActivate: [noAuthGuard] },
   { path: 'cultivo', component: CultivoListComponent, canActivate: [authResponsableGuard] },
   { path: 'cultivo/:id', component: CultivoVerComponent, canActivate: [authResponsableGuard] },
   { path: 'subir-csv', component: SubirCsvComponent, canActivate: [authResponsableGuard] },
   { path: 'normalizar-mapas', component: NormalizarMapasComponent, canActivate: [authResponsableGuard] },
-  //{ path: 'resultado-normalizacion/:id', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },
   { path: 'normalizar-mapas-rendimiento/:cultivoId', component: NormalizarMapasRendimientoComponent, canActivate: [authResponsableGuard] },
-
-  { path: '**', redirectTo: '' }
+  { path: '**', component: HomepageComponent }
 ];
 
 @NgModule({

@@ -39,6 +39,7 @@ import { CultivoVerComponent } from './components/cultivo/cultivo-ver/cultivo-ve
 import { ConfirmationDialogComponent } from './components/confirmation-dialog/confirmation-dialog.component';
 import { ConfirmationService } from './services/confirmation.service';
 import { NgxPaginationModule } from 'ngx-pagination';
+import { HomepageComponent } from './components/homepage/homepage.component';
 
 
 @NgModule({
@@ -71,7 +72,8 @@ import { NgxPaginationModule } from 'ngx-pagination';
     NormalizarMapasComponent,
     NormalizarMapasRendimientoComponent,
     CultivoVerComponent,
-    ConfirmationDialogComponent
+    ConfirmationDialogComponent,
+    HomepageComponent
   ],
   imports: [
     BrowserModule,

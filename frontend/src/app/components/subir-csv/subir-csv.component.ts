@@ -11,6 +11,7 @@ import { EspecieService } from '../../services/especie.service';
 import { ToastrService } from 'ngx-toastr';
 import { UploadService } from '../../services/upload.service';
 import { ActivatedRoute, Router } from '@angular/router';
+import { ConfirmationService } from '../../services/confirmation.service';
 
 @Component({
   selector: 'app-subir-csv',
@@ -43,7 +44,8 @@ export class SubirCsvComponent implements OnInit {
     private toastr: ToastrService,
     private uploadService: UploadService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private confirmationService: ConfirmationService
   ) {
     this.csvForm = this.fb.group({
       cultivo: [null, Validators.required],
@@ -194,6 +196,25 @@ export class SubirCsvComponent implements OnInit {
     if (event.target.files) {
       this.archivosCsv = Array.from(event.target.files);
       this.csvForm.patchValue({ archivos: this.archivosCsv });
+      console.log('this.archivosCsv.length ', this.archivosCsv.length);
+      
+      if (this.archivosCsv.length === 1) {
+        this.mapaUnico = true;
+        this.confirmationService
+          .requestConfirmation(
+            "Se recibió un archivo único",
+            "Esto significa que se van a normalizar los datos de forma automática, ¿quiere proceder de igual manera?"
+          )
+          .then((confirmed) => {
+            if (confirmed) {
+              this.subirArchivosCsv();
+            } else {
+              this.mapaUnico = false;
+            }
+          });
+      } else {
+        this.mapaUnico = false;
+      }
     }
   }
 

@@ -57,6 +57,12 @@ export class CultivoService {
   normalizarMapas(cultivoId: string): Observable<any> {
      return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
   }
+
+  verificarRendimientoCargado(cultivoId: string): Observable<{ rendimiento_existe: boolean }> {
+    const url = `${this.baseUrl}${cultivoId}/rendimiento-existe/`;
+    return this.http.get<{ rendimiento_existe: boolean }>(url);
+  }
+
    // Método para obtener los datos de normalización
   obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
      return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);

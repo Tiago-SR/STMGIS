@@ -135,6 +135,9 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       } else if (data.action === 'proceso_cancelado') {
         this.toastr.info('El proceso ha sido cancelado', 'Proceso cancelado');
         this.router.navigate(['/ruta-inicial']);
+      } else if (data.action === 'mapa-unico') {
+        this.toastr.info(data.message, 'Mapa único');
+        this.isLoading = false;
       } else if (data.action === 'error') {
         this.toastr.error(data.message, 'Error');
         this.isLoading = false;

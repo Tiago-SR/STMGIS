@@ -8,7 +8,6 @@
         {{ campo.nombre }}
       </option>
     </select>
-    <!-- Selección de cultivo -->
     <label for="cultivoSelect" class="block text-gray-700 text-sm font-bold mb-2 ml-4">Seleccionar Cultivo:</label>
     <select id="cultivoSelect" [(ngModel)]="selectedCultivoId" (change)="onCultivoSelected(selectedCultivoId)"
       class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
@@ -17,21 +16,20 @@
         {{ cultivo.nombre }}
       </option>
     </select>
-        <!-- Nuevo select para seleccionar el tipo de rendimiento -->
-    <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold mb-2 ml-4">Tipo de rendimiento:</label>
-    <select id="tipoRendimiento" [(ngModel)]="tipoRendimiento" class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-      <option value="rendimiento_relativo">Rendimiento Relativo</option>
-      <option value="rendimiento_real">Rendimiento Real</option>
-      <option value="masa_rend_seco">Masa de Rendimiento Seco</option>
-      <option value="rendimiento_normalizado">Rendimiento Normalizado</option>
-    </select>
+      <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold mb-2 ml-4">Tipo de rendimiento:</label>
+        <select id="tipoRendimiento" [(ngModel)]="tipoRendimiento" (change)="aplicarFiltroRendimiento()"
+                class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <option value="rendimiento_relativo">Rendimiento Relativo</option>
+          <option value="rendimiento_real">Rendimiento Real</option>
+          <option value="masa_rend_seco">Masa de Rendimiento Seco</option>
+          <option value="rendimiento_normalizado">Rendimiento Normalizado</option>
+        </select>
 
     <button (click)="onCargarCsv()" [disabled]="!selectedUuid"
       class="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none">
       Cargar mapas de rendimiento
     </button>
 
-     <!-- Botón para calcular el rendimiento por ambiente y descargar el Excel -->
      <button (click)="onCalcularRendimiento()" [disabled]="!selectedCultivoId"
      class="ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none">
      Calcular rendimiento y descargar Excel
@@ -42,7 +40,7 @@
   <div class="relative flex-1">
     <div id="viewDiv" class="h-full w-full"></div>
 
-    <div *ngIf="mapLoaded" class="floating-table bg-white p-2 border rounded shadow-lg text-sm w-36">
+    <div *ngIf="mapLoaded && mostrarReferencias" class="floating-table bg-white p-2 border rounded shadow-lg text-sm w-36">
       <h2 class="font-bold text-md mb-2">Referencias de Percentiles</h2>
       <table class="min-w-full border-collapse border border-gray-300 mt-1 text-xs text-center">
         <thead>

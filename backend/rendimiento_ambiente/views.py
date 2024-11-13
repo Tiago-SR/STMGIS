@@ -1,9 +1,7 @@
-# views.py
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from django.shortcuts import get_object_or_404
-from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Avg, StdDev
 from django.http import HttpResponse
 import pandas as pd
@@ -13,10 +11,6 @@ from .serializers import RendimientoAmbienteSerializer
 from cultivo.models import Cultivo, CultivoData
 from .models import RendimientoAmbiente
 from ambientes.models import  Ambiente
-import xlsxwriter
-
-
-
 
 class RendimientoAmbienteView(viewsets.ModelViewSet):
     queryset = RendimientoAmbiente.objects.all()
@@ -25,15 +19,13 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'], url_path='calcular-rendimiento')
     def calcular_rendimiento(self, request, pk=None):
         try:
-            # Get the cultivo object
             cultivo = get_object_or_404(Cultivo, pk=pk)
             
             print(f"Encontrado cultivo con ID: {cultivo.id}")
 
-            # Get all CultivoData points for this cultivo
             puntos_cultivo = CultivoData.objects.filter(
                 cultivo=cultivo,
-                rendimiento_real__isnull=False  # Ensure we only get points with valid yield data
+                rendimiento_real__isnull=False
             )
 
             if not puntos_cultivo.exists():
@@ -42,20 +34,16 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            # Get all active ambientes
             ambientes = Ambiente.objects.filter(is_active=True)
             
             resultados = []
-            
-            # Process each ambiente
+
             for ambiente in ambientes:
-                # Find all points that fall within this ambiente's geometry
                 puntos_en_ambiente = puntos_cultivo.filter(
                     punto_geografico__intersects=ambiente.ambiente_geom
                 )
                 
                 if puntos_en_ambiente.exists():
-                    # Calculate statistics
                     stats = puntos_en_ambiente.aggregate(
                         rendimiento_real_promedio=Avg('rendimiento_real'),
                         rendimiento_relativo_promedio=Avg('rendimiento_relativo'),
@@ -63,7 +51,6 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
                         std_dev_relativo=StdDev('rendimiento_relativo')
                     )
                     
-                    # Calculate coefficient of variation (CV = std_dev / mean)
                     coef_variacion_real = (
                         stats['std_dev_real'] / stats['rendimiento_real_promedio'] 
                         if stats['rendimiento_real_promedio'] else 0
@@ -73,7 +60,6 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
                         if stats['rendimiento_relativo_promedio'] else 0
                     )
                     
-                    # Create or update RendimientoAmbiente record
                     rendimiento_ambiente, created = RendimientoAmbiente.objects.update_or_create(
                         cultivo=cultivo,
                         ambiente_id=ambiente.id,  # Added ambiente_id to make it unique per ambiente
@@ -84,8 +70,7 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
                             'coef_variacion_relativo': coef_variacion_relativo,
                         }
                     )
-                    
-                    # Add to results
+
                     resultados.append({
                         'ambiente_id': ambiente.idA,
                         'nombre_ambiente': ambiente.name,
@@ -94,8 +79,8 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
                         'rendimiento_relativo_promedio': round(stats['rendimiento_relativo_promedio'], 2),
                         'desviacion_estandar_real': round(stats['std_dev_real'], 2),
                         'desviacion_estandar_relativo': round(stats['std_dev_relativo'], 2),
-                        'coef_variacion_real': round(coef_variacion_real * 100, 2),  # Convert to percentage
-                        'coef_variacion_relativo': round(coef_variacion_relativo * 100, 2),  # Convert to percentage
+                        'coef_variacion_real': round(coef_variacion_real * 100, 2),
+                        'coef_variacion_relativo': round(coef_variacion_relativo * 100, 2),
                         'cantidad_puntos': puntos_en_ambiente.count()
                     })
             
@@ -155,13 +140,8 @@ class RendimientoAmbienteView(viewsets.ModelViewSet):
                     status=status.HTTP_404_NOT_FOUND
                 )
 
-            # Create DataFrame
             df = pd.DataFrame(resultados)
-            
-            # Create the Excel file
             output = BytesIO()
-            
-            # Export to Excel
             df.to_excel(
                 output, 
                 sheet_name='Rendimientos',

@@ -9,6 +9,8 @@ from statistics import median, stdev, mean
 import json
 import logging
 
+from cultivo.views import normalizar_mapa_unico
+
 logger = logging.getLogger(__name__)
 
 class RendimientoConsumer(AsyncWebsocketConsumer):
@@ -94,17 +96,13 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             # Calcular diferencia porcentual entre percentiles
             diferencia_porcentual = abs((percentil_80_mapa2 - percentil_80_mapa1) / percentil_80_mapa1 * 100)
             logger.info(f"Diferencia porcentual entre percentiles 80: {diferencia_porcentual}%")
-            
-            
-            # Si la diferencia está dentro de la variación admitida, normalizar automáticamente
+
             if diferencia_porcentual <= variacion_admitida:
                 coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
                 logger.info(f"Diferencia dentro del umbral admitido. Normalizando automáticamente con coeficiente: {coeficiente_sugerido}")
                 await self._normalizar_automaticamente(coeficiente_sugerido)
                 return
 
-
-            # Calcular coeficiente sugerido
             coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
             coeficiente_sugerido_median = (percentil_50_mapa1 / percentil_50_mapa2) if percentil_50_mapa2 > 0 else 1
 
@@ -135,9 +133,10 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
                 'modo_manual': True
             }))
         else:
+            await normalizar_mapa_unico(self.cultivo_id)
             await self.send(text_data=json.dumps({
-                'action': 'error',
-                'message': 'Se necesitan al menos dos mapas para iniciar el proceso.'
+                'action': 'mapa_unico',
+                'message': 'Se encontró un único mapa de rendimiento, se normalizó automáticamente como un mapa único.'
             }))
 
     def calcular_mediana(self, valores):

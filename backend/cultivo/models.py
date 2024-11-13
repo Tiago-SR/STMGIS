@@ -19,15 +19,12 @@ class Cultivo(models.Model):
     def __str__(self):
         return self.nombre
     def save(self, *args, **kwargs):
-        # Concatenamos los valores de los campos relacionados para crear el nombre
-        campo_nombre = self.campo.nombre  # Asumiendo que Campo tiene un campo 'nombre'
-        especie_nombre = self.especie.nombre  # Asumiendo que Especie tiene un campo 'nombre'
-        gestion_nombre = self.gestion.name  # Asumiendo que Gestión tiene un campo 'nombre'
+        campo_nombre = self.campo.nombre
+        especie_nombre = self.especie.nombre
+        gestion_nombre = self.gestion.name
 
-        # Asignamos el nuevo valor a 'nombre' en el formato que quieres
         self.nombre = f"{campo_nombre} {especie_nombre} {gestion_nombre} detalle"
         
-        # Llamamos al método original para guardar el objeto
         super(Cultivo, self).save(*args, **kwargs)
 
 class CultivoData(models.Model):

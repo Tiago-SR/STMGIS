@@ -41,7 +41,7 @@ export class CultivoVerComponent implements OnInit {
 
   // Checkbox's controls
   mapaRendimientoChecked = new FormControl(false);
-  mbaChecked = new FormControl(false);
+  mbaChecked = new FormControl(true);
   rendimientoAmbienteChecked = new FormControl(false);
   ajusteMBAChecked = new FormControl(false);
   showPercentileTable = false;
@@ -96,6 +96,7 @@ export class CultivoVerComponent implements OnInit {
                     this.cargarCampo();
                     this.cargarMapaRendimiento();
                     this.cargarRendimientoAmbiente();
+                    this.toggleLayerMBA();
                 });
 
                 },
@@ -116,7 +117,6 @@ export class CultivoVerComponent implements OnInit {
           this.router.navigate(['/']);
         }
       })
-      
     });
   }
 
@@ -422,19 +422,16 @@ export class CultivoVerComponent implements OnInit {
             
             if (!data.features || data.features.length === 0) {
                 console.warn('No hay features en los datos');
-                this.toast.warning('No hay datos de rendimiento por ambiente disponibles');
+                this.toast.warning('No hay datos de rendimiento por ambiente disponibles. Por favor suba los csv correspondientes');
                 return;
             }
 
-            // Crear un Blob con los datos
             const blob = new Blob([JSON.stringify(data)], {
                 type: 'application/json'
             });
 
-            // Crear URL para el Blob
             const blobUrl = URL.createObjectURL(blob);
 
-            // Crear la capa
             this.geojsonLayerRendimientoAmbiente = new GeoJSONLayer({
                 url: blobUrl,
                 title: 'Rendimiento por Ambiente',
