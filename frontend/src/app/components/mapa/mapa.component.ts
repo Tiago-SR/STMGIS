@@ -221,10 +221,8 @@ export class MapaComponent implements OnInit {
   }
 
   onCultivoSelected(cultivoId: string): void {
-    if (this.cultivoDataLayer) {
-      this.map.remove(this.cultivoDataLayer);
-      this.rendimientosData = [];
-    }
+    this.map.remove(this.cultivoDataLayer);
+    this.rendimientosData = [];
     this.mostrarReferencias = false;
     this.selectedCultivoId = cultivoId;
     this.verificarRendimiento();

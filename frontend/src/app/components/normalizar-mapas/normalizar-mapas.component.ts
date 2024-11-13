@@ -14,7 +14,6 @@ import { Router } from '@angular/router';
 import { WebSocketService } from '../../services/web-socket.service';
 import { Subscription } from 'rxjs';
 import { ConfirmationService } from '../../services/confirmation.service';
-import { PaginatedResponse } from '../../models/paginated-response.model';
 
 @Component({
   selector: 'app-normalizar-mapas',
@@ -246,16 +245,12 @@ export class NormalizarMapasComponent implements OnInit, OnDestroy {
       this.websocketSubscription.unsubscribe();
     }
 
-    // Conectar al WebSocket
     this.webSocketService.connect(cultivoId);
-
-    // Suscribirse a los mensajes del WebSocket
     this.websocketSubscription = this.webSocketService.getMessages().subscribe(
       (data) => {
         console.log('Mensaje recibido del WebSocket:', data);
 
         if (data.action === 'nuevos_mapas') {
-          // Navegar a la página de normalización cuando se reciban los primeros mapas
           this.isConnecting = false;
           this.router.navigate(['/normalizar-mapas-rendimiento', cultivoId]);
         } 
@@ -263,7 +258,10 @@ export class NormalizarMapasComponent implements OnInit, OnDestroy {
           this.isConnecting = false;
           this.toastr.success('La normalización de mapas de rendimiento ha sido completada.', 'Éxito');
           this.router.navigate([`/resultado-normalizacion/${cultivoId}`]);
-        } 
+        } else if (data.action === 'mapa_unico') {
+          this.toastr.info(data.message, 'Mapa único');
+          this.isConnecting = false;
+      }
         else if (data.action === 'error') {
           this.isConnecting = false;
           this.toastr.error(data.message, 'Error');

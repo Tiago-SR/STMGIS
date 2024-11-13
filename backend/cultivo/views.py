@@ -1,3 +1,5 @@
+from asgiref.sync import sync_to_async
+
 from api.pagination import StandardResultsSetPagination
 #from geojson import Feature, FeatureCollection
 from rest_framework import viewsets, status
@@ -5,6 +7,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
+
+from rendimiento_ambiente.views import RendimientoAmbienteView
 from .models import Cultivo, CultivoData
 from .serializers import CultivoSerializer, CultivoDataGeoSerializer
 import json
@@ -214,10 +218,11 @@ class CultivoViewSet(viewsets.ModelViewSet):
             status=status.HTTP_202_ACCEPTED
         )
 
-
+@sync_to_async
 def normalizar_mapa_unico(cultivo_id):
     cultivo = Cultivo.objects.get(id=cultivo_id)
     queryset_base = CultivoData.objects.filter(cultivo=cultivo)
+    logger.warning(f"Estoy haciendo el normalizado unico para: {cultivo_id}.")
 
     if not queryset_base.exists():
         logger.warning(f"No hay mapas de rendimiento para el cultivo con id {cultivo_id}.")
@@ -239,6 +244,15 @@ def normalizar_mapa_unico(cultivo_id):
         )
 
     logger.info(f"Normalización completa para el cultivo con id {cultivo_id}.")
+
+    # Iniciar el cálculo de rendimiento en segundo plano
+    threading.Thread(target=calcular_rendimiento_post_normalizacion, args=(cultivo_id,)).start()
+
+def calcular_rendimiento_post_normalizacion(cultivo_id):
+    cultivo = get_object_or_404(Cultivo, pk=cultivo_id)
+    view = RendimientoAmbienteView()
+    view.calcular_rendimiento(None, pk=cultivo_id)
+    logger.info("Cálculo de rendimiento post-normalización completado.")
 
 def cultivodata_geojson_view(request):
     campo_id = request.GET.get('campo_id', None)
@@ -1011,20 +1025,18 @@ def extraccion_p_ambiente_geojson_view(request, cultivo_id):
         )
 
 def extraccion_k_ambiente_geojson_view(request, cultivo_id):
-
     try:
-        print(f"Procesando cultivo_id: {cultivo_id}")
+        logger.info(f"Iniciando procesamiento para cultivo_id: {cultivo_id}")
         cultivo = get_object_or_404(Cultivo, id=cultivo_id)
         especie = cultivo.especie
-        print(f"Cultivo encontrado: {cultivo.nombre}")
-        print(f"Especie: {especie.nombre}")
+        logger.info(f"Cultivo encontrado: {cultivo.nombre}")
+        logger.info(f"Especie asociada: {especie.nombre}")
 
-        # Primero, obtener los rendimientos por ambiente
+        # Obtener rendimientos por ambiente
         rendimientos = RendimientoAmbiente.objects.filter(
             cultivo=cultivo
         ).select_related('ambiente')
-
-        print(f"Rendimientos encontrados: {rendimientos.count()}")
+        logger.info(f"Cantidad de rendimientos encontrados: {rendimientos.count()}")
 
         # Crear el GeoJSON manualmente
         features = []
@@ -1032,15 +1044,14 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
 
         for rendimiento in rendimientos:
             if rendimiento.ambiente and rendimiento.ambiente.ambiente_geom and rendimiento.rendimiento_real_promedio:
-                # Calcular la extracción de P
                 if 'Potasio' in especie.nutrientes:
                     extraccion_k = rendimiento.rendimiento_real_promedio * especie.nutrientes.get("Potasio", 0)
                 else:
                     extraccion_k = 0
-                    print(f"No se encontró el valor de 'Potasio' para la especie '{especie.nombre}'")
+                    logger.warning(f"No se encontró el valor de 'Potasio' para la especie '{especie.nombre}'")
 
-                # Guardar el valor para calcular percentiles
                 rendimientos_valores.append(extraccion_k)
+                logger.debug(f"Extracción de Potasio calculada: {extraccion_k} para el ambiente {rendimiento.ambiente.idA}")
 
                 feature = {
                     'type': 'Feature',
@@ -1055,8 +1066,8 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
                 }
                 features.append(feature)
 
-        print(f"Features creadas: {len(features)}")
-        print(f"Valores de extracción de P: {rendimientos_valores}")
+        logger.info(f"Total de features creadas: {len(features)}")
+        logger.debug(f"Valores de extracción de Potasio: {rendimientos_valores}")
 
         # Calcular percentiles
         if rendimientos_valores:
@@ -1069,6 +1080,7 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
                 'p80': rendimientos_valores[int(n * 0.8)],
                 'max': rendimientos_valores[-1]
             }
+            logger.info(f"Percentiles calculados: {percentiles}")
         else:
             percentiles = {
                 'p20': 0,
@@ -1077,6 +1089,7 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
                 'p80': 0,
                 'max': 0
             }
+            logger.warning("No se encontraron valores de extracción para calcular percentiles")
 
         # Crear la respuesta GeoJSON
         geojson = {
@@ -1089,10 +1102,11 @@ def extraccion_k_ambiente_geojson_view(request, cultivo_id):
             }
         }
 
+        logger.info("GeoJSON generado exitosamente")
         return JsonResponse(geojson, safe=False)
 
     except Exception as e:
-        print(f"Error en extraccion_p_ambiente_geojson_view: {str(e)}")
+        logger.error(f"Error en extraccion_k_ambiente_geojson_view: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse(
