@@ -50,8 +50,7 @@ export class CampoFormComponent implements OnInit {
   loadEmpresas() {
     this.empresaService.getAllEmpresas().subscribe({
       next: (empresas) => {
-        console.log('adsasdasda', empresas);
-        
+
         this.empresas = empresas;
       },
       error: (err) => {
@@ -94,7 +93,6 @@ export class CampoFormComponent implements OnInit {
    
       this.campoService.createCampo(formData).subscribe({
         next: (res) => {
-          console.log('Campo registrado:', res);         
           this.router.navigate(['/campos'], {
             state: { message: 'Campo actualizado con éxito', type: 'success' }
           });

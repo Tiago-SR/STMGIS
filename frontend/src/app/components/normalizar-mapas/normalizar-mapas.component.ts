@@ -209,8 +209,6 @@ export class NormalizarMapasComponent implements OnInit, OnDestroy {
     this.cultivoService.obtenerEstaNormalizado(cultivoId).subscribe(
       (response) => {
         if (response.all_normalized) {
-          // Mostrar diálogo de confirmación
-          console.log('mati debug todo normalizado');
           this.confirmationService
             .requestConfirmation(
               'Normalización Previa Encontrada',

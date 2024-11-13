@@ -86,7 +86,6 @@ export class CampoEditComponent implements OnInit {
       };
       this.campoService.updateCampo(this.campo.id!, this.campo).subscribe({
         next: (res) => {
-          console.log('Campo actualizado:', res);
           this.toastr.success('Exito', 'Campo actualizado');
           this.router.navigate(['/campos'], {
             state: { message: 'Campo actualizado con éxito', type: 'success' }
