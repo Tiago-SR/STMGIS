@@ -92,7 +92,6 @@ export class CultivoVerComponent implements OnInit {
                   this.nombreEmpresa = data.nombre;
                   this.initMap()
                   this.view.when(() => {
-                    console.log('Mapa inicializado');
                     this.cargarCampo();
                     this.cargarMapaRendimiento();
                     this.cargarRendimientoAmbiente();
@@ -397,7 +396,6 @@ export class CultivoVerComponent implements OnInit {
   }
   cargarRendimientoAmbiente(): void {
     if (!this.idCultivo) {
-        console.log('No hay ID de cultivo');
         return;
     }
     
@@ -418,8 +416,7 @@ export class CultivoVerComponent implements OnInit {
             return response.json();
         })
         .then(data => {
-            console.log('Datos recibidos:', data);
-            
+
             if (!data.features || data.features.length === 0) {
                 console.warn('No hay features en los datos');
                 this.toast.warning('No hay datos de rendimiento por ambiente disponibles. Por favor suba los csv correspondientes');
@@ -478,14 +475,11 @@ export class CultivoVerComponent implements OnInit {
               }],
             });
 
-            console.log('Capa creada, agregando al mapa...');
             this.map.add(this.geojsonLayerRendimientoAmbiente);
             
-            // Establecer la visibilidad según el estado del checkbox
             this.geojsonLayerRendimientoAmbiente.visible = this.rendimientoAmbienteChecked.value ?? false;
             console.log('Visibilidad de la capa:', this.geojsonLayerRendimientoAmbiente.visible);
 
-            // Zoom a la capa cuando esté lista
             this.geojsonLayerRendimientoAmbiente.when(() => {
                 console.log('Capa cargada completamente');
                 if (this.geojsonLayerRendimientoAmbiente.fullExtent) {
@@ -493,7 +487,6 @@ export class CultivoVerComponent implements OnInit {
                 }
             });
 
-            // Limpiar el URL del Blob después de un tiempo
             setTimeout(() => {
                 URL.revokeObjectURL(blobUrl);
                 console.log('Blob URL liberada');

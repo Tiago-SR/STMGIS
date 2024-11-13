@@ -21,9 +21,7 @@ export class EmpresaForm2Component {
     if (form.valid) {
       this.empresaService.createEmpresa(this.empresa).subscribe({
         next: (res) => {
-          console.log('Empresa creada:', res);
           this.router.navigate(['/empresas']); // Redirigir después del registro
-
         },
         error: (err) => console.error('Error al crear empresa:', err)
       });
