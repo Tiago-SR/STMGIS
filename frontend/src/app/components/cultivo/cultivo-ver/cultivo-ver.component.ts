@@ -106,7 +106,7 @@ export class CultivoVerComponent implements OnInit {
               });
             },
             error: error => {
-              this.toast.warning('Error al obtener el campo', 'Alerta');
+              this.toast.warning('Ha ocurrido un error al obtener el campo relacionado al cultivo, o el mismo ya no esta disponible.', 'Alerta');
               this.router.navigate(['/']);
             }
           });
