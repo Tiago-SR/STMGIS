@@ -7,6 +7,7 @@ import { Empresa } from '../../../models/empresa.model';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../../services/auth.service';
 import { UserType } from '../../../enums/user-type';
+import {ConfirmationService} from "../../../services/confirmation.service";
 
 @Component({
   selector: 'app-campo-list',
@@ -29,7 +30,8 @@ export class CampoListComponent implements OnInit {
     private campoService: CampoService,
     private router: Router,
     private toastr: ToastrService,
-    private authService: AuthService
+    private authService: AuthService,
+    private confirmationService: ConfirmationService
   ) {}
 
   ngOnInit() {
@@ -131,16 +133,23 @@ export class CampoListComponent implements OnInit {
     this.router.navigate(['campos/editar/',id]);      
   }
 
-  softDeleteCampo(id: string){
-    this.campoService.deleteCampo(id).subscribe({
-      next: () => {
-        this.toastr.success('Campo eliminado correctamente', 'Éxito');
-        this.loadCampos();
-      },
-      error: (error) => {
-        console.error('Error al eliminar campo', error);
-        this.toastr.error('Error al eliminar campo', 'Error');
-      } 
+  softDeleteCampo(id: string) {
+    this.confirmationService.requestConfirmation(
+      'Eliminar Campo',
+      '¿Estás seguro de que deseas eliminar este campo?'
+    ).then((confirmed) => {
+      if (confirmed) {
+        this.campoService.deleteCampo(id).subscribe({
+          next: () => {
+            this.toastr.success('Campo eliminado correctamente', 'Éxito');
+            this.loadCampos();
+          },
+          error: (error) => {
+            console.error('Error al eliminar campo', error);
+            this.toastr.error('Error al eliminar campo', 'Error');
+          }
+        });
+      }
     });
   }
 
