@@ -29,9 +29,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
     this.menuOpen = !this.menuOpen;
   }
 
- 
-  
-
   ngOnInit() {
     this.authService.checkAndRenewToken();
     this.authService.isLoggedIn.subscribe(info => {
