@@ -22,22 +22,17 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         self.acumulado_mapas_ids = []
         self.coeficiente_actual = 1
         self.normalized_pairs = []
-        self.last_activity = datetime.utcnow()
 
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
         logger.info(f"WebSocket conectado para cultivo_id: {self.cultivo_id}")
 
-        self.idle_timeout_task = asyncio.create_task(self.check_idle_timeout())
 
     async def disconnect(self, close_code):
-        if hasattr(self, 'idle_timeout_task'):
-            self.idle_timeout_task.cancel()
         await self.channel_layer.group_discard(self.group_name, self.channel_name)
         logger.info(f"WebSocket desconectado para cultivo_id: {self.cultivo_id}")
 
     async def receive(self, text_data):
-        self.last_activity = datetime.utcnow()
         data = json.loads(text_data)
         action = data.get('action')
 
@@ -51,16 +46,6 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             await self.procesar_coeficiente_actualizado(coeficiente)
         elif action == 'cancelar_proceso':
             await self.cancelar_proceso()
-
-    async def check_idle_timeout(self):
-        idle_timeout = timedelta(minutes=5)
-        while True:
-            await asyncio.sleep(60)
-            now = datetime.utcnow()
-            if now - self.last_activity > idle_timeout:
-                logger.info(f"Tiempo de inactividad alcanzado para cultivo_id: {self.cultivo_id}")
-                await self.close()
-                break
 
     async def iniciar_proceso(self):
         logger.info("Iniciando proceso de normalización")

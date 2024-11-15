@@ -1,35 +1,8 @@
 from asgiref.sync import sync_to_async
 
 from api.pagination import StandardResultsSetPagination
-#from geojson import Feature, FeatureCollection
-from rest_framework import viewsets, status
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from rest_framework import generics
-
 from rendimiento_ambiente.views import RendimientoAmbienteView
-from .models import Cultivo, CultivoData
-from .serializers import CultivoSerializer, CultivoDataGeoSerializer
-import json
-
-from django.http import StreamingHttpResponse
-import time
-from django.core.serializers import serialize
-from django.http import JsonResponse
-from django.db import transaction
-from django.contrib.gis.geos import Point
-import chardet
-from datetime import datetime
-import pandas as pd
-import io
-import threading
-import uuid
-from django.core.cache import cache
-from django.http import HttpResponse, Http404
-from .models import Cultivo, CultivoData
-from django.contrib.gis.geos import GEOSGeometry
-#from geojson import Feature, FeatureCollection
+import asyncio
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -53,12 +26,9 @@ import io
 import threading
 import uuid
 from django.core.cache import cache
-from django.http import HttpResponse, Http404
-from django.contrib.gis.geos import GEOSGeometry
+from django.http import HttpResponse
 from rendimiento_ambiente.models import RendimientoAmbiente
-from ambientes.models import Ambiente
-from django.db.models import F, OuterRef, Subquery, Avg
-
+from django.db.models import F, Avg
 from django.http import Http404
 from .models import Cultivo, CultivoData
 from django_filters.rest_framework import DjangoFilterBackend
@@ -193,7 +163,7 @@ class CultivoViewSet(viewsets.ModelViewSet):
 
             if mapa_unico:
                 logger.warning("Se recibio un mapa unico, iniciando normalización.")
-                normalizar_mapa_unico(cultivo.id)
+                normalizar_mapa_unico2(cultivo.id)
             else:
                 logger.warning("No se recibio un mapa unico, normalización omitida.")
 
@@ -220,6 +190,35 @@ class CultivoViewSet(viewsets.ModelViewSet):
 
 @sync_to_async
 def normalizar_mapa_unico(cultivo_id):
+    cultivo = Cultivo.objects.get(id=cultivo_id)
+    queryset_base = CultivoData.objects.filter(cultivo=cultivo)
+    logger.warning(f"Estoy haciendo el normalizado unico para: {cultivo_id}.")
+
+    if not queryset_base.exists():
+        logger.warning(f"No hay mapas de rendimiento para el cultivo con id {cultivo_id}.")
+        return None
+
+    media_rendimiento_normalizado = queryset_base.aggregate(media=Avg('masa_rend_seco'))['media']
+
+    if media_rendimiento_normalizado is None or media_rendimiento_normalizado == 0:
+        logger.warning(f"No se puede calcular la media para el cultivo con id {cultivo_id}.")
+        return None
+
+    logger.warning(f"La media_rendimiento_normalizado es: {media_rendimiento_normalizado}.")
+
+    with transaction.atomic():
+        queryset_base.update(
+            rendimiento_normalizado=F('masa_rend_seco'),
+            rendimiento_relativo=F('masa_rend_seco') / media_rendimiento_normalizado,
+            rendimiento_real=(F('masa_rend_seco') / media_rendimiento_normalizado) * cultivo.rinde_prom
+        )
+
+    logger.info(f"Normalización completa para el cultivo con id {cultivo_id}.")
+
+    # Iniciar el cálculo de rendimiento en segundo plano
+    threading.Thread(target=calcular_rendimiento_post_normalizacion, args=(cultivo_id,)).start()
+
+def normalizar_mapa_unico2(cultivo_id):
     cultivo = Cultivo.objects.get(id=cultivo_id)
     queryset_base = CultivoData.objects.filter(cultivo=cultivo)
     logger.warning(f"Estoy haciendo el normalizado unico para: {cultivo_id}.")
