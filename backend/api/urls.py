@@ -7,7 +7,7 @@ from django.conf.urls.static import  static
 from empresa.views import EmpresaListView
 from user.views import UserListView
 from .jwt_personalizado import CustomTokenObtainPairView
-from cultivo.views import cultivodata_geojson_view, CultivoListView
+from cultivo.views import cultivodata_geojson_view, CultivoListView, reset_map_cache
 from user import views as user_view
 from empresa import views as empresa_view
 from campo import views as campo_view
@@ -18,8 +18,6 @@ from gestion import views as gestion_view
 from cultivo import views as cultivo_view
 from rendimiento_ambiente.views import RendimientoAmbienteView
 from ambientes.views import download_shapefile_ambiente
-
-
 
 router = routers.DefaultRouter()
 router.register(r'users', user_view.UserViewSet, basename="Usuarios")
@@ -77,5 +75,6 @@ urlpatterns = [
     path('empresas/list/', EmpresaListView.as_view(), name='empresa-list'),
     path('campos/list/', CampoListView.as_view(), name='campo-list'),
     path('usuarios/list/', UserListView.as_view(), name='user-list'),
+    path('cultivos/reset-cache-mapa/', reset_map_cache, name='reset-map'),
     path('', include(router.urls))
 ] +  static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

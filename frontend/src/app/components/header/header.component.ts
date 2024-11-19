@@ -4,6 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { UploadService } from '../../services/upload.service';
 import { initFlowbite } from 'flowbite';
 import { UserType } from '../../enums/user-type';
+import {CultivoService} from "../../services/cultivo.service";
 
 @Component({
   selector: 'app-header',
@@ -22,7 +23,8 @@ export class HeaderComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private toastr: ToastrService,
-    private uploadService: UploadService
+    private uploadService: UploadService,
+    private cultivoService: CultivoService
   ) {}
 
   toggleMenu(): void {
@@ -92,5 +94,9 @@ export class HeaderComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
+  }
+
+  resetCacheMapa() {
+    this.cultivoService.resetCacheMapa();
   }
 }

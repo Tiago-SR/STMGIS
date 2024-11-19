@@ -8,7 +8,7 @@
         {{ campo.nombre }}
       </option>
     </select>
-    <label for="cultivoSelect" class="block text-gray-700 text-sm font-bold mb-2 ml-4">Seleccionar Cultivo:</label>
+    <label for="cultivoSelect" class="block text-gray-700 text-sm font-bold mb-2 mr-2 ml-4">Seleccionar Cultivo:</label>
     <select id="cultivoSelect" [(ngModel)]="selectedCultivoId" (change)="onCultivoSelected(selectedCultivoId)"
       class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
       <option value="" selected>Seleccione un cultivo</option>
@@ -16,7 +16,7 @@
         {{ cultivo.nombre }}
       </option>
     </select>
-      <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold mb-2 ml-4">Tipo de rendimiento:</label>
+      <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold mb-2 mr-2 ml-4">Tipo de rendimiento:</label>
         <select id="tipoRendimiento" [(ngModel)]="tipoRendimiento" (change)="aplicarFiltroRendimiento()"
                 class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
           <option value="rendimiento_relativo">Rendimiento Relativo</option>

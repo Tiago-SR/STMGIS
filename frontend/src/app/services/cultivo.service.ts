@@ -53,9 +53,9 @@ export class CultivoService {
   }
   subirArchivosCsv(cultivoId: string, formData: FormData, queryParams: string) {
     return this.http.post<any>(`${this.baseUrl}${cultivoId}/upload-csv/${queryParams}`, formData);
-  }  
+  }
   normalizarMapas(cultivoId: string): Observable<any> {
-     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
   }
 
   verificarRendimientoCargado(cultivoId: string): Observable<{ rendimiento_existe: boolean }> {
@@ -63,9 +63,9 @@ export class CultivoService {
     return this.http.get<{ rendimiento_existe: boolean }>(url);
   }
 
-   // Método para obtener los datos de normalización
+  // Método para obtener los datos de normalización
   obtenerDatosNormalizacion(cultivoId: string): Observable<any> {
-     return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
+    return this.http.get<any>(`${this.baseUrl}${cultivoId}/normalizar/`);
   }
   resultadoNormalizacion(cultivoId: string): Observable<any> {
     return this.http.get<any>(`${this.baseUrl}${cultivoId}/resultado-normalizacion/`);
@@ -127,5 +127,16 @@ export class CultivoService {
   descargarShapefileCoeficienteVariacion(idCultivo: string): void {
     const url = `http://api.proyecto.local/download-coeficiente-variacion-shapefile/${idCultivo}`;
     window.open(url, '_blank');
+  }
+
+  resetCacheMapa(): void {
+    this.http.patch<void>(`${this.baseUrl}reset-cache-mapa/`, null).subscribe({
+      next: () => {
+        console.log('Cache de mapa reseteado correctamente');
+      },
+      error: (err) => {
+        console.error('Error al resetear el cache de mapa:', err);
+      }
+    });
   }
 }

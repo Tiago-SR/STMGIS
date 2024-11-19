@@ -10,7 +10,7 @@ from cultivo.models import Cultivo, CultivoData
 from statistics import median
 import json
 import logging
-from cultivo.views import normalizar_mapa_unico
+from cultivo.views import normalizar_mapa_unico, calcular_rendimiento_post_normalizacion
 
 logger = logging.getLogger(__name__)
 
@@ -508,8 +508,6 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def _calcular_rendimientos_finales(self):
-
-    
         """Calcula rendimiento_relativo y rendimiento_real para todos los registros normalizados"""
         try:
             logger.info("Iniciando cálculo de rendimientos finales")
@@ -539,7 +537,10 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
                 )
 
                 logger.info(f"Puntos actualizados con rendimientos finales: {puntos_actualizados}")
-                return puntos_actualizados
+
+            calcular_rendimiento_post_normalizacion(self.cultivo_id)
+
+            return puntos_actualizados
 
         except Exception as e:
             logger.error(f"Error calculando rendimientos finales: {str(e)}")

@@ -51,23 +51,37 @@ export class MapaComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.map = new Map({
-      basemap: 'hybrid'
-    });
-
-    this.view = new MapView({
-      container: 'viewDiv',
-      map: this.map,
-      center: [-56.0698, -32.4122], 
-      zoom: 8
-    });
-
+    this.initMap();
     this.loadCampos();
+  }
 
-    this.view.on('pointer-move', (event) => {
+  initMap() {
+    console.log('Iniciando mapa...');
+
+    setTimeout(() => {
+      this.map = new Map({
+        basemap: 'hybrid'
+      });
+
+      this.view = new MapView({
+        container: 'viewDiv',
+        map: this.map,
+        center: [-56.0698, -32.4122],
+        zoom: 8
+      });
+
+      this.view.when(() => {
+        console.log('Mapa inicializado correctamente.');
+      }, (error: any) => {
+        console.error('Error al inicializar el mapa:', error);
+      });
+
+      this.view.on('pointer-move', (event) => {
       this.displayFeatureInfo(event);
     });
+    }, 0);
   }
+
 
   loadCampos() {
     this.campoService.getCampos().subscribe({

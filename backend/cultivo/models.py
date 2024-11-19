@@ -43,6 +43,10 @@ class CultivoData(models.Model):
     class Meta:
         verbose_name = 'Cultivo Data'
         verbose_name_plural = 'Cultivo Data'
+        indexes = [
+            models.Index(fields=['cultivo'], name='idx_cultivo'),
+            models.Index(fields=['cultivo', 'fecha'], name='idx_cultivo_fecha'),
+        ]
 
     def __str__(self):
         return f'Data from {self.nombre_archivo_csv} for {self.cultivo.nombre}'
