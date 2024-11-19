@@ -14,7 +14,6 @@ import SimpleRenderer from '@arcgis/core/renderers/SimpleRenderer';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
 import { FormControl } from '@angular/forms';
-import { Especie } from '../../../models/especie.model';
 import { EspecieService } from '../../../services/especie.service';
 import { HttpResponse } from '@angular/common/http';
 
@@ -29,7 +28,6 @@ export class CultivoVerComponent implements OnInit {
   cultivo: Cultivo | undefined = undefined;
   idCampo: string | undefined = '';
 
-  // Cosas para el mapa
   map!: Map;
   view!: MapView;
   geojsonLayer!: GeoJSONLayer;
@@ -39,7 +37,6 @@ export class CultivoVerComponent implements OnInit {
   highlightedGraphic: esri.Graphic | null = null;
   originalSymbol: esri.Symbol | null = null;
 
-  // Checkbox's controls
   mapaRendimientoChecked = new FormControl(false);
   mbaChecked = new FormControl(true);
   rendimientoAmbienteChecked = new FormControl(false);
@@ -49,13 +46,10 @@ export class CultivoVerComponent implements OnInit {
   extraccionKChecked = new FormControl(false);
   extraccionNChecked = new FormControl(false);
 
-  extraccionP: number = 0;
-  extraccionK: number = 0;
   geojsonLayerExtraccionP: GeoJSONLayer | undefined;
   geojsonLayerExtraccionK: GeoJSONLayer | undefined;
   geojsonLayerCoeficienteVariacion: GeoJSONLayer | undefined;
   geojsonLayerExtraccionN: GeoJSONLayer | undefined;
-
 
   // Percentiles
   p19: number = 0;
@@ -107,7 +101,7 @@ export class CultivoVerComponent implements OnInit {
             },
             error: error => {
               this.toast.warning('Ha ocurrido un error al obtener el campo relacionado al cultivo, o el mismo ya no esta disponible.', 'Alerta');
-              this.router.navigate(['/']);
+              this.router.navigate(['/cultivo']);
             }
           });
         },
@@ -132,23 +126,6 @@ export class CultivoVerComponent implements OnInit {
     });
   } 
 
-  highlightFeature(graphic: esri.Graphic) {
-    if (this.highlightedGraphic && this.originalSymbol) {
-      this.highlightedGraphic.symbol = this.originalSymbol;
-    }
-    this.originalSymbol = graphic.symbol;
-    this.highlightedGraphic = graphic;
-
-    const highlightSymbol = new SimpleFillSymbol({
-      color: [255, 255, 0, 0.5],
-      style: 'solid',
-      outline: {
-        color: [255, 0, 0],
-        width: 2
-      }
-    });
-    graphic.symbol = highlightSymbol;
-  }
   removeHighlight() {
     if (this.highlightedGraphic && this.originalSymbol) {
       this.highlightedGraphic.symbol = this.originalSymbol;
@@ -289,20 +266,17 @@ export class CultivoVerComponent implements OnInit {
 
   } 
 
-//cargar mapas a vista
   cargarMapaRendimiento(): void {
     if (!this.idCampo) {
       return;
     }
   
-    //const cultivoDataUrl = `http://api.proyecto.local/cultivodata-geojson/?campo_id=${this.idCampo}`;
     const cultivoDataUrl = `http://api.proyecto.local/cultivodata-geojson-por-cultivo/?cultivo_id=${this.idCultivo}`;
 
     if (this.cultivoDataLayerMapaRendimiento) {
       this.map.remove(this.cultivoDataLayerMapaRendimiento);
     }
   
-    // Obtener los datos del GeoJSON desde el endpoint
     fetch(cultivoDataUrl)
       .then(response => response.json())
       .then(data => {
@@ -387,6 +361,7 @@ export class CultivoVerComponent implements OnInit {
         });
       // Después de crear la capa, la agregamos al mapa y configuramos su visibilidad inicial
       this.cultivoDataLayerMapaRendimiento.visible = this.mapaRendimientoChecked.value ?? false;
+      this.showPercentileTable = this.mapaRendimientoChecked.value ?? false;
       this.map.add(this.cultivoDataLayerMapaRendimiento);
     
       })
@@ -402,7 +377,6 @@ export class CultivoVerComponent implements OnInit {
     console.log('Cargando rendimiento ambiente para cultivo:', this.idCultivo);
     const url = `http://api.proyecto.local/rendimiento-ambiente-geojson/${this.idCultivo}`;
 
-    // Si ya existe una capa, la removemos
     if (this.geojsonLayerRendimientoAmbiente) {
         console.log('Removiendo capa existente');
         this.map.remove(this.geojsonLayerRendimientoAmbiente);
@@ -419,7 +393,7 @@ export class CultivoVerComponent implements OnInit {
 
             if (!data.features || data.features.length === 0) {
                 console.warn('No hay features en los datos');
-                this.toast.warning('No hay datos de rendimiento por ambiente disponibles. Por favor suba los csv correspondientes');
+                this.toast.warning('No hay datos de rendimiento normalizado por ambiente disponibles. Por favor suba y normalice los csv correspondientes');
                 return;
             }
 

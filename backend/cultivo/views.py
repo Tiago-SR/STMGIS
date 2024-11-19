@@ -1,4 +1,5 @@
 from asgiref.sync import sync_to_async
+from django.views.decorators.csrf import csrf_exempt
 
 from api.pagination import StandardResultsSetPagination
 from rendimiento_ambiente.views import RendimientoAmbienteView
@@ -33,6 +34,7 @@ from django.http import Http404
 from .models import Cultivo, CultivoData
 from django_filters.rest_framework import DjangoFilterBackend
 import logging
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -274,20 +276,32 @@ def cultivodata_geojson_view(request):
 
 def cultivodata_geojson_por_cultivo_view(request):
     cultivo_id = request.GET.get('cultivo_id', None)
-    if cultivo_id:
-        queryset = CultivoData.objects.filter(cultivo__id=cultivo_id)
-    else:
+    if not cultivo_id:
         return JsonResponse({"error": "Se requiere el parámetro cultivo_id"}, status=400)
 
-    geojson_str = serialize(
-        "geojson",
-        queryset,
-        geometry_field="punto_geografico",
-        fields=["rendimiento_real", 'masa_rend_seco', 'rendimiento_relativo', 'rendimiento_normalizado']
-    )
+    cache_version = cache.get('map_cache_version', 1)
+    cache_key = f"cultivodata_geojson_{cultivo_id}_v{cache_version}"
+    geojson = cache.get(cache_key)
 
-    geojson = json.loads(geojson_str)
+    if not geojson:
+        queryset = CultivoData.objects.filter(cultivo__id=cultivo_id)
+        geojson_str = serialize(
+            "geojson",
+            queryset,
+            geometry_field="punto_geografico",
+            fields=["rendimiento_real", 'masa_rend_seco', 'rendimiento_relativo', 'rendimiento_normalizado']
+        )
+        geojson = json.loads(geojson_str)
+        cache.set(cache_key, geojson, timeout=300)
+
     return JsonResponse(geojson)
+
+@csrf_exempt
+def reset_map_cache(request):
+    current_version = cache.get('map_cache_version', 1)
+    new_version = current_version + 1
+    cache.set('map_cache_version', new_version)
+    return JsonResponse({'status': 'success', 'message': 'La caché de mapas ha sido reseteada.'})
 
 def detect_file_encoding(file_path):
     with open(file_path, 'rb') as f:
