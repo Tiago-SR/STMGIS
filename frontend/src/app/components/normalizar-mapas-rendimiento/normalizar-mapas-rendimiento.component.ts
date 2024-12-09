@@ -8,8 +8,8 @@ import UniqueValueRenderer from '@arcgis/core/renderers/UniqueValueRenderer';
 import SimpleFillSymbol from '@arcgis/core/symbols/SimpleFillSymbol';
 import SimpleMarkerSymbol from '@arcgis/core/symbols/SimpleMarkerSymbol';
 import { WebSocketService } from '../../services/web-socket.service';
-import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer'; // Asegúrate de importar esta clase
-import * as reactiveUtils from '@arcgis/core/core/reactiveUtils'; // Use named import
+import ClassBreaksRenderer from '@arcgis/core/renderers/ClassBreaksRenderer';
+import * as reactiveUtils from '@arcgis/core/core/reactiveUtils';
 
 
 @Component({
@@ -105,7 +105,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         this.toastr.success(
           `Se realizó la normalización automática ya que la diferencia
             está dentro de la variación admitida (${this.variacionAdmitida}%)
-            Coeficiente aplicado: ${data.coeficiente_aplicado.toFixed(2)}`,
+            Coeficiente aplicado: ${data.coeficiente_aplicado.toFixed(3)}`,
           'Normalización Automática',
           {
             timeOut: 5000,
@@ -114,8 +114,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
             enableHtml: true
           }
         );
-
-        this.coeficienteAjusteActual = data.coeficiente_aplicado;
         this.cd.detectChanges();
 
       } else if (data.action === 'mapa_actualizado') {
@@ -430,7 +428,12 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
   addToCalculation1(event: __esri.PopupTriggerActionEvent): void {
     const attributes = this.view.popup.selectedFeature.attributes;
-    this.posicion1Value = attributes.rendimiento_normalizado;
+    console.log(attributes);
+    if (attributes.rendimiento_normalizado == 0) {
+      this.posicion1Value = attributes.masa_rend_seco;
+    } else {
+      this.posicion1Value = attributes.rendimiento_normalizado;
+    }
     this.cd.detectChanges();
     this.toastr.success(`Valor ${this.posicion1Value} agregado a posición 1`);
   }
