@@ -106,7 +106,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
       } else if (data.action === 'normalizacion_automatica') {
         this.toastr.success(
-          `Se realizó la normalización automática ya que la diferencia (${this.diferenciaPorcentual.toFixed(1)}%) 
+          `Se realizó la normalización automática ya que la diferencia
             está dentro de la variación admitida (${this.variacionAdmitida}%)
             Coeficiente aplicado: ${data.coeficiente_aplicado.toFixed(2)}`,
           'Normalización Automática',
