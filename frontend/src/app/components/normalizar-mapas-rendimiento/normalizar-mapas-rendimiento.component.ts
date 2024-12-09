@@ -428,7 +428,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
   addToCalculation1(event: __esri.PopupTriggerActionEvent): void {
     const attributes = this.view.popup.selectedFeature.attributes;
-    console.log(attributes);
     if (attributes.rendimiento_normalizado == 0) {
       this.posicion1Value = attributes.masa_rend_seco;
     } else {
