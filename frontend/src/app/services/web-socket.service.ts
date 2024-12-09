@@ -28,12 +28,10 @@ export class WebSocketService {
     }
 
     const url = `ws://api.proyecto.local/ws/rendimiento/${this.cultivoId}/`;
-    console.log('Intentando conectar al WebSocket:', url);
     
     this.socket = new WebSocket(url);
 
     this.socket.onopen = (event) => {
-      console.log('WebSocket abierto:', event);
       this.openSubject.next();
       this.connectionStatusSubject.next(true);
       this.reconnectAttempts = 0;
@@ -41,7 +39,6 @@ export class WebSocketService {
     };
 
     this.socket.onmessage = (event) => {
-      console.log('Mensaje recibido:', event.data);
       try {
         const data = JSON.parse(event.data);
         this.messagesSubject.next(data);
@@ -56,12 +53,10 @@ export class WebSocketService {
     };
 
     this.socket.onclose = (event) => {
-      console.log('WebSocket cerrado:', event);
       this.connectionStatusSubject.next(false);
       
       if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++;
-        console.log(`Intento de reconexión ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
         
         const timeout = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
         this.reconnectTimeout = setTimeout(() => {
@@ -74,9 +69,7 @@ export class WebSocketService {
   sendMessage(data: any): void {
     if (this.socket?.readyState === WebSocket.OPEN) {
       this.socket.send(JSON.stringify(data));
-      console.log('Mensaje enviado por WebSocket:', data);
     } else {
-      console.log('WebSocket no conectado, encolando mensaje');
       this.messageQueue.push(data);
       this.attemptReconnection();
     }

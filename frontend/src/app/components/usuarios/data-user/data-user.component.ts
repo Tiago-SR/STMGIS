@@ -112,12 +112,10 @@ export class DataUserComponent implements OnInit {
 
     this.userService.updateUser(this.user.id, datosToSend).subscribe({
       next: (data) => {
-        console.log(data);
         this.formSubmitted = false;
         this.toast.success('Usuario actualizado', '');
       },
       error: (error) => {
-        console.log(error);
         this.formSubmitted = false;
         this.toast.error('Error al actualizar el usuario', '');
       }

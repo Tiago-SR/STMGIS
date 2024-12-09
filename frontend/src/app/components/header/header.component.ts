@@ -75,7 +75,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
       }
   
       setTimeout(() => {
-        console.log('Reintentando conexión SSE...');
         this.initSSE(uploadId);
       }, 5000);
     };

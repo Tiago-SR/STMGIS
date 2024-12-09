@@ -68,7 +68,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       this.webSocketService.connect(this.cultivoId);
 
       this.webSocketService.onOpen().subscribe(() => {
-        console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
         this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
       });
     } else {
@@ -77,8 +76,6 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
 
     this.webSocketService.getMessages().subscribe((data) => {
       this.isLoading = false;
-      console.log('Mensaje del WebSocket:', data);
-
       if (data.action === 'nuevos_mapas') {
         this.isLoading = true;
         this.mapaReferencia = data.mapa_referencia;
@@ -241,9 +238,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
       geoJsonLayerIA.queryExtent().then((response) => {
         if (response.extent) {
           this.view.goTo(response.extent.expand(1.2));
-        } else {
-          console.log('No se encontraron entidades para las zonas de rendimiento o las geometrías son nulas.');
-        }
+        } else { }
       }).catch((error) => {
         console.error('Error al calcular el extent del GeoJSONLayer:', error);
       });
@@ -282,19 +277,11 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
     const p79 = getPercentileValue(79);
     const p100 = getPercentileValue(100);
 
-    console.log('percentil p19', p19);
-    console.log('percentil p39', p39);
-    console.log('percentil p59', p59);
-    console.log('percentil ', p79);
-    console.log('percentil ', p100);
-
     const mapas = [this.mapaReferencia, this.mapaActual];
 
     mapas.forEach((data, index) => {
       const geoJsonBlob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const geoJsonUrl = URL.createObjectURL(geoJsonBlob);
-      console.log('GeoJSON URL:', geoJsonUrl);
-
       let field;
 
       if (index === 0 && data.features[0].properties.rendimiento_normalizado != 0) {
@@ -415,9 +402,7 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         geoJsonLayer.queryExtent().then((response) => {
           if (response.extent) {
             this.view.goTo(response.extent.expand(1.2));
-          } else {
-            console.log(`No se encontraron entidades o las geometrías son nulas para el mapa ${index + 1}.`);
-          }
+          } else { }
         }).catch((error) => {
           console.error('Error al calcular el extent del GeoJSONLayer:', error);
         });
@@ -431,13 +416,10 @@ export class NormalizarMapasRendimientoComponent implements OnInit {
         () => this.view.popup,
         'trigger-action',
         (event: __esri.PopupTriggerActionEvent) => {
-          console.log('Popup trigger action event:', event);
           if (event.action.id === 'addToCalculation1') {
             this.addToCalculation1(event);
-            console.log('Triggered addToCalculation1');
           } else if (event.action.id === 'addToCalculation2') {
             this.addToCalculation2(event);
-            console.log('Triggered addToCalculation2');
           }
         }
       );

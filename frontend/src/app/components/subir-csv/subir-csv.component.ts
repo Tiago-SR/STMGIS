@@ -196,7 +196,6 @@ export class SubirCsvComponent implements OnInit {
     if (event.target.files) {
       this.archivosCsv = Array.from(event.target.files);
       this.csvForm.patchValue({ archivos: this.archivosCsv });
-      console.log('this.archivosCsv.length ', this.archivosCsv.length);
       
       if (this.archivosCsv.length === 1) {
         this.mapaUnico = true;

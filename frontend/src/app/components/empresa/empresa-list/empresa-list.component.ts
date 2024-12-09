@@ -61,7 +61,6 @@ export class EmpresaListComponent implements OnInit {
         this.cargando = true;
         this.empresaService.deleteEmpresa(id).subscribe({
           next: () => {
-            console.log('Empresa eliminada (soft delete).');
             this.loadEmpresas();
           },
           error: (err) => {

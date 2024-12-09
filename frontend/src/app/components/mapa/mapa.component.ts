@@ -56,7 +56,6 @@ export class MapaComponent implements OnInit {
   }
 
   initMap() {
-    console.log('Iniciando mapa...');
 
     setTimeout(() => {
       this.map = new Map({

@@ -246,8 +246,6 @@ export class NormalizarMapasComponent implements OnInit, OnDestroy {
     this.webSocketService.connect(cultivoId);
     this.websocketSubscription = this.webSocketService.getMessages().subscribe(
       (data) => {
-        console.log('Mensaje recibido del WebSocket:', data);
-
         if (data.action === 'nuevos_mapas') {
           this.isConnecting = false;
           this.router.navigate(['/normalizar-mapas-rendimiento', cultivoId]);
@@ -275,7 +273,6 @@ export class NormalizarMapasComponent implements OnInit, OnDestroy {
 
     // Iniciar el proceso cuando el WebSocket esté abierto
     this.webSocketService.onOpen().subscribe(() => {
-      console.log('WebSocket está abierto, enviando mensaje iniciar_proceso');
       this.webSocketService.sendMessage({ action: 'iniciar_proceso' });
     });
   }

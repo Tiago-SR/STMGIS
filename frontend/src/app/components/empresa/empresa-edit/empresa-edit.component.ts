@@ -40,7 +40,6 @@ export class EmpresaEditComponent implements OnInit {
       }
       this.empresaService.updateEmpresa(this.empresa.id!, this.empresa).subscribe({
         next: (res) => {
-          console.log('Empresa actualizada:', res);
           this.router.navigate(['/empresas']);
         },
         error: (err) => console.error('Error al actualizar empresa:', err)
