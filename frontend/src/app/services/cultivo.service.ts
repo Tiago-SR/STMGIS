@@ -132,7 +132,7 @@ export class CultivoService {
   resetCacheMapa(): void {
     this.http.patch<void>(`${this.baseUrl}reset-cache-mapa/`, null).subscribe({
       next: () => {
-        console.log('Cache de mapa reseteado correctamente');
+        // console.log('Cache de mapa reseteado correctamente');
       },
       error: (err) => {
         console.error('Error al resetear el cache de mapa:', err);

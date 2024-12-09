@@ -75,7 +75,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
       }
   
       setTimeout(() => {
-        console.log('Reintentando conexión SSE...');
         this.initSSE(uploadId);
       }, 5000);
     };
@@ -83,7 +82,13 @@ export class HeaderComponent implements OnInit, OnDestroy {
     
 
   showNotification(message: string) {
-    this.toastr.success(message, 'Notificación');
+    this.toastr.success(message, 'Notificación',
+      {
+        disableTimeOut: true,
+        closeButton: true,
+        enableHtml: true
+      }
+    );
   }
 
   ngOnDestroy() {

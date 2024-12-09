@@ -100,13 +100,13 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
             logger.info(f"Diferencia porcentual entre percentiles 80: {diferencia_porcentual}%")
 
             if diferencia_porcentual <= variacion_admitida:
-                coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
+                coeficiente_sugerido = round(percentil_80_mapa1 / percentil_80_mapa2, 3) if percentil_80_mapa2 > 0 else 1
                 logger.info(f"Diferencia dentro del umbral admitido. Normalizando automáticamente con coeficiente: {coeficiente_sugerido}")
                 await self._normalizar_automaticamente(coeficiente_sugerido)
                 return
 
-            coeficiente_sugerido = (percentil_80_mapa1 / percentil_80_mapa2) if percentil_80_mapa2 > 0 else 1
-            coeficiente_sugerido_median = (percentil_50_mapa1 / percentil_50_mapa2) if percentil_50_mapa2 > 0 else 1
+            coeficiente_sugerido = round(percentil_80_mapa1 / percentil_80_mapa2, 3) if percentil_80_mapa2 > 0 else 1
+            coeficiente_sugerido_median = round(percentil_50_mapa1 / percentil_50_mapa2, 3) if percentil_50_mapa2 > 0 else 1
 
             puntos_referencia = len(valores_mapa1)
             puntos_actual = len(valores_mapa2)
@@ -390,9 +390,9 @@ class RendimientoConsumer(AsyncWebsocketConsumer):
         puntos_actual = len(valores_actual)
         
         # Calcular coeficientes sugeridos
-        coeficiente_sugerido = (percentil_80_referencia / percentil_80_actual) if percentil_80_actual > 0 else 1
-        coeficiente_sugerido_median = (percentil_50_referencia / percentil_50_actual) if percentil_50_actual > 0 else 1
-
+        coeficiente_sugerido = round(percentil_80_referencia / percentil_80_actual, 3) if percentil_80_actual > 0 else 1
+        coeficiente_sugerido_median = round(percentil_50_referencia / percentil_50_actual, 3) if percentil_50_actual > 0 else 1
+        
         # Si la diferencia está dentro de la variación admitida, normalizar automáticamente
         if diferencia_porcentual <= variacion_admitida:
             logger.info(f"Diferencia dentro del umbral admitido. Normalizando automáticamente con coeficiente: {coeficiente_sugerido}")

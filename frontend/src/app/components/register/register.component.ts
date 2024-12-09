@@ -50,7 +50,6 @@ export class RegisterComponent implements OnInit {
 
   onSubmit() {
     this.formSubmitted = true
-    console.log(this.password?.value, this.rePassword?.value);
     
     if (this.password && this.rePassword && this.password.value != this.rePassword.value) {
       this.errorMsg = "Las contraseñas no coinciden.";
@@ -60,7 +59,6 @@ export class RegisterComponent implements OnInit {
       const data = this.userData.value
       if (data.nickname && data.password && data.firstName && data.lastName) {
         this.register(this.token, data.nickname, data.password, data.firstName, data.lastName);
-        console.log('Registering user...');
       } else {
         // AQUI SE DEBERIA MOSTRAR UN ERROR
       }
@@ -72,10 +70,8 @@ export class RegisterComponent implements OnInit {
       next: (response) => {
         this.toast.success('Usuario registrado correctamente');
         this.router.navigate(['/login']);
-        console.log(response); 
       },
       error: (error) => {
-        console.log(error);
         if (error.status === 401) {
           this.errorMsg = "Nickname o contraseña incorrectos."
         } else if (error.error) {

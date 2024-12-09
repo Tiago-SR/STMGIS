@@ -249,9 +249,7 @@ export class CultivoVerComponent implements OnInit {
             }
           });
           this.view.goTo(extent.expand(1.2));
-        } else {
-          console.log('No se encontraron entidades para el campo seleccionado o las geometrías son nulas.');
-        }
+        } else { }
       });
     });
   }
@@ -374,11 +372,9 @@ export class CultivoVerComponent implements OnInit {
         return;
     }
     
-    console.log('Cargando rendimiento ambiente para cultivo:', this.idCultivo);
     const url = `http://api.proyecto.local/rendimiento-ambiente-geojson/${this.idCultivo}`;
 
     if (this.geojsonLayerRendimientoAmbiente) {
-        console.log('Removiendo capa existente');
         this.map.remove(this.geojsonLayerRendimientoAmbiente);
     }
 
@@ -452,10 +448,8 @@ export class CultivoVerComponent implements OnInit {
             this.map.add(this.geojsonLayerRendimientoAmbiente);
             
             this.geojsonLayerRendimientoAmbiente.visible = this.rendimientoAmbienteChecked.value ?? false;
-            console.log('Visibilidad de la capa:', this.geojsonLayerRendimientoAmbiente.visible);
 
             this.geojsonLayerRendimientoAmbiente.when(() => {
-                console.log('Capa cargada completamente');
                 if (this.geojsonLayerRendimientoAmbiente.fullExtent) {
                     this.view.goTo(this.geojsonLayerRendimientoAmbiente.fullExtent);
                 }
@@ -463,7 +457,6 @@ export class CultivoVerComponent implements OnInit {
 
             setTimeout(() => {
                 URL.revokeObjectURL(blobUrl);
-                console.log('Blob URL liberada');
             }, 5000);
         })
         .catch(error => {
@@ -473,16 +466,13 @@ export class CultivoVerComponent implements OnInit {
   }
   cargarExtraccionAmbienteP(): void {
     if (!this.idCultivo) {
-      console.log('No hay ID de cultivo');
       return;
     }
     
-    console.log('Cargando extracción de P por ambiente para cultivo:', this.idCultivo);
     const url = `http://api.proyecto.local/extraccion-p-ambiente-geojson/${this.idCultivo}`;
 
     // Si ya existe una capa, la removemos
     if (this.geojsonLayerExtraccionP) {
-      console.log('Removiendo capa existente de extracción de P');
       this.map.remove(this.geojsonLayerExtraccionP);
     }
 
@@ -494,8 +484,6 @@ export class CultivoVerComponent implements OnInit {
         return response.json();
       })
       .then(data => {
-        console.log('Datos recibidos de extracción de P:', data);
-        
         if (!data.features || data.features.length === 0) {
           console.warn('No hay features en los datos de extracción de P');
           this.toast.warning('No hay datos de extracción de P por ambiente disponibles');
@@ -553,23 +541,19 @@ export class CultivoVerComponent implements OnInit {
           }]
         });
 
-        console.log('Capa de extracción de P creada, agregando al mapa...');
         this.map.add(this.geojsonLayerExtraccionP);
         
         // Establecer la visibilidad según el estado del checkbox
         this.geojsonLayerExtraccionP.visible = this.extraccionPChecked.value ?? false;
-        console.log('Visibilidad de la capa de extracción de P:', this.geojsonLayerExtraccionP.visible);
 
         // Zoom a la capa cuando esté lista
         this.geojsonLayerExtraccionP.when(() => {
-          console.log('Capa de extracción de P cargada completamente');
         
         });
 
         // Limpiar el URL del Blob después de un tiempo
         setTimeout(() => {
           URL.revokeObjectURL(blobUrl);
-          console.log('Blob URL de extracción de P liberada');
         }, 5000);
       })
       .catch(error => {
@@ -579,16 +563,13 @@ export class CultivoVerComponent implements OnInit {
   }
   cargarExtraccionAmbienteK(): void {
     if (!this.idCultivo) {
-      console.log('No hay ID de cultivo');
       return;
     }
     
-    console.log('Cargando extracción de K por ambiente para cultivo:', this.idCultivo);
     const url = `http://api.proyecto.local/extraccion-k-ambiente-geojson/${this.idCultivo}`;
   
     // Si ya existe una capa, la removemos
     if (this.geojsonLayerExtraccionK) {
-      console.log('Removiendo capa existente de extracción de K');
       this.map.remove(this.geojsonLayerExtraccionK);
     }
   
@@ -600,8 +581,6 @@ export class CultivoVerComponent implements OnInit {
         return response.json();
       })
       .then(data => {
-        console.log('Datos recibidos de extracción de K:', data);
-        
         if (!data.features || data.features.length === 0) {
           console.warn('No hay features en los datos de extracción de K');
           this.toast.warning('No hay datos de extracción de K por ambiente disponibles');
@@ -659,23 +638,19 @@ export class CultivoVerComponent implements OnInit {
           }]
         });
   
-        console.log('Capa de extracción de K creada, agregando al mapa...');
         this.map.add(this.geojsonLayerExtraccionK);
         
         // Establecer la visibilidad según el estado del checkbox
         this.geojsonLayerExtraccionK.visible = this.extraccionKChecked.value ?? false;
-        console.log('Visibilidad de la capa de extracción de K:', this.geojsonLayerExtraccionK.visible);
   
         // Zoom a la capa cuando esté lista
         this.geojsonLayerExtraccionK.when(() => {
-          console.log('Capa de extracción de K cargada completamente');
          
         });
   
         // Limpiar el URL del Blob después de un tiempo
         setTimeout(() => {
           URL.revokeObjectURL(blobUrl);
-          console.log('Blob URL de extracción de K liberada');
         }, 5000);
       })
       .catch(error => {
@@ -685,16 +660,13 @@ export class CultivoVerComponent implements OnInit {
   } 
   cargarExtraccionAmbienteN(): void {
     if (!this.idCultivo) {
-      console.log('No hay ID de cultivo');
       return;
     }
   
-    console.log('Cargando extracción de N por ambiente para cultivo:', this.idCultivo);
     const url = `http://api.proyecto.local/extraccion-n-ambiente-geojson/${this.idCultivo}`;
   
     // Si ya existe una capa, la removemos
     if (this.geojsonLayerExtraccionN) {
-      console.log('Removiendo capa existente de extracción de N');
       this.map.remove(this.geojsonLayerExtraccionN);
     }
   
@@ -705,9 +677,7 @@ export class CultivoVerComponent implements OnInit {
         }
         return response.json();
       })
-      .then(data => {
-        console.log('Datos recibidos de extracción de N:', data);
-  
+      .then(data => {  
         if (!data.features || data.features.length === 0) {
           console.warn('No hay features en los datos de extracción de N');
           this.toast.warning('No hay datos de extracción de N por ambiente disponibles');
@@ -765,22 +735,18 @@ export class CultivoVerComponent implements OnInit {
           }]
         });
   
-        console.log('Capa de extracción de N creada, agregando al mapa...');
         this.map.add(this.geojsonLayerExtraccionN);
   
         // Establecer la visibilidad según el estado del checkbox
         this.geojsonLayerExtraccionN.visible = this.extraccionNChecked.value ?? false;
-        console.log('Visibilidad de la capa de extracción de N:', this.geojsonLayerExtraccionN.visible);
   
         // Zoom a la capa cuando esté lista
         this.geojsonLayerExtraccionN.when(() => {
-          console.log('Capa de extracción de N cargada completamente');
         });
   
         // Limpiar el URL del Blob después de un tiempo
         setTimeout(() => {
           URL.revokeObjectURL(blobUrl);
-          console.log('Blob URL de extracción de N liberada');
         }, 5000);
       })
       .catch(error => {
@@ -790,16 +756,13 @@ export class CultivoVerComponent implements OnInit {
   }  
   cargarCoeficienteVariacionAmbiente(): void {
     if (!this.idCultivo) {
-        console.log('No hay ID de cultivo');
         return;
     }
   
-    console.log('Cargando coeficiente de variación para cultivo:', this.idCultivo);
     const url = `http://api.proyecto.local/coeficiente_variacion_geojson/${this.idCultivo}`;
     
     // Remover la capa existente si ya está cargada
     if (this.geojsonLayerCoeficienteVariacion) {
-        console.log('Removiendo capa existente');
         this.map.remove(this.geojsonLayerCoeficienteVariacion);
     }
   
@@ -811,8 +774,6 @@ export class CultivoVerComponent implements OnInit {
             return response.json();
         })
         .then(data => {
-            console.log('Datos recibidos:', data);
-  
             if (!data.features || data.features.length === 0) {
                 console.warn('No hay features en los datos');
                 this.toast.warning('No hay datos de coeficiente de variación por ambiente disponibles');
@@ -882,7 +843,6 @@ export class CultivoVerComponent implements OnInit {
             this.map.add(this.geojsonLayerCoeficienteVariacion);
   
             this.geojsonLayerCoeficienteVariacion.visible = true;
-            console.log('Capa de coeficiente de variación agregada al mapa');
   
             this.geojsonLayerCoeficienteVariacion.when(() => {
                 if (this.geojsonLayerCoeficienteVariacion && this.geojsonLayerCoeficienteVariacion.fullExtent) {
@@ -892,7 +852,6 @@ export class CultivoVerComponent implements OnInit {
   
             setTimeout(() => {
                 URL.revokeObjectURL(blobUrl);
-                console.log('Blob URL liberada');
             }, 5000);
         })
         .catch(error => {
@@ -1000,22 +959,15 @@ export class CultivoVerComponent implements OnInit {
     
     }
   }
-  toggleLayerAjusteMBA(): void {
-    console.log('toggleLayerAjusteMBA');
-  }
   toggleLayerRendimientoMBA(): void {
-    console.log('Toggle rendimiento MBA:', this.rendimientoAmbienteChecked.value);
-    
     // Si la capa no existe, intentamos cargarla primero
     if (!this.geojsonLayerRendimientoAmbiente) {
-        console.log('Capa no inicializada, cargando...');
         this.cargarRendimientoAmbiente();
         return;
     }
 
     // Si la capa existe, cambiamos su visibilidad
     this.geojsonLayerRendimientoAmbiente.visible = this.rendimientoAmbienteChecked.value ?? false;
-    console.log('Capa visible:', this.geojsonLayerRendimientoAmbiente.visible);
   }
   toggleLayerCoeficienteVariacion(): void {
     if (this.geojsonLayerCoeficienteVariacion) {
