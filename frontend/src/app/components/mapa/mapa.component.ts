@@ -42,6 +42,8 @@ export class MapaComponent implements OnInit {
   tipoRendimiento: string = 'rendimiento_relativo'; 
   rendimientoDisponible: boolean = false;
   rendimientosData: any[] = [];
+  isLoading: boolean = false;
+
 
   constructor(
     private campoService: CampoService,
@@ -364,7 +366,7 @@ export class MapaComponent implements OnInit {
       this.toastr.warning('No hay mapas de rendimientos cargados para este cultivo.', 'Advertencia')
       return;
     }
-  
+    this.isLoading = true;
     const cultivoDataUrl = `http://api.proyecto.local/cultivodata-geojson-por-cultivo/?cultivo_id=${this.selectedCultivoId}`;
   
     if (this.cultivoDataLayer) {
@@ -380,6 +382,10 @@ export class MapaComponent implements OnInit {
       .catch(error => {
         console.error('Error al cargar los datos del GeoJSON:', error);
         this.mapLoaded = false;
+      })
+      .finally(() => {
+        this.isLoading = false;
+        this.cdr.detectChanges();
       });
   }
 
