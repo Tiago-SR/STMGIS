@@ -9,6 +9,9 @@ from api.pagination import StandardResultsSetPagination
 from .serializers import UserSerializer, UserListSerializer, ResponsableSerializer
 from .models import User, Responsable, Admin
 from api.const import ADMIN, RESPONSABLE
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserListView(generics.ListAPIView):
     queryset = User.objects.filter(is_staff=False, is_superuser=False)
@@ -68,16 +71,24 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(methods=['post'], detail=False)
     def invite(self, request):
         email = request.data.get('email', None)
+        logger.info("Solicitud de invitación recibida. Email: %s", email)
+        
         if not email:
+            logger.error("El email no fue proporcionado en la solicitud.")
             return Response('El email es requerido', status=400)
+        
         user = User.objects.filter(email=email).first()
         if user and user.is_active:
+            logger.warning("El email ya está registrado y activo: %s", email)
             return Response('El email ya está registrado', status=400)
+        
         if user and not user.is_active:
+            logger.info("El usuario con email %s no estaba activo. Eliminando el usuario.", email)
             user.delete()
+        
+        try:
         invited_user = Responsable.objects.create_user(username=email, email=email, password=None, is_active=False)
         token, _ = Token.objects.get_or_create(user=invited_user)
-        
         invite_url = settings.FRONTEND_URL + '/register?token=' + token.key
         email = EmailMessage(
             'Invitación para registrarse en el sistema',

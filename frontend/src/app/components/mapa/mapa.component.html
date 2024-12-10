@@ -1,42 +1,47 @@
 <div class="w-full flex flex-col">
-  <div class="mb-4 p-4 flex items-center">
-    <label for="campoSelect" class="block text-gray-700 text-sm font-bold mb-2 mr-2">Seleccionar Campo:</label>
-    <select id="campoSelect" #campoSelect (change)="onCampoSelected(campoSelect.value)"
-      class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-      <option value="" selected>Seleccione un campo</option>
-      <option *ngFor="let campo of campos" [value]="campo.id">
-        {{ campo.nombre }}
-      </option>
-    </select>
-    <label for="cultivoSelect" class="block text-gray-700 text-sm font-bold mb-2 mr-2 ml-4">Seleccionar Unidad Manejo:</label>
-    <select id="cultivoSelect" [(ngModel)]="selectedCultivoId" (change)="onCultivoSelected(selectedCultivoId)"
-      class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-      <option value="" selected>Seleccione Unidad Manejo</option>
-      <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">
-        {{ cultivo.nombre }}
-      </option>
-    </select>
-      <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold mb-2 mr-2 ml-4">Tipo de rendimiento:</label>
+  <div class="p-4 flex flex-wrap gap-4">
+    <div class="flex-1 flex flex-col">
+      <label for="campoSelect" class="block text-gray-700 text-sm font-bold">Seleccionar Campo:</label>
+      <select id="campoSelect" #campoSelect (change)="onCampoSelected(campoSelect.value)"
+        class="flex-1 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+        <option value="" selected>Seleccione un campo</option>
+        <option *ngFor="let campo of campos" [value]="campo.id">
+          {{ campo.nombre }}
+        </option>
+      </select>
+    </div>
+    <div class="flex-1 flex flex-col">
+      <label for="cultivoSelect" class="block text-gray-700 text-sm font-bold">Seleccionar Unidad Manejo:</label>
+      <select id="cultivoSelect" [(ngModel)]="selectedCultivoId" (change)="onCultivoSelected(selectedCultivoId)"
+        class="flex-1 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+        <option value="" selected>Seleccione Unidad Manejo</option>
+        <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">
+          {{ cultivo.nombre }}
+        </option>
+      </select>
+    </div>
+    <div class="flex-1 flex flex-col">
+      <label for="tipoRendimiento" class="block text-gray-700 text-sm font-bold">Tipo de rendimiento:</label>
         <select id="tipoRendimiento" [(ngModel)]="tipoRendimiento" (change)="aplicarFiltroRendimiento()"
-                class="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                class="flex-1 shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
           <option value="masa_rend_seco">Masa de Rendimiento Seco (tn/há)</option>
           <option value="rendimiento_relativo">Rendimiento Relativo (% media)</option>
           <option value="rendimiento_real">Rendimiento Real (tn/há)</option>
           <option value="rendimiento_normalizado">Rendimiento Normalizado (tn/há)</option>
         </select>
-
+    </div>
+  </div>
+  <div class="flex flex-wrap flex-col sm:flex-row px-4 mb-4 gap-4">
     <button (click)="onCargarCsv()" [disabled]="!selectedUuid || isLoading"
-      class="ml-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none">
+      class="flex-1 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none">
       Cargar mapas de rendimiento
     </button>
 
-     <button (click)="onCalcularRendimiento()" [disabled]="!selectedCultivoId || isLoading"
-     class="ml-4 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none">
-     Calcular rendimiento y descargar Excel
-   </button>
-   
+    <button (click)="onCalcularRendimiento()" [disabled]="!selectedCultivoId || isLoading"
+      class="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 focus:outline-none">
+      Calcular rendimiento y descargar Excel
+    </button>
   </div>
-
   <div class="relative flex-1">
     <div id="viewDiv" class="h-full w-full"></div>
 

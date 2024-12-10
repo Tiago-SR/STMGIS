@@ -1,5 +1,5 @@
 <div class="ml-6 mr-6 w-full">
-  <div class="flex justify-between items-center mb-4">
+  <div class="flex justify-between flex-wrap items-center mb-4">
     <h1 class="text-2xl font-bold">Lista de Unidad de Manejo</h1>
     <button *ngIf="!cargando && cultivos.length !== 0" (click)="abrirModalCreacion()"
       class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-2">
@@ -8,7 +8,7 @@
   </div>
 
   <!-- Filtros -->
-  <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+  <div class="mb-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     <div>
       <label for="empresa" class="block text-sm font-medium text-gray-700">Empresa</label>
       <select id="empresa" [(ngModel)]="selectedEmpresa" (change)="onFiltroChangeEmpresa()"
