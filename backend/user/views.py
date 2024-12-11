@@ -86,7 +86,6 @@ class UserViewSet(viewsets.ModelViewSet):
             logger.info("El usuario con email %s no estaba activo. Eliminando el usuario.", email)
             user.delete()
         
-        try:
         invited_user = Responsable.objects.create_user(username=email, email=email, password=None, is_active=False)
         token, _ = Token.objects.get_or_create(user=invited_user)
         invite_url = settings.FRONTEND_URL + '/register?token=' + token.key
