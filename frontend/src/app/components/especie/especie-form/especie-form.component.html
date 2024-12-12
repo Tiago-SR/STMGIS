@@ -12,7 +12,7 @@
           <label for="nombre" class="block text-sm font-medium text-gray-700">Nombre</label>
           <input type="text" id="nombre" formControlName="nombre"
             class="mt-1 p-2 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-            placeholder="Nombre de la especie">
+            placeholder="Nombre del cultivo">
           <div *ngIf="especieForm.get('nombre')?.invalid && especieForm.get('nombre')?.touched"
             class="text-red-600 text-sm">
             El nombre es inválido.
