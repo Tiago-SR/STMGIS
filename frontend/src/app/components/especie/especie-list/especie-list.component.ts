@@ -31,7 +31,7 @@ export class EspecieListComponent implements OnInit {
         this.cargando = false;
       },
       error: (error) => {
-        this.toastr.error('Error al cargar las especies', 'Error');
+        this.toastr.error('Error al cargar los cultivos', 'Error');
         this.cargando = false;
       }
     });
@@ -56,12 +56,12 @@ export class EspecieListComponent implements OnInit {
       this.especieService.eliminarEspecie(this.especieSeleccionada.id!).subscribe({
         next: () => {
           this.eliminarEspecieDeLista(this.especieSeleccionada!.id!);
-          this.toastr.success(`Especie ${this.especieSeleccionada?.nombre} eliminada con éxito`);
+          this.toastr.success(`Cultivo ${this.especieSeleccionada?.nombre} eliminado con éxito`);
           this.cerrarModal();
         },
         error: (error) => {
-          this.toastr.error('Error al eliminar la especie', 'Error');
-          console.error('Error al eliminar la especie:', error);
+          this.toastr.error('Error al eliminar el cultivo', 'Error');
+          console.error('Error al eliminar  el cultivo:', error);
         }
       });
     }

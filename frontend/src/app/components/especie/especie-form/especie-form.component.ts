@@ -91,26 +91,24 @@ export class EspecieFormComponent implements OnInit {
         this.especieService.actualizarEspecie(this.especieId, especieEditada).subscribe({
           next: (especie) => {
             this.especieActualizada.emit(especie);
-            this.toastr.success(`Especie "${especie.nombre}" actualizada con éxito`);
+            this.toastr.success(`Cultivo "${especie.nombre}" actualizado con éxito`);
             this.cerrarModal();
             this.especieForm.reset();
           },
           error: (error) => {
-            this.toastr.error('Error al actualizar la especie', 'Error');
-            console.error('Error al actualizar la especie:', error);
+            this.toastr.error('Error al actualizar el cultivo', 'Error');
           }
         });
       } else {
         this.especieService.crearEspecie(especieEditada).subscribe({
           next: (especie) => {
             this.especieActualizada.emit(especie);
-            this.toastr.success(`Especie "${especie.nombre}" creada con éxito`);
+            this.toastr.success(`Cultivo "${especie.nombre}" creado con éxito`);
             this.cerrarModal();
             this.especieForm.reset();
           },
           error: (error) => {
-            this.toastr.error('Error al crear la especie', 'Error');
-            console.error('Error al crear la especie:', error);
+            this.toastr.error('Error al crear el cultivo', 'Error');
           }
         });
       }

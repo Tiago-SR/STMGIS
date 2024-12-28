@@ -1,14 +1,14 @@
 <div class="ml-6 mr-6 w-full">
-  <div class="flex justify-between items-center mb-4">
-    <h1 class="text-2xl font-bold">Lista de Cultivos</h1>
+  <div class="flex justify-between flex-wrap items-center mb-4">
+    <h1 class="text-2xl font-bold">Lista de Unidad de Manejo</h1>
     <button *ngIf="!cargando && cultivos.length !== 0" (click)="abrirModalCreacion()"
       class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded mt-2">
-      Nuevo Cultivo
+      Nueva Unidad Manejo
     </button>
   </div>
 
   <!-- Filtros -->
-  <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+  <div class="mb-4 grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     <div>
       <label for="empresa" class="block text-sm font-medium text-gray-700">Empresa</label>
       <select id="empresa" [(ngModel)]="selectedEmpresa" (change)="onFiltroChangeEmpresa()"
@@ -18,7 +18,7 @@
       </select>
     </div>
     <div>
-      <label for="especie" class="block text-sm font-medium text-gray-700">Especie</label>
+      <label for="especie" class="block text-sm font-medium text-gray-700">Cultivo</label>
       <select id="especie" [(ngModel)]="selectedEspecie" (change)="onFiltroChange()"
         class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm">
         <option value="">Todas</option>
@@ -54,16 +54,16 @@
   </div>
 
   <div *ngIf="!cargando && cultivos.length === 0 && resetearForm === false" class="text-center py-10">
-    <h2 class="text-3xl font-bold mb-4">No hay cultivos aún</h2>
-    <p class="text-gray-600 mb-6">Agrega tu primer cultivo para comenzar.</p>
+    <h2 class="text-3xl font-bold mb-4">No hay Unidad Manejo aún</h2>
+    <p class="text-gray-600 mb-6">Agrega tu primera unidad de manejo para comenzar.</p>
     <button (click)="abrirModalCreacion()"
       class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-      Crear Cultivo
+      Crear Unidad Manejo
     </button>
   </div>
 
   <div *ngIf="!cargando && cultivos.length === 0 && resetearForm === true" class="text-center py-10">
-    <h2 class="text-3xl font-bold mb-4">No hay cultivos que coincidan con los filtros seleccionados</h2>
+    <h2 class="text-3xl font-bold mb-4">No hay Unidad Menejo que coincidan con los filtros seleccionados</h2>
   </div>
 
   <div *ngIf="!cargando && cultivos.length > 0"
@@ -89,7 +89,7 @@
     <div class="fixed inset-0 bg-gray-800 bg-opacity-50" (click)="cerrarModal()" tabindex="0"></div>
     <div class="bg-white rounded-lg shadow-lg w-full max-w-lg p-6 relative z-[200]">
       <h2 class="text-xl font-bold text-gray-900 mb-4" style="word-break: break-word;">
-        ¿Deseas eliminar el cultivo "{{ cultivoSeleccionado?.nombre }}"?
+        ¿Deseas eliminar la Unidad Manejo "{{ cultivoSeleccionado?.nombre }}"?
       </h2>
       <p class="mb-6">Esta acción no se puede deshacer.</p>
       <div class="flex justify-end">
