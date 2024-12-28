@@ -30,11 +30,7 @@ export class UserCreateModalComponent {
           this.toast.success('Usuario invitado correctamente');
         },
         error: (error) => {
-          if (error.error) {
-            this.error.push(error.error);
-          } else {
-            this.error.push('Error al invitar al usuario');
-          }
+          this.error.push('Error al invitar al usuario');
           this.formSubmitted = false;
         },
       })

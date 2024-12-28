@@ -225,26 +225,26 @@ export class CultivoFormComponent {
         this.cultivoService.actualizarParcialCultivo(this.cultivoId, cultivoEditado).subscribe({
           next: (cultivo) => {
             this.cultivoActualizado.emit(cultivo);
-            this.toastr.success(`Especie "${cultivo.nombre}" actualizada con éxito`);
+            this.toastr.success(`Unidad de manejo "${cultivo.nombre}" actualizada con éxito`);
             this.cerrarModal();
             this.cultivoForm.reset();
           },
           error: (error) => {
-            this.toastr.error('Error al actualizar la especie', 'Error');
-            console.error('Error al actualizar la especie:', error);
+            this.toastr.error('Error al actualizar la unidad de manejo', 'Error');
+            // console.error('Error al actualizar la especie:', error);
           }
         });
       } else {
         this.cultivoService.crearCultivo(cultivoEditado).subscribe({
           next: (cultivo) => {
             this.cultivoActualizado.emit(cultivo);
-            this.toastr.success(`Especie "${cultivo.nombre}" creada con éxito`);
+            this.toastr.success(`Unidad de manejo "${cultivo.nombre}" creada con éxito`);
             this.cerrarModal();
             this.cultivoForm.reset();
           },
           error: (error) => {
-            this.toastr.error('Error al crear la especie', 'Error');
-            console.error('Error al crear la especie:', error);
+            this.toastr.error('Error al crear la unidad de manejo', 'Error');
+            // console.error('Error al crear la especie:', error);
           }
         });
       }

@@ -28,10 +28,10 @@
     </div>
     
     <div class="mb-4" *ngIf="especies.length > 0">
-      <label for="especie" class="block text-gray-700 font-medium mb-2">Especie:</label>
+      <label for="especie" class="block text-gray-700 font-medium mb-2">Cultivo:</label>
       <select id="especie" [(ngModel)]="especieSeleccionadaId" (change)="onEspecieChange()"
         class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-        <option value="" disabled selected>Seleccione una Especie</option>
+        <option value="" disabled selected>Seleccione un Cultivo</option>
         <option *ngFor="let especie of especies" [value]="especie.id">{{ especie.nombre }}</option>
       </select>
     </div>
@@ -47,10 +47,10 @@
     
     <form [formGroup]="cultivoForm" (ngSubmit)="seleccionarCultivo()" novalidate>
       <div class="mb-4" *ngIf="cultivos.length > 0">
-        <label for="cultivo" class="block text-gray-700 font-medium mb-2">Cultivo:</label>
+        <label for="cultivo" class="block text-gray-700 font-medium mb-2">Unidad Manejo:</label>
         <select id="cultivo" formControlName="cultivo"
           class="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-          <option value="" selected>Seleccione un Cultivo</option>
+          <option value="" selected>Seleccione Unidad Manejo</option>
           <option *ngFor="let cultivo of cultivos" [value]="cultivo.id">{{ cultivo.nombre }}</option>
         </select>
       </div>
